@@ -35,13 +35,17 @@ hasta que así se indique explícitamente.
 
 ## Estado actual
 
-- [x] Preparación del entorno (carpeta del proyecto, repositorio Git, README,
-      datos del negocio documentados)
-- [ ] Definición de arquitectura (pendiente de aprobación para iniciar)
-- [ ] Resto de fases: por definir
+- [x] Fase 0 — Preparación del entorno (carpeta del proyecto, repositorio
+      Git, README, datos del negocio documentados)
+- [x] Fase 1 — Arquitectura entregada en [docs/arquitectura.md](docs/arquitectura.md),
+      **pendiente de tu aprobación** antes de iniciar la Fase 2 (base de datos)
+- [ ] Resto de fases: ver el plan en docs/arquitectura.md §9
 
-## Stack (previsto, sujeto a confirmación)
+## Stack (propuesto en docs/arquitectura.md, sujeto a confirmación)
 
-- PHP sobre XAMPP (Apache + MySQL/MariaDB)
-- Sin código de aplicación todavía — este commit solo prepara el entorno de
-  trabajo.
+- PHP 8 + PDO, arquitectura MVC ligera hecha a medida (sin framework, sin
+  Composer obligatorio) — análisis completo de por qué no Laravel en
+  hosting compartido en docs/arquitectura.md §2.
+- MySQL/MariaDB, Bootstrap 5 vendorizado localmente.
+- Sin código de aplicación todavía — este commit solo agrega el análisis de
+  arquitectura.
