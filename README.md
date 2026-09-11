@@ -39,10 +39,26 @@ hasta que así se indique explícitamente.
       Git, README, datos del negocio documentados)
 - [x] Fase 1 — Arquitectura **aprobada**, ver [docs/arquitectura.md](docs/arquitectura.md)
 - [x] Fase 2 — Base de datos: [database/schema.sql](database/schema.sql) (14
-      tablas) + [docs/modelo-datos.md](docs/modelo-datos.md) (diagrama ER),
-      validado contra MariaDB local. **Pendiente de tu revisión/aprobación**
-      antes de iniciar la Fase 3 (Core)
+      tablas) + [docs/modelo-datos.md](docs/modelo-datos.md) (diagrama ER)
+- [x] Fase 3 — Core: router, conexión PDO, autenticación con bloqueo por
+      intentos fallidos, CSRF, sesiones seguras, manejo de errores/404/403,
+      estructura completa de carpetas. Probado de extremo a extremo
+      (login correcto/incorrecto, bloqueo tras 5 intentos, logout, rutas
+      protegidas). **Pendiente de tu revisión** antes de iniciar la Fase 4
+      (panel: catálogo)
 - [ ] Resto de fases: ver el plan en docs/arquitectura.md §9
+
+## Cómo probar en local
+
+1. Este proyecto usa un alias de Apache (`http://localhost/elcharco` →
+   `elcharco/public`) configurado en
+   `C:\xampp\apache\conf\extra\httpd-xampp.conf`. **Reinicia Apache desde
+   el Panel de Control de XAMPP** (Stop/Start) para que tome el cambio.
+2. Copia `config/database.example.php` como `config/database.php` (ya
+   existe en este equipo con las credenciales del usuario dedicado
+   `elcharco_app`) si trabajas desde otra máquina.
+3. Abre `http://localhost/elcharco` (sitio público) y
+   `http://localhost/elcharco/admin/login` (panel).
 
 ## Stack (confirmado en docs/arquitectura.md §10)
 

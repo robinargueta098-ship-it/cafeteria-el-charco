@@ -351,6 +351,9 @@ INSERT INTO productos (categoria_id, nombre, descripcion, precio, orden) VALUES
 -- vacíos a propósito porque no se han proporcionado — se completan
 -- desde el panel cuando el negocio los tenga listos.
 INSERT INTO configuracion_sistema (clave, valor, descripcion) VALUES
+  ('nombre_sitio', 'Cafetería El Charco', 'Nombre del negocio mostrado en el sitio y el panel'),
+  ('logo', '', 'Ruta del logo — pendiente de que el negocio proporcione el archivo'),
+  ('direccion_texto', '', 'Dirección en texto plano — pendiente de proporcionar'),
   ('whatsapp_numero', '+50233577968', 'Número de WhatsApp para el botón de contacto'),
   ('instagram_usuario', '@el_charco_cafeteria', 'Usuario de Instagram/TikTok'),
   ('facebook_nombre', 'Cafetería El Charco', 'Nombre de la página de Facebook'),

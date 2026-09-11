@@ -1,0 +1,16 @@
+# Credenciales — nunca en git
+/config/database.php
+
+# Logs de aplicación
+/storage/logs/*.log
+
+# Fotos subidas desde el panel (contenido, no código)
+/public/uploads/productos/*
+/public/uploads/galeria/*
+!/public/uploads/productos/.gitkeep
+!/public/uploads/galeria/.gitkeep
+
+# Sistema operativo / editor
+.DS_Store
+Thumbs.db
+.vscode/

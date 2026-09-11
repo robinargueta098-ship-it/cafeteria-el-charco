@@ -1,0 +1,5 @@
+# Red de seguridad adicional: storage/ ya queda fuera de public/ (la
+# raíz web real), así que en un hosting bien configurado esta carpeta
+# no es alcanzable por URL. Esta regla es solo un respaldo por si el
+# document root llegara a apuntar mal.
+Require all denied

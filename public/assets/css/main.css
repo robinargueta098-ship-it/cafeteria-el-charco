@@ -1,0 +1,99 @@
+/*
+ * Cafetería El Charco — estilos base.
+ *
+ * Los valores exactos de esta paleta son un primer punto de partida a
+ * partir de la descripción real del negocio (beige/crema, café/marrón
+ * oscuro, verde — docs/negocio.md). No son códigos de marca oficiales;
+ * se afinan en la Fase 8 (diseño visual) si el negocio define una guía
+ * de marca más precisa.
+ */
+
+:root {
+  --color-beige: #f4ecdf;
+  --color-beige-claro: #faf6ee;
+  --color-cafe-oscuro: #3b2415;
+  --color-cafe: #6f4e37;
+  --color-verde: #4b6b3a;
+  --color-texto: #2e1f17;
+  --color-blanco: #ffffff;
+  --color-error: #a13d2b;
+
+  --espaciado-1: 8px;
+  --espaciado-2: 16px;
+  --espaciado-3: 24px;
+  --espaciado-4: 32px;
+
+  --radio-borde: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-beige-claro);
+  color: var(--color-texto);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--color-cafe);
+}
+
+.contenedor {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--espaciado-3);
+}
+
+.btn {
+  display: inline-block;
+  padding: var(--espaciado-1) var(--espaciado-3);
+  border-radius: var(--radio-borde);
+  border: none;
+  background: var(--color-cafe);
+  color: var(--color-blanco);
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.btn:hover {
+  background: var(--color-cafe-oscuro);
+}
+
+.btn-verde {
+  background: var(--color-verde);
+}
+
+.tarjeta {
+  background: var(--color-blanco);
+  border: 1px solid var(--color-beige);
+  border-radius: var(--radio-borde);
+  padding: var(--espaciado-3);
+}
+
+.mensaje-error {
+  color: var(--color-error);
+  margin-bottom: var(--espaciado-2);
+}
+
+.campo {
+  margin-bottom: var(--espaciado-2);
+}
+
+.campo label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.campo input {
+  width: 100%;
+  padding: var(--espaciado-1);
+  border: 1px solid var(--color-cafe);
+  border-radius: var(--radio-borde);
+  font-size: 1rem;
+}

@@ -1,0 +1,16 @@
+# Las fotos de productos y galería se sirven desde aquí, pero esta
+# carpeta nunca debe poder ejecutar código PHP (defensa en profundidad
+# por si algún día se sube un archivo malicioso disfrazado de imagen).
+
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+
+<FilesMatch "\.(php|phtml|php\d|phar)$">
+    Require all denied
+</FilesMatch>
+
+Options -Indexes -ExecCGI
