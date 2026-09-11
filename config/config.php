@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 define('APP_ENV', 'local');   // 'local' en XAMPP, 'production' en Hostinger
 define('APP_DEBUG', true);    // true muestra errores detallados; false en producción
-define('APP_URL', 'http://localhost/elcharco');
+define('APP_URL', 'http://elcharco.local');
 define('APP_TIMEZONE', 'America/Guatemala');
 
 define('BASE_PATH', dirname(__DIR__));

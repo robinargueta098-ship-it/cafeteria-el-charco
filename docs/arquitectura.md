@@ -116,10 +116,14 @@ rápido de tener funcionando pero el aislamiento depende de que el
 `.htaccess` esté bien configurado y de que Apache lo respete (Hostinger sí
 lo respeta por defecto).
 
-**Confirmado:** `public/` como raíz web (ver §10). Para desarrollo local en
-XAMPP, la Fase 3 incluirá configurar un Virtual Host apuntando a
-`elcharco/public`, en vez de seguir probando en `http://localhost/elcharco`
-directo sobre la raíz del proyecto.
+**Confirmado:** `public/` como raíz web (ver §10). En la Fase 3 se probó
+primero con un *alias* de Apache (`http://localhost/elcharco`) y se
+descartó: la app genera enlaces/redirecciones como rutas absolutas de la
+raíz del dominio, que bajo un alias de subcarpeta apuntan mal. Se usa en
+su lugar un **Virtual Host con dominio propio**
+(`http://elcharco.local`, ver README "Cómo probar en local"), que
+reproduce fielmente cómo se verá en producción (dominio propio en
+Hostinger = `public/`).
 
 ---
 

@@ -50,15 +50,36 @@ hasta que así se indique explícitamente.
 
 ## Cómo probar en local
 
-1. Este proyecto usa un alias de Apache (`http://localhost/elcharco` →
-   `elcharco/public`) configurado en
-   `C:\xampp\apache\conf\extra\httpd-xampp.conf`. **Reinicia Apache desde
-   el Panel de Control de XAMPP** (Stop/Start) para que tome el cambio.
-2. Copia `config/database.example.php` como `config/database.php` (ya
-   existe en este equipo con las credenciales del usuario dedicado
-   `elcharco_app`) si trabajas desde otra máquina.
-3. Abre `http://localhost/elcharco` (sitio público) y
-   `http://localhost/elcharco/admin/login` (panel).
+Este proyecto usa un **Virtual Host con dominio propio**
+(`http://elcharco.local`) apuntando directamente a `elcharco/public`,
+configurado en `C:\xampp\apache\conf\extra\httpd-vhosts.conf`.
+
+Se probó primero con un *alias* de subcarpeta (`http://localhost/elcharco`)
+y se descartó: la aplicación genera enlaces, formularios y redirecciones
+como rutas absolutas de la raíz del dominio (`/admin/login`,
+`/assets/css/main.css`), que es exactamente cómo funcionará en producción
+(Hostinger, dominio propio = `public/`). Bajo un alias de subcarpeta esas
+rutas absolutas apuntan mal (`http://localhost/admin/login` en vez de
+`http://localhost/elcharco/admin/login`), rompiendo login y assets. Un
+Virtual Host con nombre propio reproduce fielmente la raíz de dominio de
+producción, así que no hay ese desfase.
+
+Pasos para levantar el entorno en una máquina nueva:
+
+1. Agregar `127.0.0.1 elcharco.local` al archivo hosts de Windows
+   (`C:\Windows\System32\drivers\etc\hosts`) — requiere permisos de
+   administrador.
+2. Verificar que `C:\xampp\apache\conf\extra\httpd-vhosts.conf` tenga el
+   bloque `<VirtualHost *:80>` con `ServerName elcharco.local` y
+   `DocumentRoot` apuntando a `elcharco/public` (y que el primer
+   VirtualHost del archivo preserve `http://localhost` con
+   `DocumentRoot "C:/xampp/htdocs"`, para no romper otros proyectos).
+3. Reiniciar Apache desde el Panel de Control de XAMPP.
+4. Copiar `config/database.example.php` como `config/database.php` y
+   completar con las credenciales del usuario dedicado `elcharco_app`
+   (no root).
+5. Abrir `http://elcharco.local/` (sitio público) y
+   `http://elcharco.local/admin/login` (panel).
 
 ## Stack (confirmado en docs/arquitectura.md §10)
 
