@@ -5,8 +5,9 @@ alcance, decisión tecnológica, módulos, flujos, modelo de datos, estructura
 de carpetas, seguridad, riesgos y plan por fases. Se basa exclusivamente en
 los datos reales del negocio documentados en [negocio.md](negocio.md).
 
-Estado: **propuesta pendiente de aprobación**. No se ha escrito código de
-aplicación todavía.
+Estado: **Fase 1 aprobada** (ver decisiones confirmadas en §10). No se ha
+escrito código de aplicación todavía — eso corresponde a la Fase 2 en
+adelante.
 
 ---
 
@@ -115,8 +116,10 @@ rápido de tener funcionando pero el aislamiento depende de que el
 `.htaccess` esté bien configurado y de que Apache lo respete (Hostinger sí
 lo respeta por defecto).
 
-Te pregunto tu preferencia al final de este documento — es una decisión que
-conviene fijar antes de escribir el Core.
+**Confirmado:** `public/` como raíz web (ver §10). Para desarrollo local en
+XAMPP, la Fase 3 incluirá configurar un Virtual Host apuntando a
+`elcharco/public`, en vez de seguir probando en `http://localhost/elcharco`
+directo sobre la raíz del proyecto.
 
 ---
 
@@ -142,6 +145,17 @@ conviene fijar antes de escribir el Core.
 | Promociones | promociones activas hoy | `promociones` |
 
 ### 3.2 Panel administrativo
+
+**Roles confirmados para v1** (§10): dos roles con permisos distintos.
+
+| Rol | Puede ver/usar | No puede |
+|---|---|---|
+| **Administrador** | todos los módulos: productos, categorías, galería, temporadas, promociones, clientes, lealtad, recompensas, configuración, usuarios, auditoría | — |
+| **Cajero** | Clientes, Lealtad (registrar compra de café), Recompensas (canjear) | Productos, Categorías, Galería, Temporadas, Promociones, Configuración, Usuarios, Auditoría |
+
+El control de acceso se resuelve en el Core (Fase 3) con una función
+`check_role()` equivalente a la de PG2 (`includes/auth_check.php`), aplicada
+al inicio de cada controlador del panel.
 
 | Módulo | Función |
 |---|---|
@@ -225,7 +239,8 @@ horarios_atencion       (horario semanal)
 
 ### 5.1 Tablas propuestas (v1 — 14 tablas)
 
-- **roles** — id, nombre
+- **roles** — id, nombre (seed inicial: `Administrador`, `Cajero`; ver
+  permisos por rol en §3.2)
 - **usuarios** — id, nombre, usuario, password_hash, rol_id, activo,
   ultimo_acceso, intentos_fallidos, bloqueado_hasta, creado_en
 - **intentos_login** — id, usuario_o_ip, exitoso, ip, user_agent, creado_en
@@ -363,19 +378,19 @@ No se avanza de una fase a la siguiente sin tu confirmación explícita.
 
 ---
 
-## 10. Decisiones abiertas para tu confirmación
+## 10. Decisiones confirmadas (Fase 1 aprobada)
 
-Antes de iniciar la Fase 2 (base de datos) necesito que confirmes:
+1. **Stack**: MVC ligero en PHP plano (§2.3). Se descarta Laravel para
+   esta versión.
+2. **Estructura de carpetas**: `public/` como raíz web (§2.4), con Virtual
+   Host local en XAMPP apuntando a `elcharco/public` (se configura en la
+   Fase 3).
+3. **Calificación de Google**: valor editable manualmente desde
+   `configuracion_sistema`, con enlace a la ficha de Google. Sin API de
+   pago.
+4. **Roles del panel**: dos roles desde el inicio — `Administrador` y
+   `Cajero`, con permisos diferenciados (detalle en §3.2).
 
-1. **Stack**: ¿apruebas MVC ligero en PHP plano (recomendado, §2.3) o
-   prefieres Laravel a pesar de los riesgos de hosting compartido (§2.2)?
-2. **Estructura de carpetas**: ¿`public/` como raíz web con Virtual Host
-   local (recomendado, más aislado) o estructura plana en la raíz del
-   proyecto protegida con `.htaccess` (más simple de probar en XAMPP ya
-   mismo)?
-3. **Calificación de Google**: ¿valor editable manualmente desde el panel
-   (recomendado, sin costo) o integrar la API de Google Places (requiere
-   cuenta de facturación en Google Cloud)?
-4. **Roles del panel**: ¿un solo rol "Administrador" para esta versión
-   (recomendado, más simple) o varios roles desde el inicio (ej.
-   Administrador/Cajero)?
+Con esto queda cerrada la Fase 1. La Fase 2 (diseño completo de
+`database/schema.sql`, con las 14 tablas de §5.1 ya ajustadas a estas
+decisiones) inicia cuando lo confirmes explícitamente.

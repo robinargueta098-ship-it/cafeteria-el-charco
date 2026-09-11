@@ -37,15 +37,18 @@ hasta que así se indique explícitamente.
 
 - [x] Fase 0 — Preparación del entorno (carpeta del proyecto, repositorio
       Git, README, datos del negocio documentados)
-- [x] Fase 1 — Arquitectura entregada en [docs/arquitectura.md](docs/arquitectura.md),
-      **pendiente de tu aprobación** antes de iniciar la Fase 2 (base de datos)
+- [x] Fase 1 — Arquitectura **aprobada**, ver [docs/arquitectura.md](docs/arquitectura.md)
+- [ ] Fase 2 — Base de datos (`database/schema.sql`): por iniciar, requiere
+      confirmación explícita
 - [ ] Resto de fases: ver el plan en docs/arquitectura.md §9
 
-## Stack (propuesto en docs/arquitectura.md, sujeto a confirmación)
+## Stack (confirmado en docs/arquitectura.md §10)
 
 - PHP 8 + PDO, arquitectura MVC ligera hecha a medida (sin framework, sin
   Composer obligatorio) — análisis completo de por qué no Laravel en
   hosting compartido en docs/arquitectura.md §2.
 - MySQL/MariaDB, Bootstrap 5 vendorizado localmente.
-- Sin código de aplicación todavía — este commit solo agrega el análisis de
-  arquitectura.
+- `public/` como raíz web, aislando `app/`, `config/` y `database/`.
+- Panel con dos roles: Administrador y Cajero.
+- Sin código de aplicación todavía — la Fase 2 (base de datos) es el
+  siguiente paso.
