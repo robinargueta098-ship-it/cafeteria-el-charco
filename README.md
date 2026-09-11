@@ -38,8 +38,10 @@ hasta que así se indique explícitamente.
 - [x] Fase 0 — Preparación del entorno (carpeta del proyecto, repositorio
       Git, README, datos del negocio documentados)
 - [x] Fase 1 — Arquitectura **aprobada**, ver [docs/arquitectura.md](docs/arquitectura.md)
-- [ ] Fase 2 — Base de datos (`database/schema.sql`): por iniciar, requiere
-      confirmación explícita
+- [x] Fase 2 — Base de datos: [database/schema.sql](database/schema.sql) (14
+      tablas) + [docs/modelo-datos.md](docs/modelo-datos.md) (diagrama ER),
+      validado contra MariaDB local. **Pendiente de tu revisión/aprobación**
+      antes de iniciar la Fase 3 (Core)
 - [ ] Resto de fases: ver el plan en docs/arquitectura.md §9
 
 ## Stack (confirmado en docs/arquitectura.md §10)
