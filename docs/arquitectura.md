@@ -215,8 +215,14 @@ al inicio de cada controlador del panel.
 
 ### 4.5 Login del panel
 - `password_hash` / `password_verify`, `session_regenerate_id(true)` al
-  autenticar, token CSRF en el formulario, y bloqueo temporal tras varios
-  intentos fallidos (tabla `intentos_login`).
+  autenticar, token CSRF en el formulario (validado automáticamente por
+  el Router en todo POST, no opcional por controlador), y dos niveles de
+  bloqueo temporal tras intentos fallidos: por cuenta (`usuarios.
+  intentos_fallidos` / `bloqueado_hasta`) y por IP (tabla
+  `intentos_login`, protege contra fuerza bruta repartida entre varias
+  cuentas desde el mismo origen). `password_verify()` siempre se ejecuta
+  con algún hash — real o ficticio — para que el tiempo de respuesta no
+  revele si un usuario existe o no.
 
 ---
 
@@ -327,18 +333,40 @@ crea localmente y en el servidor a partir de una plantilla
 - PDO con sentencias preparadas siempre; nunca concatenar SQL.
 - `htmlspecialchars()` en toda salida a HTML.
 - `password_hash()` / `password_verify()` para usuarios del panel.
-- `session_regenerate_id(true)` al iniciar sesión.
-- Token CSRF en todo formulario POST del panel.
+  `password_verify()` se ejecuta siempre (con un hash real o uno
+  ficticio) para que el tiempo de respuesta del login no revele si un
+  usuario existe o no.
+- `session_regenerate_id(true)` al iniciar sesión; al cerrar sesión se
+  destruyen los datos en el servidor **y** se expira la cookie en el
+  navegador.
+- Token CSRF validado automáticamente por el Router en todo POST — no es
+  una llamada que cada controlador nuevo deba recordar hacer.
 - Cookies de sesión `HttpOnly`, `SameSite=Strict`, `Secure` en producción
   (Hostinger da SSL gratuito).
-- Bloqueo temporal tras intentos de login fallidos.
+- Cabeceras HTTP `X-Content-Type-Options: nosniff`, `X-Frame-Options:
+  SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin` en toda
+  respuesta.
+- Bloqueo temporal tras intentos de login fallidos, en dos niveles: por
+  cuenta (`usuarios.intentos_fallidos`/`bloqueado_hasta`) y por IP (tabla
+  `intentos_login`), para cubrir tanto ataques contra una cuenta como
+  fuerza bruta repartida entre varias cuentas desde el mismo origen.
 - Nunca mostrar `$e->getMessage()` al usuario — log en `storage/logs/`,
-  mensaje genérico en pantalla.
+  mensaje genérico en pantalla. `ErrorHandler` fija `display_errors`
+  según `APP_DEBUG` (nunca confía en el `php.ini` del hosting) y registra
+  un manejador de `shutdown` para los errores fatales del motor que no
+  pasan por las excepciones normales.
+- `Controller::vista()` valida con `realpath()` que la plantilla
+  resuelta siga dentro de `app/Views` (defensa en profundidad contra
+  inclusión de archivos, aunque hoy el nombre de vista siempre es un
+  valor fijo en el código).
 - Validación estricta de archivos subidos (extensión + MIME real + tamaño
   + nombre aleatorio) y carpeta `uploads/` sin permiso de ejecutar PHP.
 - Credenciales de base de datos fuera de git, usuario de MySQL dedicado sin
   privilegios de root (igual que en PG2).
 - `app/`, `config/`, `database/` no accesibles por URL (ver §2.4).
+- Clase `Validator` (`app/Core/Validator.php`) para validar datos de
+  formularios de forma consistente en las Fases 4-6 (requerido, longitud
+  máxima/mínima, numérico, email, valores permitidos).
 
 ---
 

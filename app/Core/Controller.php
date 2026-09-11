@@ -14,9 +14,18 @@ abstract class Controller
 {
     protected function vista(string $vista, array $datos = []): void
     {
-        $rutaArchivo = APP_PATH . '/Views/' . $vista . '.php';
+        $directorioVistas = realpath(APP_PATH . '/Views');
+        $rutaArchivo = realpath(APP_PATH . '/Views/' . $vista . '.php');
 
-        if (!file_exists($rutaArchivo)) {
+        // Defensa en profundidad: aunque hoy $vista siempre es un valor
+        // fijo en el código (nunca viene de la URL o de un formulario),
+        // esto evita que un futuro descuido abra inclusión de archivos
+        // arbitrarios (ej. $vista = '../../../../config/database').
+        if (
+            $directorioVistas === false
+            || $rutaArchivo === false
+            || !str_starts_with($rutaArchivo, $directorioVistas . DIRECTORY_SEPARATOR)
+        ) {
             throw new RuntimeException("Vista no encontrada: {$vista}");
         }
 

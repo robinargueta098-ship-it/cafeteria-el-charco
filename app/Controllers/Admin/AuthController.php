@@ -6,8 +6,8 @@ namespace App\Controllers\Admin;
 
 use App\Core\Auth;
 use App\Core\Controller;
+use App\Core\Validator;
 use App\Middleware\AuthMiddleware;
-use App\Middleware\CsrfMiddleware;
 use App\Middleware\GuestMiddleware;
 
 class AuthController extends Controller
@@ -20,12 +20,22 @@ class AuthController extends Controller
 
     public function iniciarSesion(): void
     {
-        CsrfMiddleware::manejar();
+        // El token CSRF ya se validó en App\Core\Router para todo POST
+        // (docs/arquitectura.md §7) — no hace falta repetirlo aquí.
 
-        $usuario  = trim((string) ($_POST['usuario'] ?? ''));
-        $password = (string) ($_POST['password'] ?? '');
+        $datos = [
+            'usuario'  => trim((string) ($_POST['usuario'] ?? '')),
+            'password' => (string) ($_POST['password'] ?? ''),
+        ];
 
-        if ($usuario === '' || $password === '' || !Auth::intentar($usuario, $password)) {
+        $validador = new Validator($datos);
+        $validador
+            ->requerido('usuario', 'Usuario')
+            ->longitudMaxima('usuario', 'Usuario', 50)
+            ->requerido('password', 'Contraseña')
+            ->longitudMaxima('password', 'Contraseña', 255);
+
+        if (!$validador->esValido() || !Auth::intentar($datos['usuario'], $datos['password'])) {
             $this->vista('admin/login', ['error' => 'Usuario o contraseña incorrectos.']);
             return;
         }
@@ -35,7 +45,6 @@ class AuthController extends Controller
 
     public function cerrarSesion(): void
     {
-        CsrfMiddleware::manejar();
         Auth::cerrarSesion();
         $this->redirigir('/admin/login');
     }

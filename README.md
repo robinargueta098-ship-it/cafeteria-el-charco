@@ -44,8 +44,18 @@ hasta que así se indique explícitamente.
       intentos fallidos, CSRF, sesiones seguras, manejo de errores/404/403,
       estructura completa de carpetas. Probado de extremo a extremo
       (login correcto/incorrecto, bloqueo tras 5 intentos, logout, rutas
-      protegidas). **Pendiente de tu revisión** antes de iniciar la Fase 4
-      (panel: catálogo)
+      protegidas).
+- [x] Fase 3.1 — Revisión de seguridad y endurecimiento: CSRF automático
+      en todo POST (Router, no opcional por controlador), bloqueo por IP
+      además de por cuenta (tabla `intentos_login`, antes sin usar),
+      comparación de tiempo constante en el login (evita enumeración de
+      usuarios), manejo real de errores fatales (`register_shutdown_
+      function`) con `display_errors` controlado por `APP_DEBUG`, cookie
+      de sesión expirada explícitamente en logout, defensa en
+      profundidad contra inclusión de archivos en `Controller::vista()`,
+      cabeceras de seguridad HTTP, y clase `Validator` reutilizable para
+      las Fases 4-6. Ver docs/arquitectura.md §7. **Pendiente de tu
+      revisión** antes de iniciar la Fase 4 (panel: catálogo)
 - [ ] Resto de fases: ver el plan en docs/arquitectura.md §9
 
 ## Cómo probar en local

@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 namespace App\Core;
 
+use App\Middleware\CsrfMiddleware;
+
 /**
  * Router mínimo: mapea método+ruta a [Controlador, método]. Soporta
  * parámetros de ruta con la sintaxis {param}. Nada de "magia":
  * las rutas se declaran explícitamente en app/Routes/*.php.
+ *
+ * Todo POST pasa automáticamente por CsrfMiddleware antes de ejecutar
+ * la acción: la protección CSRF es el comportamiento por defecto, no
+ * algo que cada controlador nuevo tenga que recordar llamar.
  */
 class Router
 {
@@ -47,6 +53,11 @@ class Router
 
             if (preg_match($patron, $uri, $coincidencias)) {
                 array_shift($coincidencias);
+
+                if ($metodo === 'POST') {
+                    CsrfMiddleware::manejar();
+                }
+
                 $this->ejecutar($ruta['accion'], $coincidencias);
                 return;
             }

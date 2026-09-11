@@ -30,6 +30,12 @@ use App\Core\Router;
 use App\Core\Session;
 
 ErrorHandler::registrar();
+
+// Cabeceras de seguridad básicas para toda respuesta (docs/arquitectura.md §7).
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+
 Session::iniciar();
 
 $router = new Router();
