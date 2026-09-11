@@ -54,9 +54,25 @@ hasta que así se indique explícitamente.
       de sesión expirada explícitamente en logout, defensa en
       profundidad contra inclusión de archivos en `Controller::vista()`,
       cabeceras de seguridad HTTP, y clase `Validator` reutilizable para
-      las Fases 4-6. Ver docs/arquitectura.md §7. **Pendiente de tu
-      revisión** antes de iniciar la Fase 4 (panel: catálogo)
-- [ ] Resto de fases: ver el plan en docs/arquitectura.md §9
+      las Fases 4-6. Ver docs/arquitectura.md §7.
+- [x] Fases 4-6 — Panel administrativo completo: Productos, Categorías
+      (con protección contra huérfanos), Galería (subida validada),
+      Temporadas, Promociones (4 tipos, sin acumulación accidental),
+      Clientes, Lealtad (libro mayor transaccional — nunca se edita el
+      saldo sin historial), Recompensas, Configuración (incl. horarios),
+      Usuarios (con protección del último Administrador activo) y
+      Auditoría (con filtros). Sidebar con permisos por rol
+      (Administrador/Cajero). Probado de extremo a extremo contra
+      `elcharco.local`: CRUD de cada módulo, subida de imagen real vs.
+      archivo falso rechazado, huérfanos bloqueados, flujo completo de
+      lealtad (acumular → rechazar canje insuficiente → acumular más →
+      canjear → verificar sobrante y auditoría), roles restringidos.
+      Un bug real encontrado y corregido durante las pruebas: un fallo
+      de codificación podía tumbar con error 500 una operación ya
+      guardada exitosamente — ver docs/arquitectura.md §7. **Pendiente
+      de tu revisión**
+- [ ] Resto de fases (sitio público, diseño visual, despliegue): ver el
+      plan en docs/arquitectura.md §9
 
 ## Cómo probar en local
 

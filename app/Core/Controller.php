@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core;
 
+use App\Middleware\AuthMiddleware;
+use App\Middleware\RoleMiddleware;
 use RuntimeException;
 
 /**
@@ -12,6 +14,19 @@ use RuntimeException;
  */
 abstract class Controller
 {
+    /**
+     * Exige sesión activa Y el rol indicado, en ese orden: sin esto,
+     * un controlador podría llamar solo a RoleMiddleware y mostrar un
+     * confuso "403" a alguien que ni siquiera había iniciado sesión
+     * (debería ver el login). IDs de rol: 1 = Administrador, 2 = Cajero
+     * (docs/arquitectura.md §3.2).
+     */
+    protected function requerirRol(int ...$rolesPermitidos): void
+    {
+        AuthMiddleware::manejar();
+        RoleMiddleware::requerir(...$rolesPermitidos);
+    }
+
     protected function vista(string $vista, array $datos = []): void
     {
         $directorioVistas = realpath(APP_PATH . '/Views');
@@ -36,6 +51,14 @@ abstract class Controller
     protected function redirigir(string $ruta): void
     {
         header('Location: ' . $ruta);
+        exit;
+    }
+
+    /** Para cuando un {id} de la URL no corresponde a ningún registro real. */
+    protected function error404(): void
+    {
+        http_response_code(404);
+        require APP_PATH . '/Views/errores/404.php';
         exit;
     }
 }

@@ -367,6 +367,19 @@ crea localmente y en el servidor a partir de una plantilla
 - Clase `Validator` (`app/Core/Validator.php`) para validar datos de
   formularios de forma consistente en las Fases 4-6 (requerido, longitud
   máxima/mínima, numérico, email, valores permitidos).
+- `AuditoriaService::registrar()` nunca puede tumbar la operación que
+  está auditando: corre en su propio try/catch y usa
+  `JSON_INVALID_UTF8_SUBSTITUTE` al codificar los valores antes/después.
+  Se encontró en pruebas que sin esto, un dato con una codificación
+  inválida producía un error 500 aunque el cambio de negocio ya se
+  hubiera guardado correctamente — la auditoría es un registro
+  secundario y su fallo debe degradarse (log) sin bloquear al usuario.
+- Interpretación de alcance: el `ENUM` de `bitacora_auditoria.accion`
+  se amplió a `crear, editar, eliminar, login, consumo, canje`. Las
+  palabras "recompensa" y "canje" pedidas para auditoría se tratan como
+  el mismo evento (`canje`: se entrega el café gratis) — si en el
+  futuro se necesita distinguir "el cliente se volvió elegible" de "se
+  canjeó", se agrega un valor de ENUM aparte.
 
 ---
 

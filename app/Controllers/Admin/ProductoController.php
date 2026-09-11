@@ -1,0 +1,227 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers\Admin;
+
+use App\Core\Controller;
+use App\Core\Flash;
+use App\Core\SubidaArchivo;
+use App\Core\Validator;
+use App\Models\Categoria;
+use App\Models\Producto;
+use App\Models\Temporada;
+use App\Services\AuditoriaService;
+
+class ProductoController extends Controller
+{
+    public function index(): void
+    {
+        $this->requerirRol(1);
+
+        $this->vista('admin/productos/index', [
+            'seccionActiva' => 'productos',
+            'productos'     => (new Producto())->listarTodos(),
+        ]);
+    }
+
+    public function mostrarCrear(): void
+    {
+        $this->requerirRol(1);
+        $this->formulario(null, []);
+    }
+
+    public function crear(): void
+    {
+        $this->requerirRol(1);
+
+        $datos = $this->datosDelFormulario();
+        $errores = $this->validar($datos);
+
+        if ($errores === [] && ($_FILES['imagen']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            $subida = SubidaArchivo::guardarImagen($_FILES['imagen'], UPLOADS_PATH . '/productos');
+            if (!$subida['ok']) {
+                $errores[] = $subida['error'];
+            } else {
+                $datos['imagen'] = $subida['nombre'];
+            }
+        }
+
+        if ($errores !== []) {
+            $this->formulario(array_merge($datos, ['id' => null]), $errores);
+            return;
+        }
+
+        $modelo = new Producto();
+        $id = $modelo->crear($datos);
+        $modelo->sincronizarTemporadas($id, $this->temporadaIdsDelFormulario());
+
+        AuditoriaService::registrar('productos', $id, 'crear', null, $datos);
+
+        Flash::exito('Producto creado correctamente.');
+        $this->redirigir('/admin/productos');
+    }
+
+    public function mostrarEditar(string $id): void
+    {
+        $this->requerirRol(1);
+
+        $modelo = new Producto();
+        $producto = $modelo->buscarPorId((int) $id);
+        if ($producto === null) {
+            $this->error404();
+        }
+
+        $producto['temporada_ids'] = $modelo->obtenerTemporadaIds((int) $id);
+        $this->formulario($producto, []);
+    }
+
+    public function actualizar(string $id): void
+    {
+        $this->requerirRol(1);
+
+        $modelo = new Producto();
+        $existente = $modelo->buscarPorId((int) $id);
+        if ($existente === null) {
+            $this->error404();
+        }
+
+        $datos = $this->datosDelFormulario();
+        $errores = $this->validar($datos);
+
+        $imagenNueva = null;
+        if ($errores === [] && ($_FILES['imagen']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            $subida = SubidaArchivo::guardarImagen($_FILES['imagen'], UPLOADS_PATH . '/productos');
+            if (!$subida['ok']) {
+                $errores[] = $subida['error'];
+            } else {
+                $imagenNueva = $subida['nombre'];
+            }
+        }
+
+        if ($errores !== []) {
+            $datos['id'] = $id;
+            $datos['temporada_ids'] = $this->temporadaIdsDelFormulario();
+            $this->formulario($datos, $errores);
+            return;
+        }
+
+        // Conserva la imagen anterior si no se subió una nueva.
+        $datos['imagen'] = $imagenNueva ?? $existente['imagen'];
+
+        $modelo->actualizar((int) $id, $datos);
+        $modelo->sincronizarTemporadas((int) $id, $this->temporadaIdsDelFormulario());
+
+        if ($imagenNueva !== null && $existente['imagen'] !== null) {
+            SubidaArchivo::eliminar(UPLOADS_PATH . '/productos', $existente['imagen']);
+        }
+
+        AuditoriaService::registrar('productos', (int) $id, 'editar', $existente, $datos);
+
+        Flash::exito('Producto actualizado correctamente.');
+        $this->redirigir('/admin/productos');
+    }
+
+    /** "Eliminar" un producto en realidad alterna su estado activo/inactivo (nunca borrado físico, ver docs/arquitectura.md §8). */
+    public function alternarEstado(string $id): void
+    {
+        $this->requerirRol(1);
+
+        $modelo = new Producto();
+        $producto = $modelo->buscarPorId((int) $id);
+        if ($producto === null) {
+            $this->error404();
+        }
+
+        $nuevoEstado = (int) $producto['activo'] === 1 ? 0 : 1;
+        $datos = $producto;
+        $datos['activo'] = $nuevoEstado;
+        $modelo->actualizar((int) $id, $datos);
+
+        AuditoriaService::registrar('productos', (int) $id, 'editar', $producto, $datos);
+
+        Flash::exito($nuevoEstado === 1 ? 'Producto activado.' : 'Producto desactivado.');
+        $this->redirigir('/admin/productos');
+    }
+
+    private function formulario(?array $producto, array $errores): void
+    {
+        $this->vista('admin/productos/formulario', [
+            'seccionActiva' => 'productos',
+            'producto'      => $producto,
+            'errores'       => $errores,
+            'categorias'    => (new Categoria())->listarActivas(),
+            'temporadas'    => (new Temporada())->listarTodas(),
+        ]);
+    }
+
+    /** @return array<string,mixed> */
+    private function datosDelFormulario(): array
+    {
+        $precioAlt = trim((string) ($_POST['precio_alt'] ?? ''));
+        $etiquetaAlt = trim((string) ($_POST['etiqueta_precio_alt'] ?? ''));
+
+        return [
+            'categoria_id'        => (int) ($_POST['categoria_id'] ?? 0),
+            'nombre'              => trim((string) ($_POST['nombre'] ?? '')),
+            'descripcion'         => $this->nuloSiVacio($_POST['descripcion'] ?? ''),
+            'precio'              => (string) ($_POST['precio'] ?? ''),
+            'precio_alt'          => $precioAlt === '' ? null : $precioAlt,
+            'etiqueta_precio_alt' => $etiquetaAlt === '' ? null : $etiquetaAlt,
+            'es_destacado'        => isset($_POST['es_destacado']) ? 1 : 0,
+            'es_mas_vendido'      => isset($_POST['es_mas_vendido']) ? 1 : 0,
+            'activo'              => isset($_POST['activo']) ? 1 : 0,
+            'orden'               => (int) ($_POST['orden'] ?? 0),
+        ];
+    }
+
+    /** @return array<int,int> */
+    private function temporadaIdsDelFormulario(): array
+    {
+        $valores = $_POST['temporadas'] ?? [];
+        if (!is_array($valores)) {
+            return [];
+        }
+
+        return array_map('intval', $valores);
+    }
+
+    /** @return array<int,string> */
+    private function validar(array $datos): array
+    {
+        $validador = new Validator($datos);
+        $validador
+            ->requerido('nombre', 'Nombre')
+            ->longitudMaxima('nombre', 'Nombre', 120)
+            ->longitudMaxima('descripcion', 'Descripción', 255)
+            ->requerido('precio', 'Precio')
+            ->numerico('precio', 'Precio');
+
+        $errores = $validador->errores();
+
+        if (is_numeric($datos['precio']) && (float) $datos['precio'] <= 0) {
+            $errores[] = 'El precio debe ser mayor que cero.';
+        }
+
+        if ($datos['precio_alt'] !== null) {
+            if (!is_numeric($datos['precio_alt']) || (float) $datos['precio_alt'] <= 0) {
+                $errores[] = 'El precio alternativo debe ser un número mayor que cero.';
+            }
+            if ($datos['etiqueta_precio_alt'] === null) {
+                $errores[] = 'Si defines un precio alternativo, escribe también su etiqueta (ej. "Sin café").';
+            }
+        }
+
+        if ($datos['categoria_id'] <= 0 || !(new Categoria())->buscarPorId($datos['categoria_id'])) {
+            $errores[] = 'Selecciona una categoría válida.';
+        }
+
+        return $errores;
+    }
+
+    private function nuloSiVacio(mixed $valor): ?string
+    {
+        $valor = trim((string) $valor);
+        return $valor === '' ? null : $valor;
+    }
+}

@@ -7,8 +7,8 @@ namespace App\Controllers\Admin;
 use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Validator;
-use App\Middleware\AuthMiddleware;
 use App\Middleware\GuestMiddleware;
+use App\Services\AuditoriaService;
 
 class AuthController extends Controller
 {
@@ -40,6 +40,9 @@ class AuthController extends Controller
             return;
         }
 
+        $usuario = Auth::usuario();
+        AuditoriaService::registrar('usuarios', $usuario['id'], 'login', null, ['usuario' => $usuario['nombre']]);
+
         $this->redirigir('/admin');
     }
 
@@ -47,14 +50,5 @@ class AuthController extends Controller
     {
         Auth::cerrarSesion();
         $this->redirigir('/admin/login');
-    }
-
-    public function panel(): void
-    {
-        AuthMiddleware::manejar();
-
-        $this->vista('admin/dashboard', [
-            'usuario' => Auth::usuario(),
-        ]);
     }
 }

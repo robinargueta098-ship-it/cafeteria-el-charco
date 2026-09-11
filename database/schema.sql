@@ -67,7 +67,7 @@ CREATE TABLE bitacora_auditoria (
   id                BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   tabla_afectada    VARCHAR(64) NOT NULL,
   registro_id       BIGINT UNSIGNED NOT NULL,
-  accion            ENUM('crear','editar','eliminar') NOT NULL,
+  accion            ENUM('crear','editar','eliminar','login','consumo','canje') NOT NULL,
   usuario_id        INT UNSIGNED NULL,
   valores_antes     JSON NULL,
   valores_despues   JSON NULL,

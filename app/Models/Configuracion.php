@@ -33,4 +33,16 @@ class Configuracion
             ->prepare('UPDATE configuracion_sistema SET valor = :valor WHERE clave = :clave')
             ->execute(['valor' => $valor, 'clave' => $clave]);
     }
+
+    /** @param array<string,string> $pares clave => valor. Solo actualiza claves que ya existen (no crea nuevas). */
+    public function actualizarMultiples(array $pares): void
+    {
+        $stmt = Database::conexion()->prepare(
+            'UPDATE configuracion_sistema SET valor = :valor WHERE clave = :clave'
+        );
+
+        foreach ($pares as $clave => $valor) {
+            $stmt->execute(['valor' => $valor, 'clave' => $clave]);
+        }
+    }
 }

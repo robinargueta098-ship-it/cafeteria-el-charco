@@ -90,10 +90,257 @@ a {
   font-weight: 600;
 }
 
-.campo input {
+.campo input,
+.campo select,
+.campo textarea {
   width: 100%;
   padding: var(--espaciado-1);
   border: 1px solid var(--color-cafe);
   border-radius: var(--radio-borde);
   font-size: 1rem;
+  font-family: inherit;
+  background: var(--color-blanco);
+  color: var(--color-texto);
+}
+
+.campo-ayuda {
+  display: block;
+  font-size: 0.85rem;
+  color: #6b5a4d;
+  margin-top: 4px;
+}
+
+.campo-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.campo-checkbox input {
+  width: auto;
+}
+
+.btn-enlace {
+  background: none;
+  border: none;
+  color: var(--color-cafe-oscuro);
+  cursor: pointer;
+  padding: 0;
+  font-size: 1rem;
+  text-decoration: underline;
+}
+
+.btn-secundario {
+  background: var(--color-beige);
+  color: var(--color-texto);
+}
+
+.btn-peligro {
+  background: var(--color-error);
+}
+
+.btn-pequeno {
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
+
+/* ---------- Layout del panel (con sidebar) ---------- */
+
+.panel-body {
+  background: var(--color-beige-claro);
+}
+
+.panel-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.panel-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--color-cafe-oscuro);
+  color: var(--color-beige-claro);
+  display: flex;
+  flex-direction: column;
+  padding: var(--espaciado-2) 0;
+}
+
+.panel-sidebar-marca {
+  font-weight: 700;
+  padding: 0 var(--espaciado-2) var(--espaciado-2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  margin-bottom: var(--espaciado-2);
+}
+
+.panel-nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-grow: 1;
+}
+
+.panel-nav a {
+  display: block;
+  padding: 10px var(--espaciado-2);
+  color: var(--color-beige-claro);
+  text-decoration: none;
+}
+
+.panel-nav a:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.panel-nav a.activo {
+  background: var(--color-verde);
+  font-weight: 600;
+}
+
+.panel-logout {
+  padding: var(--espaciado-2);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.panel-logout .btn-enlace {
+  color: var(--color-beige-claro);
+}
+
+.panel-contenido {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.panel-topbar {
+  background: var(--color-blanco);
+  padding: var(--espaciado-2) var(--espaciado-3);
+  border-bottom: 1px solid var(--color-beige);
+}
+
+.panel-main {
+  padding: var(--espaciado-3);
+}
+
+.panel-main h1 {
+  margin-top: 0;
+}
+
+.panel-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--espaciado-3);
+  gap: var(--espaciado-2);
+  flex-wrap: wrap;
+}
+
+/* ---------- Alertas / mensajes flash ---------- */
+
+.alerta {
+  padding: var(--espaciado-2);
+  border-radius: var(--radio-borde);
+  margin-bottom: var(--espaciado-3);
+}
+
+.alerta-exito {
+  background: #e4efdd;
+  color: #2f4a22;
+  border: 1px solid var(--color-verde);
+}
+
+.alerta-error {
+  background: #f6e3de;
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+/* ---------- Tablas ---------- */
+
+.tabla-contenedor {
+  overflow-x: auto;
+}
+
+table.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-blanco);
+}
+
+table.tabla th,
+table.tabla td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-beige);
+  text-align: left;
+  vertical-align: middle;
+}
+
+table.tabla th {
+  background: var(--color-beige);
+  font-weight: 600;
+}
+
+.tabla-vacio {
+  padding: var(--espaciado-3);
+  text-align: center;
+  color: #6b5a4d;
+}
+
+.miniatura {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: var(--radio-borde);
+  background: var(--color-beige);
+}
+
+/* ---------- Insignias de estado ---------- */
+
+.insignia {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.insignia-activo {
+  background: #e4efdd;
+  color: #2f4a22;
+}
+
+.insignia-inactivo {
+  background: #eee;
+  color: #666;
+}
+
+.insignia-vigente {
+  background: #e4efdd;
+  color: #2f4a22;
+}
+
+.insignia-programada {
+  background: #fdf1cf;
+  color: #7a5b00;
+}
+
+.insignia-vencida {
+  background: #eee;
+  color: #666;
+}
+
+.acciones-tabla {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.progreso-lealtad {
+  background: var(--color-beige);
+  border-radius: 999px;
+  height: 20px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.progreso-lealtad-barra {
+  background: var(--color-verde);
+  height: 100%;
 }
