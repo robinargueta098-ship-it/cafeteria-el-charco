@@ -8,6 +8,7 @@ use App\Core\Controller;
 use App\Core\Flash;
 use App\Core\Validator;
 use App\Models\Categoria;
+use App\Models\Promocion;
 use App\Services\AuditoriaService;
 
 class CategoriaController extends Controller
@@ -124,6 +125,20 @@ class CategoriaController extends Controller
             Flash::error(
                 "No se puede eliminar: tiene {$totalProductos} producto(s) asociado(s). "
                 . 'Desactívala en vez de eliminarla, o mueve los productos a otra categoría primero.'
+            );
+            $this->redirigir('/admin/categorias');
+            return;
+        }
+
+        // La FK de promociones.categoria_id tiene ON DELETE CASCADE: sin
+        // este chequeo, borrar la categoría borraría en silencio
+        // cualquier promoción ligada a ella (sin pasar por este
+        // controlador ni quedar en la bitácora de auditoría).
+        $totalPromociones = (new Promocion())->contarPorCategoria((int) $id);
+        if ($totalPromociones > 0) {
+            Flash::error(
+                "No se puede eliminar: {$totalPromociones} promoción(es) usan esta categoría como alcance. "
+                . 'Elimina o reasigna esas promociones primero.'
             );
             $this->redirigir('/admin/categorias');
             return;

@@ -281,6 +281,10 @@ $tarjetaProducto = function (array $p) {
                 no se pierden: se acumulan para el siguiente.
             </p>
             <p>Pregunta en el mostrador para empezar a acumular.</p>
+            <a href="/cuenta" class="btn btn-verde">Ver mi progreso</a>
+            <p class="campo-ayuda" style="margin-top:8px;">
+                ¿No tienes cuenta? <a href="/cuenta/registro">Créala con tu teléfono y un PIN</a> — es gratis y solo toma un minuto.
+            </p>
         </div>
     </div>
 </section>

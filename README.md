@@ -87,8 +87,26 @@ hasta que así se indique explícitamente.
       Lo que el negocio no ha proporcionado (dirección, horario, texto
       "sobre nosotros", reseña de Google, foto de portada, fotos de
       productos/galería) se muestra con marcadores `[PENDIENTE: ...]`
-      claramente visibles — nunca inventado. **Pendiente de tu
-      revisión**
+      claramente visibles — nunca inventado.
+- [x] Rediseño de Lealtad + revisión de Promociones: recompensas ahora
+      son su propia entidad (tabla `recompensas`) generadas
+      automáticamente por el servidor al cruzar el umbral configurado
+      (nunca un número fijo en el código) — probado exacto contra los
+      4 ejemplos dados (10→1+0, 11→1+1, 20→2+0, 25→2+5). Canje por
+      código único con `SELECT ... FOR UPDATE` (doble canje probado y
+      rechazado, incluso saltándose la interfaz). Ajustes manuales con
+      motivo obligatorio. Cancelar una recompensa no canjeada devuelve
+      los cafés. Cuenta simple del cliente (teléfono + PIN de 4
+      dígitos, `/cuenta`) con el mismo endurecimiento que el login del
+      panel (bloqueo por cuenta + por IP, probado). Promociones: se
+      encontraron y corrigieron 2 errores lógicos reales (borrar una
+      categoría podía borrar en silencio sus promociones; una
+      promoción "vigente" no revisaba si su producto/categoría seguía
+      activo). De regalo, un bug preexistente de Fase 4-6 también
+      encontrado y corregido: desactivar un producto daba error 500
+      (PDO rechazaba parámetros de más al reusar la fila completa en un
+      UPDATE). Ver docs/arquitectura.md §4.1-4.4 y §5.1. **Pendiente de
+      tu revisión**
 - [ ] Resto de fases (diseño visual/pulido, despliegue): ver el
       plan en docs/arquitectura.md §9
 

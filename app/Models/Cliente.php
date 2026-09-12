@@ -8,6 +8,17 @@ use App\Core\Database;
 
 class Cliente
 {
+    /**
+     * Quita espacios y guiones para que "5555 1234", "5555-1234" y
+     * "55551234" se traten como el mismo teléfono tanto si lo escribe
+     * el cajero en el panel como si lo escribe el cliente en su
+     * cuenta. Conserva un "+" inicial (código de país).
+     */
+    public static function normalizarTelefono(string $telefono): string
+    {
+        return (string) preg_replace('/[\s\-]/', '', trim($telefono));
+    }
+
     /** @return array<int,array<string,mixed>> Búsqueda por nombre o teléfono (parcial). */
     public function buscar(string $termino): array
     {
@@ -60,12 +71,12 @@ class Cliente
         return (int) Database::conexion()->lastInsertId();
     }
 
-    public function contarConRecompensaDisponible(int $umbral): int
+    /** Clientes con al menos una recompensa disponible para canjear (no clientes con saldo alto: eso ya no existe, se convierte solo). */
+    public function contarConRecompensaDisponible(): int
     {
-        $stmt = Database::conexion()->prepare('SELECT COUNT(*) FROM clientes WHERE cafes_acumulados >= :umbral');
-        $stmt->execute(['umbral' => $umbral]);
-
-        return (int) $stmt->fetchColumn();
+        return (int) Database::conexion()
+            ->query("SELECT COUNT(DISTINCT cliente_id) FROM recompensas WHERE estado = 'disponible'")
+            ->fetchColumn();
     }
 
     public function contarTotal(): int
@@ -78,5 +89,44 @@ class Cliente
         Database::conexion()->prepare(
             'UPDATE clientes SET nombre = :nombre, telefono = :telefono, email = :email, notas = :notas WHERE id = :id'
         )->execute($datos + ['id' => $id]);
+    }
+
+    // --- Cuenta simple del cliente (teléfono + PIN de 4 dígitos) ---
+
+    public function establecerPin(int $id, string $pinHash): void
+    {
+        Database::conexion()->prepare(
+            'UPDATE clientes
+             SET pin_hash = :hash, pin_intentos_fallidos = 0, pin_bloqueado_hasta = NULL
+             WHERE id = :id'
+        )->execute(['hash' => $pinHash, 'id' => $id]);
+    }
+
+    public function registrarIntentoPinFallido(int $id, int $maxIntentos, int $minutosBloqueo): void
+    {
+        $pdo = Database::conexion();
+
+        $pdo->prepare(
+            'UPDATE clientes SET pin_intentos_fallidos = pin_intentos_fallidos + 1 WHERE id = :id'
+        )->execute(['id' => $id]);
+
+        $stmt = $pdo->prepare('SELECT pin_intentos_fallidos FROM clientes WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        $intentos = (int) $stmt->fetchColumn();
+
+        if ($intentos >= $maxIntentos) {
+            $pdo->prepare(
+                'UPDATE clientes SET pin_bloqueado_hasta = DATE_ADD(NOW(), INTERVAL :minutos MINUTE) WHERE id = :id'
+            )->execute(['minutos' => $minutosBloqueo, 'id' => $id]);
+        }
+    }
+
+    public function registrarAccesoClienteExitoso(int $id): void
+    {
+        Database::conexion()->prepare(
+            'UPDATE clientes
+             SET pin_intentos_fallidos = 0, pin_bloqueado_hasta = NULL, ultimo_acceso_cliente = NOW()
+             WHERE id = :id'
+        )->execute(['id' => $id]);
     }
 }

@@ -80,13 +80,20 @@ $router->get('/admin/clientes/{id}/editar', [ClienteController::class, 'mostrarE
 $router->post('/admin/clientes/{id}/editar', [ClienteController::class, 'actualizar']);
 
 // --- Lealtad ---
+// Las rutas literales van ANTES de la ruta con {id}: si no, "canjear"
+// se interpretaría como un ID de cliente (el router usa la primera
+// coincidencia, ver App\Core\Router).
 $router->get('/admin/lealtad', [LealtadController::class, 'index']);
+$router->get('/admin/lealtad/canjear', [LealtadController::class, 'mostrarCanjear']);
+$router->post('/admin/lealtad/canjear/consultar', [LealtadController::class, 'consultarCodigo']);
+$router->post('/admin/lealtad/canjear/confirmar', [LealtadController::class, 'confirmarCanje']);
 $router->get('/admin/lealtad/{id}', [LealtadController::class, 'mostrarCliente']);
 $router->post('/admin/lealtad/{id}/consumo', [LealtadController::class, 'registrarConsumo']);
-$router->post('/admin/lealtad/{id}/canjear', [LealtadController::class, 'canjear']);
+$router->post('/admin/lealtad/{id}/ajuste', [LealtadController::class, 'registrarAjuste']);
 
 // --- Recompensas ---
 $router->get('/admin/recompensas', [RecompensaController::class, 'index']);
+$router->post('/admin/recompensas/{id}/cancelar', [RecompensaController::class, 'cancelar']);
 
 // --- Configuración ---
 $router->get('/admin/configuracion', [ConfiguracionController::class, 'mostrar']);

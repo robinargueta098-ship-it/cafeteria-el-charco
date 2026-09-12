@@ -41,6 +41,7 @@ $enlaceWhatsappNav = WhatsApp::enlace($whatsappNumero, "Hola, escribo desde el s
             <a href="#ubicacion">Ubicación</a>
             <a href="#lealtad">Lealtad</a>
             <a href="#contacto">Contacto</a>
+            <a href="/cuenta">Mi cuenta</a>
             <a href="<?= htmlspecialchars($enlaceWhatsappNav, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-verde" target="_blank" rel="noopener">WhatsApp</a>
         </div>
     </div>

@@ -65,6 +65,21 @@ class Producto
         )->execute($datos + ['id' => $id]);
     }
 
+    /**
+     * Solo cambia `activo` — a propósito no reutiliza actualizar() con
+     * la fila completa de buscarPorId(): PDO en modo nativo
+     * (ATTR_EMULATE_PREPARES=false) lanza "Invalid parameter number"
+     * si el array de parámetros trae claves de más (id, creado_en...)
+     * que no están en la sentencia preparada. Bug real encontrado en
+     * pruebas — ver docs/arquitectura.md.
+     */
+    public function alternarActivo(int $id, bool $activo): void
+    {
+        Database::conexion()
+            ->prepare('UPDATE productos SET activo = :activo WHERE id = :id')
+            ->execute(['activo' => $activo ? 1 : 0, 'id' => $id]);
+    }
+
     public function eliminar(int $id): void
     {
         Database::conexion()->prepare('DELETE FROM productos WHERE id = :id')->execute(['id' => $id]);

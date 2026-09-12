@@ -67,7 +67,7 @@ CREATE TABLE bitacora_auditoria (
   id                BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   tabla_afectada    VARCHAR(64) NOT NULL,
   registro_id       BIGINT UNSIGNED NOT NULL,
-  accion            ENUM('crear','editar','eliminar','login','consumo','canje') NOT NULL,
+  accion            ENUM('crear','editar','eliminar','login','consumo','canje','ajuste') NOT NULL,
   usuario_id        INT UNSIGNED NULL,
   valores_antes     JSON NULL,
   valores_despues   JSON NULL,
@@ -185,28 +185,84 @@ CREATE TABLE clientes (
   nombre              VARCHAR(120) NOT NULL,
   telefono            VARCHAR(20) NOT NULL UNIQUE,
   email               VARCHAR(150) NULL,
-  cafes_acumulados    SMALLINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Caché del saldo; la fuente de verdad es lealtad_movimientos',
+  cafes_acumulados    SMALLINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Caché del saldo SIN convertir en recompensa; la fuente de verdad es lealtad_movimientos',
   notas               VARCHAR(255) NULL,
+
+  -- Cuenta simple del cliente (teléfono + PIN de 4 dígitos, sin correo)
+  -- para que pueda ver su propio progreso. Null = todavía no se ha
+  -- creado una cuenta para este cliente (fue registrado por un cajero).
+  pin_hash              VARCHAR(255) NULL,
+  pin_intentos_fallidos  TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  pin_bloqueado_hasta    DATETIME NULL,
+  ultimo_acceso_cliente  DATETIME NULL,
+
   creado_en           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   actualizado_en      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
--- 12. lealtad_movimientos — libro mayor de compras/canjes/ajustes
+-- 12. lealtad_movimientos — libro mayor de TODO cambio de saldo.
+--     Nunca se edita ni se borra una fila: una corrección se registra
+--     como un movimiento nuevo (ajuste_positivo/negativo) o marcando
+--     estado='anulado', jamás modificando cantidad/tipo de una fila ya
+--     escrita.
 -- ---------------------------------------------------------------------
 CREATE TABLE lealtad_movimientos (
   id                    BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   cliente_id            INT UNSIGNED NOT NULL,
-  tipo                  ENUM('compra','canje','ajuste') NOT NULL,
-  cantidad              SMALLINT NOT NULL COMMENT 'Positivo en compra/ajuste, negativo en canje (ej. -10)',
-  producto_canjeado_id  INT UNSIGNED NULL COMMENT 'Solo aplica cuando tipo=canje: qué café se entregó gratis',
+  tipo                  ENUM(
+                          'consumo',
+                          'ajuste_positivo',
+                          'ajuste_negativo',
+                          'recompensa_generada',
+                          'recompensa_canjeada',
+                          'recompensa_cancelada'
+                        ) NOT NULL,
+  cantidad              SMALLINT NOT NULL COMMENT 'Cambio en el saldo sin convertir: +N consumo/ajuste_positivo/cancelada, -umbral recompensa_generada, -N ajuste_negativo, 0 recompensa_canjeada',
+  motivo                VARCHAR(255) NULL COMMENT 'Obligatorio a nivel de aplicación para los ajustes manuales',
+  referencia            VARCHAR(60) NULL COMMENT 'Ej. el código de la recompensa relacionada',
+  estado                ENUM('activo','anulado') NOT NULL DEFAULT 'activo',
   usuario_id            INT UNSIGNED NOT NULL COMMENT 'Quién registró el movimiento',
-  nota                  VARCHAR(255) NULL,
   creado_en             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_lealtad_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id),
-  CONSTRAINT fk_lealtad_producto FOREIGN KEY (producto_canjeado_id) REFERENCES productos(id),
   CONSTRAINT fk_lealtad_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
   INDEX idx_lealtad_cliente (cliente_id, creado_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- 12b. recompensas — una fila por cada café gratis GENERADO al cruzar
+--      el umbral configurado. Se genera automáticamente en el servidor
+--      (nunca la elige el cajero ni el cliente); el producto se elige
+--      recién al canjear. codigo es lo que el cliente muestra y el
+--      cajero valida (docs/arquitectura.md — "canje por código").
+-- ---------------------------------------------------------------------
+CREATE TABLE recompensas (
+  id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  cliente_id              INT UNSIGNED NOT NULL,
+  codigo                  VARCHAR(12) NOT NULL UNIQUE,
+  estado                  ENUM('disponible','canjeada','cancelada','vencida') NOT NULL DEFAULT 'disponible',
+  movimiento_generador_id BIGINT UNSIGNED NOT NULL COMMENT 'Fila en lealtad_movimientos (tipo=recompensa_generada) que la creó',
+  fecha_generada          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  fecha_vencimiento       DATETIME NULL COMMENT 'Calculada al generar según configuracion_sistema; NULL = no vence',
+
+  producto_canjeado_id    INT UNSIGNED NULL COMMENT 'Se define hasta el momento del canje',
+  usuario_canjeo_id       INT UNSIGNED NULL,
+  fecha_canjeada          DATETIME NULL,
+  movimiento_canje_id     BIGINT UNSIGNED NULL COMMENT 'Fila en lealtad_movimientos (tipo=recompensa_canjeada)',
+
+  usuario_cancelacion_id  INT UNSIGNED NULL,
+  fecha_cancelacion       DATETIME NULL,
+  motivo_cancelacion      VARCHAR(255) NULL,
+  movimiento_cancelacion_id BIGINT UNSIGNED NULL COMMENT 'Fila en lealtad_movimientos (tipo=recompensa_cancelada)',
+
+  CONSTRAINT fk_recompensa_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+  CONSTRAINT fk_recompensa_mov_gen FOREIGN KEY (movimiento_generador_id) REFERENCES lealtad_movimientos(id),
+  CONSTRAINT fk_recompensa_mov_canje FOREIGN KEY (movimiento_canje_id) REFERENCES lealtad_movimientos(id),
+  CONSTRAINT fk_recompensa_mov_cancel FOREIGN KEY (movimiento_cancelacion_id) REFERENCES lealtad_movimientos(id),
+  CONSTRAINT fk_recompensa_producto FOREIGN KEY (producto_canjeado_id) REFERENCES productos(id),
+  CONSTRAINT fk_recompensa_usuario_canjeo FOREIGN KEY (usuario_canjeo_id) REFERENCES usuarios(id),
+  CONSTRAINT fk_recompensa_usuario_cancel FOREIGN KEY (usuario_cancelacion_id) REFERENCES usuarios(id),
+  INDEX idx_recompensa_cliente (cliente_id, estado)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -365,7 +421,8 @@ INSERT INTO configuracion_sistema (clave, valor, descripcion) VALUES
   ('facebook_url', '', 'Enlace a la página de Facebook — pendiente de proporcionar'),
   ('frase_hero', '', 'Frase corta de bienvenida en la portada — pendiente de redactar/aprobar'),
   ('descripcion_corta', '', 'Descripción breve de la cafetería en la portada — pendiente de redactar/aprobar'),
-  ('hero_imagen', '', 'Nombre de archivo de la foto de portada — pendiente de que el negocio la proporcione');
+  ('hero_imagen', '', 'Nombre de archivo de la foto de portada — pendiente de que el negocio la proporcione'),
+  ('lealtad_dias_vencimiento_recompensa', '90', 'Días que dura disponible una recompensa generada antes de vencer. Vacío o 0 = no vence.');
 
 -- Horario semanal: se crean las 7 filas marcadas como "cerrado/sin
 -- configurar" (no se inventan horarios). El negocio los completa desde

@@ -180,7 +180,9 @@ class PromocionController extends Controller
         }
 
         if ($datos['hora_inicio'] !== null && $datos['hora_fin'] !== null && $datos['hora_fin'] < $datos['hora_inicio']) {
-            $errores[] = 'La hora de fin no puede ser anterior a la hora de inicio.';
+            // Limitación conocida: no se soportan rangos que cruzan
+            // medianoche (ej. 22:00 a 02:00). Ver docs/arquitectura.md.
+            $errores[] = 'La hora de fin no puede ser anterior a la hora de inicio (no se soportan horarios que cruzan la medianoche).';
         }
 
         if ($datos['categoria_id'] !== null && (new Categoria())->buscarPorId($datos['categoria_id']) === null) {

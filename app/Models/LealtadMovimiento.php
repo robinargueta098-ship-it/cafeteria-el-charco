@@ -12,9 +12,8 @@ class LealtadMovimiento
     public function historialPorCliente(int $clienteId): array
     {
         $stmt = Database::conexion()->prepare(
-            'SELECT m.*, p.nombre AS producto_nombre, u.nombre AS usuario_nombre
+            'SELECT m.*, u.nombre AS usuario_nombre
              FROM lealtad_movimientos m
-             LEFT JOIN productos p ON p.id = m.producto_canjeado_id
              JOIN usuarios u ON u.id = m.usuario_id
              WHERE m.cliente_id = :cliente_id
              ORDER BY m.creado_en DESC'
@@ -24,18 +23,42 @@ class LealtadMovimiento
         return $stmt->fetchAll();
     }
 
-    /** @return array<int,array<string,mixed>> Todos los canjes (para el módulo Recompensas), más reciente primero. */
-    public function historialDeCanjes(): array
+    public function buscarPorId(int $id): ?array
     {
-        return Database::conexion()->query(
-            'SELECT m.*, c.nombre AS cliente_nombre, c.telefono AS cliente_telefono,
-                    p.nombre AS producto_nombre, u.nombre AS usuario_nombre
-             FROM lealtad_movimientos m
-             JOIN clientes c ON c.id = m.cliente_id
-             LEFT JOIN productos p ON p.id = m.producto_canjeado_id
-             JOIN usuarios u ON u.id = m.usuario_id
-             WHERE m.tipo = "canje"
-             ORDER BY m.creado_en DESC'
-        )->fetchAll();
+        $stmt = Database::conexion()->prepare('SELECT * FROM lealtad_movimientos WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+
+        return $stmt->fetch() ?: null;
+    }
+
+    /**
+     * Inserta un movimiento. Debe llamarse siempre dentro de una
+     * transacción abierta por el servicio (LealtadService), nunca de
+     * forma aislada, para que el movimiento y el cambio de saldo/
+     * recompensa asociado sean atómicos.
+     *
+     * @param string $tipo consumo|ajuste_positivo|ajuste_negativo|recompensa_generada|recompensa_canjeada|recompensa_cancelada
+     */
+    public function insertar(
+        int $clienteId,
+        string $tipo,
+        int $cantidad,
+        int $usuarioId,
+        ?string $motivo = null,
+        ?string $referencia = null
+    ): int {
+        Database::conexion()->prepare(
+            'INSERT INTO lealtad_movimientos (cliente_id, tipo, cantidad, usuario_id, motivo, referencia)
+             VALUES (:cliente_id, :tipo, :cantidad, :usuario_id, :motivo, :referencia)'
+        )->execute([
+            'cliente_id' => $clienteId,
+            'tipo'       => $tipo,
+            'cantidad'   => $cantidad,
+            'usuario_id' => $usuarioId,
+            'motivo'     => $motivo,
+            'referencia' => $referencia,
+        ]);
+
+        return (int) Database::conexion()->lastInsertId();
     }
 }

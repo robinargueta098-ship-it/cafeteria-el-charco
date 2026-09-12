@@ -73,12 +73,18 @@ class Promocion
         $diaSemana = (int) date('w');
         $horaActual = date('H:i:s');
 
+        // Si la promoción apunta a una categoría o producto específico,
+        // ese objetivo también debe seguir activo — si se desactivó el
+        // producto, la promoción no debe seguir anunciándolo como vigente
+        // (antes no se validaba esto).
         $filas = Database::conexion()->query(
             "SELECT pr.*, c.nombre AS categoria_nombre, p.nombre AS producto_nombre
              FROM promociones pr
              LEFT JOIN categorias c ON c.id = pr.categoria_id
              LEFT JOIN productos p ON p.id = pr.producto_id
              WHERE pr.activo = 1 AND CURDATE() BETWEEN pr.fecha_inicio AND pr.fecha_fin
+               AND (pr.categoria_id IS NULL OR c.activo = 1)
+               AND (pr.producto_id IS NULL OR p.activo = 1)
              ORDER BY pr.prioridad DESC, pr.fecha_inicio ASC"
         )->fetchAll();
 
@@ -99,6 +105,14 @@ class Promocion
 
             return true;
         }));
+    }
+
+    public function contarPorCategoria(int $categoriaId): int
+    {
+        $stmt = Database::conexion()->prepare('SELECT COUNT(*) FROM promociones WHERE categoria_id = :id');
+        $stmt->execute(['id' => $categoriaId]);
+
+        return (int) $stmt->fetchColumn();
     }
 
     public function contarVigentesHoy(): int

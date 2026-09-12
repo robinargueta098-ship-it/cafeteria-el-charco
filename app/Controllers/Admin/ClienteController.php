@@ -108,7 +108,7 @@ class ClienteController extends Controller
     {
         return [
             'nombre'   => trim((string) ($_POST['nombre'] ?? '')),
-            'telefono' => trim((string) ($_POST['telefono'] ?? '')),
+            'telefono' => Cliente::normalizarTelefono((string) ($_POST['telefono'] ?? '')),
             'email'    => trim((string) ($_POST['email'] ?? '')) ?: null,
             'notas'    => trim((string) ($_POST['notas'] ?? '')) ?: null,
         ];

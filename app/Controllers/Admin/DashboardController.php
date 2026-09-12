@@ -10,7 +10,6 @@ use App\Models\BitacoraAuditoria;
 use App\Models\Cliente;
 use App\Models\Producto;
 use App\Models\Promocion;
-use App\Services\LealtadService;
 
 class DashboardController extends Controller
 {
@@ -26,7 +25,7 @@ class DashboardController extends Controller
             'usuario'       => $usuario,
             'esAdmin'       => $esAdministrador,
             'clientesTotal' => (new Cliente())->contarTotal(),
-            'recompensasDisponibles' => (new Cliente())->contarConRecompensaDisponible(LealtadService::obtenerUmbral()),
+            'recompensasDisponibles' => (new Cliente())->contarConRecompensaDisponible(),
         ];
 
         if ($esAdministrador) {

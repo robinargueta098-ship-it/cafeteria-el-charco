@@ -209,30 +209,111 @@ al inicio de cada controlador del panel.
 
 ## 4. Flujos clave
 
-### 4.1 Registrar consumo de café (lealtad)
-1. El personal busca al cliente por teléfono (o lo crea si es nuevo).
-2. Registra la compra de N cafés → se inserta un movimiento
-   `lealtad_movimientos` tipo `compra` y se actualiza el contador en caché
-   de `clientes.cafes_acumulados`.
-3. Si el contador llega a 10 o más, el panel muestra "recompensa
-   disponible" — no se canjea automáticamente.
+### 4.1 Motor de lealtad (rediseñado — ver también §5.1 y §8)
 
-### 4.2 Canjear recompensa
-1. El personal abre el cliente, confirma que tiene ≥10 cafés acumulados.
-2. Elige cuál café del menú se entrega gratis.
-3. Se resta exactamente 10 (no se reinicia el contador a 0): el sobrante
-   sigue acumulado para el siguiente ciclo, tal como especificaste.
-4. Se guarda un movimiento tipo `canje` con el producto entregado y el
-   usuario que lo registró.
+La regla ("cada N cafés = 1 café gratis") **nunca está escrita como
+número fijo en el código**: N siempre se lee de
+`configuracion_sistema.umbral_lealtad` (`LealtadService::
+obtenerUmbral()`). Cambiarlo desde Configuración cambia el
+comportamiento para todos los clientes de inmediato, sin tocar código.
 
-### 4.3 Aplicar una promoción (sin acumulación accidental)
-1. Cada promoción tiene alcance (todo el menú, una categoría o un
-   producto), vigencia (fechas, días de la semana, rango de horas) y una
-   bandera `combinable_con_lealtad` que por defecto es **no**.
-2. Si hay varias promociones vigentes que aplican al mismo producto, el
-   sistema no las suma: se define una prioridad y solo aplica una.
-3. Que una promoción sea válida "ahora" se calcula en el servidor (fecha,
-   día, hora), nunca se confía en el navegador del cliente.
+**Registrar consumo:**
+1. El cajero busca al cliente por teléfono desde `/admin/lealtad` y
+   registra N cafés.
+2. El servidor (`LealtadService::registrarConsumo()`, con el cliente
+   bloqueado vía `SELECT ... FOR UPDATE` dentro de una transacción)
+   inserta un movimiento `consumo` y calcula cuántas veces el nuevo
+   saldo cruza el umbral. Ejemplo real probado: partiendo de 0,
+   registrar 25 genera automáticamente **2 recompensas** y deja
+   **5** acumulados — sin caso especial en el código, es aritmética
+   modular contra el umbral configurado (10→1+0, 11→1+1, 20→2+0,
+   25→2+5, los cuatro ejemplos dados se verificaron exactos).
+3. Cada recompensa generada crea una fila en `recompensas` (código
+   único, estado `disponible`, fecha de vencimiento según
+   `lealtad_dias_vencimiento_recompensa`) y su propio movimiento
+   `recompensa_generada` (cantidad = -umbral) en `lealtad_movimientos`.
+
+**Ajuste manual** (`registrarAjuste()`): motivo obligatorio; un
+ajuste positivo puede generar recompensas igual que un consumo; uno
+negativo se rechaza si dejaría el saldo por debajo de cero.
+
+**Cancelar una recompensa no canjeada**: solo si su estado es
+`disponible`; devuelve exactamente los cafés que costó (se lee del
+movimiento que la generó, no del umbral *actual*, por si cambió desde
+entonces) y queda su propio movimiento `recompensa_cancelada` —
+nunca se pierden cafés en silencio.
+
+### 4.2 Canjear una recompensa (por código)
+1. El cliente ve su código (ej. `2FXQ-Z4CR`) en su cuenta (`/cuenta`,
+   teléfono + PIN de 4 dígitos) y se lo muestra al cajero.
+2. El cajero lo escribe en `/admin/lealtad/canjear` (paso 1: consultar
+   — muestra a quién pertenece y su estado, sin canjear todavía).
+3. Confirma eligiendo el café a entregar (paso 2:
+   `LealtadService::validarYCanjearRecompensa()`), que dentro de una
+   transacción hace `SELECT ... FOR UPDATE` sobre la fila de la
+   recompensa — si dos cajeros confirman el mismo código casi al mismo
+   tiempo, el segundo espera y al continuar ya ve `estado=canjeada`.
+   Verifica en orden: existencia, pertenencia (el código ya identifica
+   un único cliente), disponibilidad y vencimiento (perezoso: si ya
+   pasó la fecha, se marca `vencida` en ese momento y se rechaza).
+   Probado: doble intento de canje del mismo código rechazado tanto
+   por la interfaz como directamente contra el controlador.
+4. Mejora futura documentada: hoy el canje es por **código
+   alfanumérico** (decisión explícita — sin librerías/servicios
+   externos de generación de QR todavía). Agregar una imagen QR
+   escaneable del mismo código es un paso adicional pendiente de
+   decidir cómo generarla (librería JS vendorizada localmente vs.
+   servicio externo).
+5. Mejora futura documentada (pedida explícitamente, no implementada
+   aún): un QR para que el propio cliente **acumule** cafés sin pasar
+   por el cajero. Por ahora acumular sigue siendo siempre vía cajero +
+   búsqueda por teléfono.
+
+### 4.3 Cuenta simple del cliente
+Teléfono + PIN de 4 dígitos, sin correo ni verificación
+(`App\Core\ClienteAuth`, sesión completamente separada de `Auth` del
+panel). Un PIN de 4 dígitos tiene poquísima entropía, así que lleva el
+mismo endurecimiento que el login del panel: bloqueo por cuenta tras 5
+intentos, límite por IP, comparación de tiempo constante. El registro
+puede crear un cliente nuevo o "reclamar" uno que ya existía (creado
+por un cajero) activándole el PIN sin tocar su historial ni su nombre.
+El panel del cliente (`/cuenta`) siempre parte de la sesión, nunca de
+un ID en la URL — no puede ver el progreso de otro cliente.
+
+### 4.4 Promociones — revisión de errores lógicos
+
+Tipos, alcance excluyente (todo/categoría/producto), vigencia
+(fechas/días/horas) y `combinable_con_lealtad` (por defecto **no**) ya
+eran correctos. Esta revisión encontró y corrigió dos errores reales:
+
+1. **Eliminar una categoría no revisaba si tenía promociones.** La FK
+   `promociones.categoria_id` tiene `ON DELETE CASCADE`: sin este
+   chequeo, borrar la categoría borraba en silencio cualquier
+   promoción ligada a ella, sin pasar por el controlador ni quedar en
+   auditoría. Corregido: `CategoriaController::eliminar()` ahora
+   también cuenta promociones antes de permitir el borrado.
+2. **Una promoción "vigente" no verificaba que su producto/categoría
+   objetivo siguiera activo.** Desactivar un producto no ocultaba las
+   promociones que lo anunciaban. Corregido en
+   `Promocion::listarVigentesAhora()`.
+
+**Limitación conocida, documentada a propósito**: no se soportan
+horarios de promoción que cruzan medianoche (ej. 22:00–02:00) — el
+horario del negocio no muestra evidencia de operar de madrugada
+(docs/negocio.md), así que se prefirió simplicidad sobre soportar un
+caso sin evidencia de necesitarse; el formulario avisa este límite en
+el mensaje de error en vez de fallar en silencio.
+
+**Sobre "no acumular por defecto"**: el sistema no tiene motor de
+cobro/checkout automático (no es una tienda en línea), así que no hay
+ningún lugar del código que sume descuentos de dos promociones a la
+vez — `prioridad` existe para que el cajero, humano, sepa cuál aplicar
+si dos coinciden, y `combinable_con_lealtad` es la única interacción
+automática (informativa) con el programa de lealtad.
+
+**Condiciones de carrera**: las promociones son CRUD puro, sin ningún
+paso de "canje" ni contador compartido — a diferencia de lealtad, no
+hay superficie real de condición de carrera aquí.
 
 ### 4.4 Publicar una foto (producto o galería)
 - Validar extensión (jpg/png/webp), tipo MIME real (no solo por
@@ -275,7 +356,7 @@ configuracion_sistema   (clave/valor: redes, whatsapp, mapa, textos, umbral de l
 horarios_atencion       (horario semanal)
 ```
 
-### 5.1 Tablas propuestas (v1 — 14 tablas)
+### 5.1 Tablas (15 — se agregó `recompensas` al rediseñar lealtad)
 
 - **roles** — id, nombre (seed inicial: `Administrador`, `Cajero`; ver
   permisos por rol en §3.2)
@@ -298,9 +379,23 @@ horarios_atencion       (horario semanal)
   dias_semana, hora_inicio, hora_fin, combinable_con_lealtad, prioridad,
   activo
 - **clientes** — id, nombre, telefono (único), email (nullable),
-  cafes_acumulados (caché), creado_en, actualizado_en, notas
-- **lealtad_movimientos** — id, cliente_id, tipo (compra/canje/ajuste),
-  cantidad, producto_canjeado_id (nullable), usuario_id, nota, creado_en
+  cafes_acumulados (saldo SIN convertir en recompensa), notas,
+  pin_hash (nullable — null = todavía sin cuenta propia),
+  pin_intentos_fallidos, pin_bloqueado_hasta, ultimo_acceso_cliente,
+  creado_en, actualizado_en
+- **lealtad_movimientos** — id, cliente_id, tipo (consumo /
+  ajuste_positivo / ajuste_negativo / recompensa_generada /
+  recompensa_canjeada / recompensa_cancelada), cantidad, motivo
+  (obligatorio a nivel de aplicación en los ajustes), referencia (ej.
+  código de la recompensa relacionada), estado (activo/anulado),
+  usuario_id, creado_en
+- **recompensas** — id, cliente_id, codigo (único, 8 caracteres sin
+  0/O/1/I para evitar confusión al teclear), estado (disponible /
+  canjeada / cancelada / vencida), movimiento_generador_id,
+  fecha_generada, fecha_vencimiento (nullable), producto_canjeado_id
+  (nullable hasta el canje), usuario_canjeo_id, fecha_canjeada,
+  movimiento_canje_id, usuario_cancelacion_id, fecha_cancelacion,
+  motivo_cancelacion, movimiento_cancelacion_id
 - **configuracion_sistema** — clave, valor, descripcion, actualizado_en
 - **horarios_atencion** — id, dia_semana, hora_apertura, hora_cierre,
   cerrado

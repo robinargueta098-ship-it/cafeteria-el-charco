@@ -134,11 +134,9 @@ class ProductoController extends Controller
         }
 
         $nuevoEstado = (int) $producto['activo'] === 1 ? 0 : 1;
-        $datos = $producto;
-        $datos['activo'] = $nuevoEstado;
-        $modelo->actualizar((int) $id, $datos);
+        $modelo->alternarActivo((int) $id, $nuevoEstado === 1);
 
-        AuditoriaService::registrar('productos', (int) $id, 'editar', $producto, $datos);
+        AuditoriaService::registrar('productos', (int) $id, 'editar', ['activo' => $producto['activo']], ['activo' => $nuevoEstado]);
 
         Flash::exito($nuevoEstado === 1 ? 'Producto activado.' : 'Producto desactivado.');
         $this->redirigir('/admin/productos');
