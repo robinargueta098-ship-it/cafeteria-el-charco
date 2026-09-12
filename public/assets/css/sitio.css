@@ -1,0 +1,583 @@
+/*
+ * Cafetería El Charco — sitio público.
+ * Usa los tokens de color/espaciado definidos en main.css (:root).
+ * Mobile-first: los estilos base son para pantallas pequeñas (360px+)
+ * y se amplían con @media hacia tablet (768px+), laptop (1024px+) y
+ * escritorio grande (1366px / 1920px).
+ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body.sitio-body {
+  background: var(--color-beige-claro);
+}
+
+/* La barra de navegación es sticky: sin este margen, saltar a un ancla
+   (menú, categorías, "Ver menú"...) deja el título tapado debajo de
+   la barra en vez de justo debajo de ella. */
+.sitio-seccion,
+.menu-categoria,
+footer.sitio-footer {
+  scroll-margin-top: 72px;
+}
+
+.sitio-contenedor {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ---------- Marcadores de contenido pendiente ---------- */
+
+.marcador-pendiente {
+  display: inline-block;
+  background: #fdf1cf;
+  color: #7a5b00;
+  border: 1px dashed #c99a1f;
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.foto-pendiente {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: repeating-linear-gradient(
+    45deg, var(--color-beige), var(--color-beige) 10px, var(--color-beige-claro) 10px, var(--color-beige-claro) 20px
+  );
+  border: 1px dashed var(--color-cafe);
+  border-radius: var(--radio-borde);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-cafe);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ---------- Barra de navegación ---------- */
+
+.sitio-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--color-beige-claro);
+  border-bottom: 1px solid var(--color-beige);
+}
+
+.sitio-nav-interior {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.sitio-nav-marca {
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--color-cafe-oscuro);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sitio-nav-marca img {
+  height: 36px;
+  width: 36px;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.sitio-nav-boton-menu {
+  display: block;
+  background: none;
+  border: 2px solid var(--color-cafe-oscuro);
+  border-radius: var(--radio-borde);
+  padding: 6px 10px;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-cafe-oscuro);
+}
+
+.sitio-nav-enlaces {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 20px 20px;
+  background: var(--color-beige-claro);
+  border-top: 1px solid var(--color-beige);
+}
+
+.sitio-nav-enlaces.abierto {
+  display: flex;
+}
+
+.sitio-nav-enlaces a {
+  color: var(--color-texto);
+  text-decoration: none;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-beige);
+  font-weight: 600;
+}
+
+.sitio-nav-enlaces .btn {
+  margin-top: 8px;
+  text-align: center;
+  border-bottom: none;
+}
+
+@media (min-width: 1024px) {
+  .sitio-nav-boton-menu {
+    display: none;
+  }
+
+  .sitio-nav-enlaces {
+    display: flex !important;
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
+    padding: 0;
+    background: none;
+    border-top: none;
+  }
+
+  .sitio-nav-enlaces a {
+    border-bottom: none;
+    padding: 4px 0;
+  }
+
+  .sitio-nav-enlaces .btn {
+    margin-top: 0;
+  }
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  position: relative;
+  color: var(--color-blanco);
+  background: linear-gradient(160deg, var(--color-cafe-oscuro), var(--color-verde));
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+
+.hero-imagen-fondo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.55;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(59, 36, 21, 0.35), rgba(59, 36, 21, 0.75));
+}
+
+.hero-contenido {
+  position: relative;
+  padding: 72px 20px 56px;
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.hero-contenido h1 {
+  font-size: clamp(1.8rem, 6vw, 3rem);
+  margin: 0 0 12px;
+}
+
+.hero-contenido p {
+  font-size: clamp(1rem, 3vw, 1.25rem);
+  margin: 0 0 24px;
+}
+
+.hero-marcador {
+  margin-bottom: 16px;
+}
+
+.hero-botones {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.hero-botones .btn {
+  padding: 14px 20px;
+  font-size: 1.05rem;
+}
+
+@media (min-width: 480px) {
+  .hero-botones {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .hero-botones .btn {
+    flex: 0 1 auto;
+  }
+}
+
+/* ---------- Secciones genéricas ---------- */
+
+.sitio-seccion {
+  padding: 48px 0;
+}
+
+.sitio-seccion:nth-child(odd) {
+  background: var(--color-beige-claro);
+}
+
+.sitio-seccion-alt {
+  background: var(--color-beige) !important;
+}
+
+.sitio-seccion h2 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  color: var(--color-cafe-oscuro);
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.sitio-seccion-intro {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 32px;
+  color: var(--color-texto);
+}
+
+/* ---------- Tarjetas de producto ---------- */
+
+.tarjetas-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 480px) {
+  .tarjetas-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .tarjetas-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+}
+
+@media (min-width: 1366px) {
+  .tarjetas-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.tarjeta-producto {
+  background: var(--color-blanco);
+  border-radius: var(--radio-borde);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(59, 36, 21, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.tarjeta-producto .foto-pendiente,
+.tarjeta-producto img {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  object-fit: cover;
+}
+
+.tarjeta-producto-cuerpo {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-grow: 1;
+}
+
+.tarjeta-producto-nombre {
+  font-weight: 700;
+  color: var(--color-cafe-oscuro);
+  margin: 0;
+}
+
+.tarjeta-producto-descripcion {
+  font-size: 0.9rem;
+  color: #6b5a4d;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.tarjeta-producto-precio {
+  font-weight: 700;
+  color: var(--color-verde);
+  font-size: 1.05rem;
+}
+
+.tarjeta-producto-precio small {
+  font-weight: 400;
+  color: #6b5a4d;
+}
+
+.etiquetas-producto {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.etiqueta {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-beige);
+  color: var(--color-cafe-oscuro);
+}
+
+.etiqueta-destacado {
+  background: #fdf1cf;
+  color: #7a5b00;
+}
+
+.etiqueta-mas-vendido {
+  background: #f6e3de;
+  color: var(--color-error);
+}
+
+/* ---------- Menú por categorías ---------- */
+
+.menu-categoria {
+  margin-bottom: 48px;
+}
+
+.menu-categoria:last-child {
+  margin-bottom: 0;
+}
+
+.menu-categoria h3 {
+  font-size: 1.4rem;
+  color: var(--color-cafe-oscuro);
+  border-bottom: 3px solid var(--color-verde);
+  display: inline-block;
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+.menu-categoria-notas {
+  font-size: 0.9rem;
+  color: #6b5a4d;
+  margin: 0 0 20px;
+}
+
+.menu-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 32px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.menu-nav a {
+  flex-shrink: 0;
+  background: var(--color-blanco);
+  border: 1px solid var(--color-beige);
+  color: var(--color-cafe-oscuro);
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* ---------- Galería ---------- */
+
+.galeria-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .galeria-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .galeria-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.galeria-grid img,
+.galeria-grid .foto-pendiente {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  object-fit: cover;
+  border-radius: var(--radio-borde);
+}
+
+/* ---------- Sobre nosotros ---------- */
+
+.sobre-nosotros-contenido {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+  font-size: 1.05rem;
+}
+
+/* ---------- Ubicación / mapa / calificación ---------- */
+
+.ubicacion-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .ubicacion-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.ubicacion-mapa-marcador {
+  aspect-ratio: 16 / 9;
+  background: var(--color-beige);
+  border: 1px dashed var(--color-cafe);
+  border-radius: var(--radio-borde);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+}
+
+.ubicacion-mapa-marcador iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: var(--radio-borde);
+}
+
+.calificacion-google {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-blanco);
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-weight: 700;
+  color: var(--color-cafe-oscuro);
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(59, 36, 21, 0.08);
+}
+
+/* ---------- Lealtad ---------- */
+
+.lealtad-tarjeta {
+  max-width: 560px;
+  margin: 0 auto;
+  background: var(--color-blanco);
+  border-radius: var(--radio-borde);
+  padding: 28px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(59, 36, 21, 0.08);
+}
+
+.lealtad-numero {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--color-verde);
+  line-height: 1;
+}
+
+/* ---------- Redes / contacto / footer ---------- */
+
+.redes-lista {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.redes-lista a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-blanco);
+  border-radius: 999px;
+  padding: 10px 20px;
+  text-decoration: none;
+  color: var(--color-cafe-oscuro);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(59, 36, 21, 0.08);
+}
+
+.horario-tabla {
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.horario-tabla td {
+  padding: 4px 8px;
+}
+
+.horario-tabla .dia {
+  font-weight: 600;
+}
+
+.sitio-footer {
+  background: var(--color-cafe-oscuro);
+  color: var(--color-beige-claro);
+  padding: 32px 0;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.sitio-footer a {
+  color: var(--color-beige-claro);
+}
+
+/* ---------- Botón flotante de WhatsApp ---------- */
+
+.whatsapp-flotante {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 60;
+  background: #25d366;
+  color: var(--color-blanco);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 1.6rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}

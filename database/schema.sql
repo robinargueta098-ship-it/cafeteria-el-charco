@@ -361,7 +361,11 @@ INSERT INTO configuracion_sistema (clave, valor, descripcion) VALUES
   ('google_maps_embed', '', 'Código embed de Google Maps — pendiente de proporcionar'),
   ('google_calificacion', '', 'Calificación de Google (ej. 4.8) — se actualiza manualmente desde el panel'),
   ('google_calificacion_url', '', 'Enlace a la ficha de Google del negocio'),
-  ('sobre_nosotros_texto', '', 'Texto de la sección "Sobre nosotros" — pendiente de redactar');
+  ('sobre_nosotros_texto', '', 'Texto de la sección "Sobre nosotros" — pendiente de redactar'),
+  ('facebook_url', '', 'Enlace a la página de Facebook — pendiente de proporcionar'),
+  ('frase_hero', '', 'Frase corta de bienvenida en la portada — pendiente de redactar/aprobar'),
+  ('descripcion_corta', '', 'Descripción breve de la cafetería en la portada — pendiente de redactar/aprobar'),
+  ('hero_imagen', '', 'Nombre de archivo de la foto de portada — pendiente de que el negocio la proporcione');
 
 -- Horario semanal: se crean las 7 filas marcadas como "cerrado/sin
 -- configurar" (no se inventan horarios). El negocio los completa desde

@@ -62,6 +62,45 @@ class Promocion
         Database::conexion()->prepare('DELETE FROM promociones WHERE id = :id')->execute(['id' => $id]);
     }
 
+    /**
+     * @return array<int,array<string,mixed>> Promociones activas, vigentes hoy, que aplican
+     * al día de la semana y hora actuales (docs/arquitectura.md §4.3 — se calcula siempre en
+     * el servidor, nunca se confía en el reloj del navegador). Para mostrar al público, no
+     * para resolver conflictos de precio (este sitio no tiene checkout).
+     */
+    public function listarVigentesAhora(): array
+    {
+        $diaSemana = (int) date('w');
+        $horaActual = date('H:i:s');
+
+        $filas = Database::conexion()->query(
+            "SELECT pr.*, c.nombre AS categoria_nombre, p.nombre AS producto_nombre
+             FROM promociones pr
+             LEFT JOIN categorias c ON c.id = pr.categoria_id
+             LEFT JOIN productos p ON p.id = pr.producto_id
+             WHERE pr.activo = 1 AND CURDATE() BETWEEN pr.fecha_inicio AND pr.fecha_fin
+             ORDER BY pr.prioridad DESC, pr.fecha_inicio ASC"
+        )->fetchAll();
+
+        return array_values(array_filter($filas, function (array $promo) use ($diaSemana, $horaActual): bool {
+            if ($promo['dias_semana'] !== null) {
+                $dias = array_map('intval', explode(',', (string) $promo['dias_semana']));
+                if (!in_array($diaSemana, $dias, true)) {
+                    return false;
+                }
+            }
+
+            if ($promo['hora_inicio'] !== null && $horaActual < $promo['hora_inicio']) {
+                return false;
+            }
+            if ($promo['hora_fin'] !== null && $horaActual > $promo['hora_fin']) {
+                return false;
+            }
+
+            return true;
+        }));
+    }
+
     public function contarVigentesHoy(): int
     {
         return (int) Database::conexion()->query(

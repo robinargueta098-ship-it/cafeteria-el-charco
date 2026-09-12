@@ -86,6 +86,81 @@ class Producto
         return (int) Database::conexion()->query('SELECT COUNT(*) FROM productos WHERE activo = 1')->fetchColumn();
     }
 
+    // --- Consultas para el sitio público (Fase 7) ---
+
+    /** @return array<int,array<string,mixed>> Productos activos agrupados por categoría (categorías activas, con al menos un producto activo). */
+    public function listarMenuPublico(): array
+    {
+        $productos = Database::conexion()->query(
+            'SELECT p.*, c.id AS cat_id, c.nombre AS cat_nombre, c.slug AS cat_slug, c.notas AS cat_notas
+             FROM productos p
+             JOIN categorias c ON c.id = p.categoria_id
+             WHERE p.activo = 1 AND c.activo = 1
+             ORDER BY c.orden ASC, p.orden ASC, p.nombre ASC'
+        )->fetchAll();
+
+        $menu = [];
+        foreach ($productos as $p) {
+            $catId = (int) $p['cat_id'];
+            if (!isset($menu[$catId])) {
+                $menu[$catId] = [
+                    'id' => $catId, 'nombre' => $p['cat_nombre'], 'slug' => $p['cat_slug'],
+                    'notas' => $p['cat_notas'], 'productos' => [],
+                ];
+            }
+            $menu[$catId]['productos'][] = $p;
+        }
+
+        return array_values($menu);
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    public function listarMasVendidos(int $limite = 6): array
+    {
+        $stmt = Database::conexion()->prepare(
+            'SELECT p.*, c.nombre AS categoria_nombre
+             FROM productos p JOIN categorias c ON c.id = p.categoria_id
+             WHERE p.activo = 1 AND p.es_mas_vendido = 1
+             ORDER BY p.orden ASC, p.nombre ASC
+             LIMIT :limite'
+        );
+        $stmt->bindValue('limite', $limite, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    public function listarDestacados(int $limite = 6): array
+    {
+        $stmt = Database::conexion()->prepare(
+            'SELECT p.*, c.nombre AS categoria_nombre
+             FROM productos p JOIN categorias c ON c.id = p.categoria_id
+             WHERE p.activo = 1 AND p.es_destacado = 1
+             ORDER BY p.orden ASC, p.nombre ASC
+             LIMIT :limite'
+        );
+        $stmt->bindValue('limite', $limite, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /** @return array<int,array<string,mixed>> Productos activos ligados a alguna temporada vigente HOY (nunca vencida). */
+    public function listarEnTemporadaVigente(): array
+    {
+        return Database::conexion()->query(
+            'SELECT DISTINCT p.*, c.nombre AS categoria_nombre
+             FROM productos p
+             JOIN categorias c ON c.id = p.categoria_id
+             JOIN producto_temporadas pt ON pt.producto_id = p.id
+             JOIN temporadas t ON t.id = pt.temporada_id
+             WHERE p.activo = 1 AND t.activo = 1
+               AND CURDATE() BETWEEN t.fecha_inicio AND t.fecha_fin
+             ORDER BY p.orden ASC, p.nombre ASC'
+        )->fetchAll();
+    }
+
     public function categoriaExiste(int $categoriaId): bool
     {
         $stmt = Database::conexion()->prepare('SELECT COUNT(*) FROM categorias WHERE id = :id');

@@ -7,8 +7,10 @@
 # Fotos subidas desde el panel (contenido, no código)
 /public/uploads/productos/*
 /public/uploads/galeria/*
+/public/uploads/sitio/*
 !/public/uploads/productos/.gitkeep
 !/public/uploads/galeria/.gitkeep
+!/public/uploads/sitio/.gitkeep
 
 # Sistema operativo / editor
 .DS_Store

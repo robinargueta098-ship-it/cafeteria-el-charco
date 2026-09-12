@@ -14,6 +14,12 @@ class Galeria
         return Database::conexion()->query('SELECT * FROM galeria ORDER BY orden ASC, id DESC')->fetchAll();
     }
 
+    /** @return array<int,array<string,mixed>> Para el sitio público. */
+    public function listarActivas(): array
+    {
+        return Database::conexion()->query('SELECT * FROM galeria WHERE activo = 1 ORDER BY orden ASC, id DESC')->fetchAll();
+    }
+
     public function buscarPorId(int $id): ?array
     {
         $stmt = Database::conexion()->prepare('SELECT * FROM galeria WHERE id = :id');

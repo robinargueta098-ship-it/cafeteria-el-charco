@@ -1,30 +1,288 @@
 <?php
 /**
- * Portada pública — versión mínima de la Fase 3 (Core).
- * El contenido completo (hero, destacados, menú, galería, ubicación,
- * lealtad, promociones...) se construye en las Fases 4-7, ver
- * docs/arquitectura.md §3.1.
+ * Portada pública — Fase 7. Todas las secciones viven en una sola
+ * página (patrón habitual para un sitio de cafetería), con anclas de
+ * navegación. Contenido real desde la base de datos
+ * (docs/negocio.md) — lo que el negocio todavía no ha proporcionado
+ * se marca con Vista::pendiente(), nunca se inventa.
  *
  * @var array<string,string> $config
+ * @var array<int,array<string,mixed>> $horarios
+ * @var array<int,array<string,mixed>> $menu
+ * @var array<int,array<string,mixed>> $masVendidos
+ * @var array<int,array<string,mixed>> $destacados
+ * @var array<int,array<string,mixed>> $temporadas
+ * @var array<int,array<string,mixed>> $productosTemporada
+ * @var array<int,array<string,mixed>> $galeria
+ * @var array<int,array<string,mixed>> $promociones
+ * @var int $umbralLealtad
  */
+use App\Core\Vista;
+use App\Core\WhatsApp;
+
 require APP_PATH . '/Views/layouts/header_publico.php';
 
 $nombreSitio = $config['nombre_sitio'] ?? 'Cafetería El Charco';
-$instagram   = $config['instagram_usuario'] ?? '';
-$facebook    = $config['facebook_nombre'] ?? '';
+$frase = $config['frase_hero'] ?? '';
+$descripcionCorta = $config['descripcion_corta'] ?? '';
+$heroImagen = $config['hero_imagen'] ?? '';
+$whatsappNumero = $config['whatsapp_numero'] ?? '';
+
+/**
+ * Tarjeta de producto reutilizada en Más vendidos / Destacados /
+ * Temporada / Menú, para no repetir el mismo bloque de HTML cuatro
+ * veces con el riesgo de que se desincronicen.
+ */
+$tarjetaProducto = function (array $p) {
+    ?>
+    <article class="tarjeta-producto">
+        <?= Vista::fotoOMarcador($p['imagen'] ?? null, UPLOADS_URL . '/productos', $p['nombre']) ?>
+        <div class="tarjeta-producto-cuerpo">
+            <p class="tarjeta-producto-nombre"><?= htmlspecialchars($p['nombre'], ENT_QUOTES, 'UTF-8') ?></p>
+            <?php if (!empty($p['descripcion'])): ?>
+                <p class="tarjeta-producto-descripcion"><?= htmlspecialchars($p['descripcion'], ENT_QUOTES, 'UTF-8') ?></p>
+            <?php endif; ?>
+            <p class="tarjeta-producto-precio">
+                Q<?= number_format((float) $p['precio'], 2) ?>
+                <?php if (!empty($p['precio_alt'])): ?>
+                    <small> · Q<?= number_format((float) $p['precio_alt'], 2) ?> (<?= htmlspecialchars($p['etiqueta_precio_alt'], ENT_QUOTES, 'UTF-8') ?>)</small>
+                <?php endif; ?>
+            </p>
+            <?php if ((int) ($p['es_destacado'] ?? 0) === 1 || (int) ($p['es_mas_vendido'] ?? 0) === 1): ?>
+                <div class="etiquetas-producto">
+                    <?php if ((int) ($p['es_mas_vendido'] ?? 0) === 1): ?><span class="etiqueta etiqueta-mas-vendido">Más vendido</span><?php endif; ?>
+                    <?php if ((int) ($p['es_destacado'] ?? 0) === 1): ?><span class="etiqueta etiqueta-destacado">Destacado</span><?php endif; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </article>
+    <?php
+};
 ?>
 
-<section class="tarjeta">
-    <h1><?= htmlspecialchars($nombreSitio, ENT_QUOTES, 'UTF-8') ?></h1>
-    <p>Sitio en construcción — Fase 3 del proyecto (núcleo del sistema).</p>
-
-    <?php if ($instagram !== ''): ?>
-        <p>Instagram/TikTok: <?= htmlspecialchars($instagram, ENT_QUOTES, 'UTF-8') ?></p>
+<!-- ===================== HERO / INICIO ===================== -->
+<section class="hero" id="inicio">
+    <?php if ($heroImagen !== ''): ?>
+        <img class="hero-imagen-fondo" src="<?= UPLOADS_URL ?>/sitio/<?= htmlspecialchars($heroImagen, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="eager">
     <?php endif; ?>
+    <div class="hero-overlay"></div>
+    <div class="hero-contenido">
+        <?php if ($heroImagen === ''): ?>
+            <div class="hero-marcador"><?= Vista::pendiente('fotografía de portada') ?></div>
+        <?php endif; ?>
+        <h1><?= htmlspecialchars($nombreSitio, ENT_QUOTES, 'UTF-8') ?></h1>
+        <p>
+            <?= $frase !== '' ? htmlspecialchars($frase, ENT_QUOTES, 'UTF-8') : Vista::pendiente('frase de bienvenida') ?>
+        </p>
+        <?php if ($descripcionCorta !== ''): ?>
+            <p><?= htmlspecialchars($descripcionCorta, ENT_QUOTES, 'UTF-8') ?></p>
+        <?php else: ?>
+            <p><?= Vista::pendiente('descripción breve de la cafetería') ?></p>
+        <?php endif; ?>
+        <div class="hero-botones">
+            <a href="#menu" class="btn">Ver menú</a>
+            <?php if ($whatsappNumero !== ''): ?>
+                <a href="<?= htmlspecialchars(WhatsApp::enlace($whatsappNumero, "Hola, quisiera hacer un pedido en {$nombreSitio}."), ENT_QUOTES, 'UTF-8') ?>"
+                   class="btn btn-verde" target="_blank" rel="noopener">Escribir por WhatsApp</a>
+            <?php endif; ?>
+        </div>
+    </div>
+</section>
 
-    <?php if ($facebook !== ''): ?>
-        <p>Facebook: <?= htmlspecialchars($facebook, ENT_QUOTES, 'UTF-8') ?></p>
-    <?php endif; ?>
+<!-- ===================== MÁS VENDIDOS ===================== -->
+<?php if ($masVendidos !== []): ?>
+<section class="sitio-seccion">
+    <div class="sitio-contenedor">
+        <h2>Los más vendidos</h2>
+        <p class="sitio-seccion-intro">Lo que más piden nuestros clientes.</p>
+        <div class="tarjetas-grid">
+            <?php foreach ($masVendidos as $p): $tarjetaProducto($p); endforeach; ?>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
+
+<!-- ===================== DESTACADOS ===================== -->
+<?php if ($destacados !== []): ?>
+<section class="sitio-seccion sitio-seccion-alt">
+    <div class="sitio-contenedor">
+        <h2>Destacados</h2>
+        <p class="sitio-seccion-intro">Nuestras recomendaciones.</p>
+        <div class="tarjetas-grid">
+            <?php foreach ($destacados as $p): $tarjetaProducto($p); endforeach; ?>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
+
+<!-- ===================== TEMPORADA ===================== -->
+<?php if ($productosTemporada !== []): ?>
+<section class="sitio-seccion">
+    <div class="sitio-contenedor">
+        <h2>De temporada</h2>
+        <p class="sitio-seccion-intro">
+            <?= htmlspecialchars(implode(', ', array_column($temporadas, 'nombre')), ENT_QUOTES, 'UTF-8') ?>
+        </p>
+        <div class="tarjetas-grid">
+            <?php foreach ($productosTemporada as $p): $tarjetaProducto($p); endforeach; ?>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
+
+<!-- ===================== PROMOCIONES VIGENTES ===================== -->
+<?php if ($promociones !== []): ?>
+<section class="sitio-seccion sitio-seccion-alt">
+    <div class="sitio-contenedor">
+        <h2>Promociones de hoy</h2>
+        <div class="tarjetas-grid">
+            <?php foreach ($promociones as $promo): ?>
+                <article class="tarjeta-producto">
+                    <div class="tarjeta-producto-cuerpo">
+                        <p class="tarjeta-producto-nombre"><?= htmlspecialchars($promo['nombre'], ENT_QUOTES, 'UTF-8') ?></p>
+                        <?php if (!empty($promo['descripcion'])): ?>
+                            <p class="tarjeta-producto-descripcion"><?= htmlspecialchars($promo['descripcion'], ENT_QUOTES, 'UTF-8') ?></p>
+                        <?php endif; ?>
+                        <p class="tarjeta-producto-descripcion">
+                            <?= htmlspecialchars($promo['producto_nombre'] ?? $promo['categoria_nombre'] ?? 'Todo el menú', ENT_QUOTES, 'UTF-8') ?>
+                        </p>
+                    </div>
+                </article>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
+
+<!-- ===================== MENÚ ===================== -->
+<section class="sitio-seccion" id="menu">
+    <div class="sitio-contenedor">
+        <h2>Nuestro menú</h2>
+
+        <?php if ($menu === []): ?>
+            <p class="sitio-seccion-intro">El menú se está preparando.</p>
+        <?php else: ?>
+            <nav class="menu-nav" aria-label="Ir a una categoría">
+                <?php foreach ($menu as $cat): ?>
+                    <a href="#cat-<?= htmlspecialchars($cat['slug'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($cat['nombre'], ENT_QUOTES, 'UTF-8') ?></a>
+                <?php endforeach; ?>
+            </nav>
+
+            <?php foreach ($menu as $cat): ?>
+                <div class="menu-categoria" id="cat-<?= htmlspecialchars($cat['slug'], ENT_QUOTES, 'UTF-8') ?>">
+                    <h3><?= htmlspecialchars($cat['nombre'], ENT_QUOTES, 'UTF-8') ?></h3>
+                    <?php if (!empty($cat['notas'])): ?>
+                        <p class="menu-categoria-notas"><?= htmlspecialchars($cat['notas'], ENT_QUOTES, 'UTF-8') ?></p>
+                    <?php endif; ?>
+                    <div class="tarjetas-grid">
+                        <?php foreach ($cat['productos'] as $p): $tarjetaProducto($p); endforeach; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+</section>
+
+<!-- ===================== SOBRE NOSOTROS ===================== -->
+<section class="sitio-seccion sitio-seccion-alt" id="nosotros">
+    <div class="sitio-contenedor">
+        <h2>Sobre nosotros</h2>
+        <div class="sobre-nosotros-contenido">
+            <?php if (!empty($config['sobre_nosotros_texto'])): ?>
+                <p><?= nl2br(htmlspecialchars($config['sobre_nosotros_texto'], ENT_QUOTES, 'UTF-8')) ?></p>
+            <?php else: ?>
+                <p><?= Vista::pendiente('texto de "Sobre nosotros"') ?></p>
+            <?php endif; ?>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== GALERÍA ===================== -->
+<section class="sitio-seccion" id="galeria">
+    <div class="sitio-contenedor">
+        <h2>Galería</h2>
+        <?php if ($galeria === []): ?>
+            <p class="sitio-seccion-intro"><?= Vista::pendiente('fotografías de la galería') ?></p>
+        <?php else: ?>
+            <div class="galeria-grid">
+                <?php foreach ($galeria as $foto): ?>
+                    <?= Vista::fotoOMarcador($foto['imagen'], UPLOADS_URL . '/galeria', $foto['titulo'] ?? $nombreSitio) ?>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+</section>
+
+<!-- ===================== UBICACIÓN / MAPA / CALIFICACIÓN ===================== -->
+<section class="sitio-seccion sitio-seccion-alt" id="ubicacion">
+    <div class="sitio-contenedor">
+        <h2>Ubicación</h2>
+        <div class="ubicacion-grid">
+            <div>
+                <?php if (!empty($config['google_maps_embed'])): ?>
+                    <div class="ubicacion-mapa-marcador">
+                        <?php
+                        // Este campo es el único del sitio que se imprime sin
+                        // htmlspecialchars(): es código embed de Google Maps
+                        // (un <iframe>) que solo un Administrador autenticado
+                        // puede escribir desde el panel — no es contenido
+                        // enviado por un visitante del sitio.
+                        echo $config['google_maps_embed'];
+                        ?>
+                    </div>
+                <?php else: ?>
+                    <div class="ubicacion-mapa-marcador"><?= Vista::pendiente('mapa de Google Maps') ?></div>
+                <?php endif; ?>
+                <p style="margin-top:12px;">
+                    <?= !empty($config['direccion_texto']) ? htmlspecialchars($config['direccion_texto'], ENT_QUOTES, 'UTF-8') : Vista::pendiente('dirección exacta') ?>
+                </p>
+            </div>
+            <div>
+                <h3>Calificación en Google</h3>
+                <?php if (!empty($config['google_calificacion'])): ?>
+                    <?php $urlResena = $config['google_calificacion_url'] ?? ''; ?>
+                    <?php if ($urlResena !== ''): ?>
+                        <a class="calificacion-google" href="<?= htmlspecialchars($urlResena, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">
+                            ⭐ <?= htmlspecialchars($config['google_calificacion'], ENT_QUOTES, 'UTF-8') ?> en Google
+                        </a>
+                    <?php else: ?>
+                        <span class="calificacion-google">⭐ <?= htmlspecialchars($config['google_calificacion'], ENT_QUOTES, 'UTF-8') ?> en Google</span>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <p><?= Vista::pendiente('calificación de Google') ?></p>
+                <?php endif; ?>
+
+                <h3 style="margin-top:24px;">Horario</h3>
+                <?php
+                    $hayHorarioAbierto = false;
+                    foreach ($horarios as $h) {
+                        if ((int) $h['cerrado'] === 0) { $hayHorarioAbierto = true; break; }
+                    }
+                ?>
+                <?php if (!$hayHorarioAbierto): ?>
+                    <p><?= Vista::pendiente('horario de atención') ?></p>
+                <?php else: ?>
+                    <p>Consulta el horario completo al pie de la página.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== LEALTAD ===================== -->
+<section class="sitio-seccion" id="lealtad">
+    <div class="sitio-contenedor">
+        <h2>Programa de lealtad</h2>
+        <div class="lealtad-tarjeta">
+            <div class="lealtad-numero"><?= (int) $umbralLealtad ?></div>
+            <p>
+                Compra <?= (int) $umbralLealtad ?> cafés y el siguiente es <strong>gratis</strong> —
+                cualquier café de nuestro menú. Si te faltan algunos para completar el ciclo,
+                no se pierden: se acumulan para el siguiente.
+            </p>
+            <p>Pregunta en el mostrador para empezar a acumular.</p>
+        </div>
+    </div>
 </section>
 
 <?php

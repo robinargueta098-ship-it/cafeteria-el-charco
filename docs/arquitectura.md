@@ -148,6 +148,34 @@ Hostinger = `public/`).
 | Lealtad | explicación pública de la regla (10 cafés = 1 gratis) | texto fijo + `configuracion_sistema` (umbral) |
 | Promociones | promociones activas hoy | `promociones` |
 
+**Implementado en la Fase 7** (una sola página con anclas, ver
+`app/Views/public/home.php`): todas las secciones de la tabla. El
+indicador "abierto ahora" de horarios no se implementó — se muestra la
+tabla completa en el pie de página; se puede agregar después si hace
+falta.
+
+Config nueva que no estaba en la Fase 2/3 (agregada directo a
+`configuracion_sistema`, seguimos antes del lanzamiento): `frase_hero`,
+`descripcion_corta`, `hero_imagen`, `facebook_url` — todas editables
+desde `/admin/configuracion`, `logo` y `hero_imagen` ahora se suben
+como archivo (antes solo existían como texto).
+
+Dos decisiones de la Fase 7 documentadas para quien revise el código
+después:
+- `App\Core\Vista::pendiente()` marca con `[PENDIENTE: ...]` un dato
+  de negocio que falta (dirección, horario, "sobre nosotros", reseña
+  de Google, foto de portada) — nunca se inventa. `Vista::
+  fotoOMarcador()` es distinto: es el caso normal de un catálogo que
+  se va completando con fotos, así que usa un ícono discreto ("📷 Foto
+  pendiente") en vez de un aviso en mayúsculas repetido en cada una de
+  las 46 tarjetas de producto.
+- El campo `google_maps_embed` es el único dato del sitio que se
+  imprime **sin** `htmlspecialchars()` (ver `home.php`, sección
+  Ubicación): es código `<iframe>` que solo un Administrador
+  autenticado puede escribir desde el panel, no contenido enviado por
+  un visitante — está documentado con un comentario en el propio
+  archivo para que no se confunda con un descuido.
+
 ### 3.2 Panel administrativo
 
 **Roles confirmados para v1** (§10): dos roles con permisos distintos.

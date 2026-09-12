@@ -69,9 +69,27 @@ hasta que así se indique explícitamente.
       canjear → verificar sobrante y auditoría), roles restringidos.
       Un bug real encontrado y corregido durante las pruebas: un fallo
       de codificación podía tumbar con error 500 una operación ya
-      guardada exitosamente — ver docs/arquitectura.md §7. **Pendiente
-      de tu revisión**
-- [ ] Resto de fases (sitio público, diseño visual, despliegue): ver el
+      guardada exitosamente — ver docs/arquitectura.md §7.
+- [x] Fase 7 — Sitio público completo (una sola página con anclas):
+      hero, más vendidos, destacados, temporada, promociones vigentes,
+      menú dinámico por categorías (46 productos reales, agrupados y
+      con notas de categoría), sobre nosotros, galería, ubicación +
+      mapa, calificación de Google, lealtad, contacto/redes y botón
+      flotante de WhatsApp. WhatsApp siempre construido desde el número
+      configurado centralmente (`App\Core\WhatsApp`), con un mensaje
+      distinto según el contexto (portada, nav, flotante).
+      Responsive real (probado en el navegador en 360/375/390/414/768/
+      1024/1280/1920px, sin desbordamiento horizontal en ninguno);
+      `scroll-margin-top` corregido tras encontrar que el nav fijo
+      tapaba los títulos al saltar a un ancla. `loading="lazy"` +
+      `decoding="async"` verificados con una foto real subida de
+      prueba. Sin Bootstrap/jQuery — CSS y JS propios.
+      Lo que el negocio no ha proporcionado (dirección, horario, texto
+      "sobre nosotros", reseña de Google, foto de portada, fotos de
+      productos/galería) se muestra con marcadores `[PENDIENTE: ...]`
+      claramente visibles — nunca inventado. **Pendiente de tu
+      revisión**
+- [ ] Resto de fases (diseño visual/pulido, despliegue): ver el
       plan en docs/arquitectura.md §9
 
 ## Cómo probar en local

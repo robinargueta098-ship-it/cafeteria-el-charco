@@ -22,7 +22,7 @@ $nombresDias = [0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 
         </div>
     <?php endif; ?>
 
-    <form method="post" action="/admin/configuracion">
+    <form method="post" action="/admin/configuracion" enctype="multipart/form-data">
         <?= Csrf::campo() ?>
 
         <h2>Identidad</h2>
@@ -30,6 +30,31 @@ $nombresDias = [0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 
             <label for="nombre_sitio">Nombre del sitio</label>
             <input type="text" id="nombre_sitio" name="nombre_sitio" maxlength="100"
                    value="<?= htmlspecialchars($config['nombre_sitio'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+        </div>
+        <div class="campo">
+            <label for="logo">Logo</label>
+            <?php if (!empty($config['logo'])): ?>
+                <div style="margin-bottom:8px;"><img class="miniatura" src="<?= UPLOADS_URL ?>/sitio/<?= htmlspecialchars($config['logo'], ENT_QUOTES, 'UTF-8') ?>" alt=""></div>
+            <?php endif; ?>
+            <input type="file" id="logo" name="logo" accept=".jpg,.jpeg,.png,.webp">
+            <span class="campo-ayuda">JPG, PNG o WEBP. Deja vacío para conservar el actual.</span>
+        </div>
+        <div class="campo">
+            <label for="hero_imagen">Foto de portada (hero)</label>
+            <?php if (!empty($config['hero_imagen'])): ?>
+                <div style="margin-bottom:8px;"><img class="miniatura" src="<?= UPLOADS_URL ?>/sitio/<?= htmlspecialchars($config['hero_imagen'], ENT_QUOTES, 'UTF-8') ?>" alt="" style="width:120px;height:80px;"></div>
+            <?php endif; ?>
+            <input type="file" id="hero_imagen" name="hero_imagen" accept=".jpg,.jpeg,.png,.webp">
+            <span class="campo-ayuda">Foto grande de portada del sitio público. JPG, PNG o WEBP.</span>
+        </div>
+        <div class="campo">
+            <label for="frase_hero">Frase de bienvenida (portada)</label>
+            <input type="text" id="frase_hero" name="frase_hero" maxlength="200"
+                   value="<?= htmlspecialchars($config['frase_hero'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+        </div>
+        <div class="campo">
+            <label for="descripcion_corta">Descripción breve (portada)</label>
+            <textarea id="descripcion_corta" name="descripcion_corta" rows="2" maxlength="300"><?= htmlspecialchars($config['descripcion_corta'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
         </div>
         <div class="campo">
             <label for="direccion_texto">Dirección</label>
@@ -48,14 +73,19 @@ $nombresDias = [0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 
                    value="<?= htmlspecialchars($config['whatsapp_numero'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
         </div>
         <div class="campo">
-            <label for="instagram_usuario">Instagram / TikTok</label>
+            <label for="instagram_usuario">Instagram / TikTok (con @)</label>
             <input type="text" id="instagram_usuario" name="instagram_usuario" maxlength="100"
                    value="<?= htmlspecialchars($config['instagram_usuario'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
         </div>
         <div class="campo">
-            <label for="facebook_nombre">Facebook</label>
+            <label for="facebook_nombre">Nombre de la página de Facebook</label>
             <input type="text" id="facebook_nombre" name="facebook_nombre" maxlength="100"
                    value="<?= htmlspecialchars($config['facebook_nombre'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+        </div>
+        <div class="campo">
+            <label for="facebook_url">Enlace a la página de Facebook</label>
+            <input type="url" id="facebook_url" name="facebook_url" maxlength="255"
+                   value="<?= htmlspecialchars($config['facebook_url'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
         </div>
 
         <h2>Ubicación y calificación de Google</h2>
