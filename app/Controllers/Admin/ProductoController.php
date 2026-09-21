@@ -52,6 +52,10 @@ class ProductoController extends Controller
             return;
         }
 
+        // Sin foto subida, la clave no existe todavía: el INSERT la necesita
+        // (con PDO nativo un parámetro sin valor es "Invalid parameter number" → 500).
+        $datos['imagen'] ??= null;
+
         $modelo = new Producto();
         $id = $modelo->crear($datos);
         $modelo->sincronizarTemporadas($id, $this->temporadaIdsDelFormulario());
