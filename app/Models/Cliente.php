@@ -57,6 +57,67 @@ class Cliente
         return $stmt->fetch() ?: null;
     }
 
+    /**
+     * Deja el código personal como se guarda: mayúsculas y "CL-" + 10
+     * caracteres. Acepta "cl abcdefghjk", "CL-ABCDEFGHJK", etc. Devuelve ''
+     * si no tiene esa forma (los códigos de recompensa tienen 8, no 10).
+     */
+    public static function normalizarCodigoQr(string $entrada): string
+    {
+        $limpio = (string) preg_replace('/[^A-Z0-9]/', '', strtoupper($entrada));
+
+        return preg_match('/^CL[A-Z0-9]{10}$/', $limpio) === 1 ? 'CL-' . substr($limpio, 2) : '';
+    }
+
+    public function buscarPorCodigoQr(string $codigoQr): ?array
+    {
+        $stmt = Database::conexion()->prepare('SELECT * FROM clientes WHERE codigo_qr = :codigo_qr');
+        $stmt->execute(['codigo_qr' => $codigoQr]);
+
+        return $stmt->fetch() ?: null;
+    }
+
+    /**
+     * Código personal del cliente (el que va en su QR para sumar cafés). Se
+     * crea la primera vez que se pide y desde entonces es siempre el mismo.
+     * Es aleatorio (random_int) y NO se deriva del teléfono ni del id, así
+     * nadie puede adivinar el de otra persona. La garantía de que no se
+     * repite es el UNIQUE de la columna: ante una colisión se genera otro.
+     */
+    public function obtenerCodigoQr(int $id): string
+    {
+        $pdo = Database::conexion();
+        $alfabeto = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+        for ($intento = 1; $intento <= 5; $intento++) {
+            $stmt = $pdo->prepare('SELECT codigo_qr FROM clientes WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            $actual = $stmt->fetchColumn();
+
+            if (is_string($actual) && $actual !== '') {
+                return $actual;
+            }
+
+            $codigo = 'CL-';
+            for ($i = 0; $i < 10; $i++) {
+                $codigo .= $alfabeto[random_int(0, strlen($alfabeto) - 1)];
+            }
+
+            try {
+                // "AND codigo_qr IS NULL": si otra petición lo asignó primero, no se pisa.
+                $pdo->prepare('UPDATE clientes SET codigo_qr = :codigo_qr WHERE id = :id AND codigo_qr IS NULL')
+                    ->execute(['codigo_qr' => $codigo, 'id' => $id]);
+            } catch (\PDOException $e) {
+                if ((int) ($e->errorInfo[1] ?? 0) !== 1062) {
+                    throw $e;
+                }
+                // Colisión con el código de otro cliente: se reintenta con uno nuevo.
+            }
+        }
+
+        throw new \RuntimeException("No se pudo asignar un código QR al cliente {$id}.");
+    }
+
     public function buscarPorTelefono(string $telefono): ?array
     {
         $stmt = Database::conexion()->prepare('SELECT * FROM clientes WHERE telefono = :telefono');

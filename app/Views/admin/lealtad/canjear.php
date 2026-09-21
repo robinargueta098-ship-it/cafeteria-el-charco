@@ -5,6 +5,9 @@
  * @var array<string,mixed>|null $recompensa
  * @var string|null $error
  * @var array<int,array<string,mixed>> $productos
+ * @var array<string,mixed>|null $clienteEscaneado
+ * @var int $umbral
+ * @var array<int,array<string,mixed>> $disponibles
  */
 use App\Core\Csrf;
 use App\Core\Vista;
@@ -12,11 +15,16 @@ use App\Core\Vista;
 require APP_PATH . '/Views/layouts/panel_header.php';
 ?>
 
-<h1>Canjear recompensa</h1>
+<h1>Escanear código</h1>
 <p>
-    Escanea el código QR que el cliente muestra en su cuenta (<?= htmlspecialchars(APP_URL, ENT_QUOTES, 'UTF-8') ?>/cuenta)
-    o escribe el código a mano. En los dos casos se muestra a quién pertenece antes de canjear.
+    Escanea el QR que el cliente muestra en su cuenta (<?= htmlspecialchars(APP_URL, ENT_QUOTES, 'UTF-8') ?>/cuenta)
+    o escribe el código a mano; con el escáner o a mano funciona igual:
 </p>
+<ul>
+    <li><strong>QR personal</strong> (<code>CL-…</code>): identifica al cliente y <strong>suma cafés</strong>.</li>
+    <li><strong>QR de recompensa</strong> (<code>XXXX-XXXX</code>): <strong>canjea</strong> el café gratis.</li>
+</ul>
+<p class="campo-ayuda">En los dos casos se muestra a quién pertenece antes de aplicar nada.</p>
 
 <?php if ($error !== null): ?>
     <div class="alerta alerta-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
@@ -38,9 +46,9 @@ require APP_PATH . '/Views/layouts/panel_header.php';
         <form method="post" action="/admin/lealtad/canjear/consultar" id="formulario-codigo">
             <?= Csrf::campo() ?>
             <div class="campo">
-                <label for="codigo">Código de la recompensa</label>
+                <label for="codigo">Código (QR personal o de recompensa)</label>
                 <input type="text" id="codigo" name="codigo" maxlength="20" required autofocus
-                       autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX"
+                       autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CL-… o XXXX-XXXX"
                        class="campo-codigo"
                        value="<?= htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8') ?>">
             </div>
@@ -53,6 +61,39 @@ require APP_PATH . '/Views/layouts/panel_header.php';
         </form>
     </div>
 </div>
+
+<?php if ($clienteEscaneado !== null): ?>
+    <?php $saldoEscaneado = (int) $clienteEscaneado['cafes_acumulados']; ?>
+    <div class="tarjeta" style="max-width:480px;margin-top:24px;">
+        <h2 style="margin-top:0;">Cliente identificado</h2>
+        <p><strong>Cliente:</strong> <?= htmlspecialchars($clienteEscaneado['nombre'], ENT_QUOTES, 'UTF-8') ?></p>
+        <p><strong>Teléfono:</strong> <?= htmlspecialchars($clienteEscaneado['telefono'], ENT_QUOTES, 'UTF-8') ?></p>
+        <p><strong>Cafés acumulados:</strong> <?= $saldoEscaneado ?> de <?= (int) $umbral ?></p>
+
+        <form method="post" action="/admin/lealtad/canjear/sumar">
+            <?= Csrf::campo() ?>
+            <?php /* El servidor vuelve a buscar al cliente por este código: no se envía ningún id. */ ?>
+            <input type="hidden" name="codigo_qr" value="<?= htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8') ?>">
+            <div class="campo">
+                <label for="cantidad">Cafés comprados</label>
+                <input type="number" id="cantidad" name="cantidad" min="1" max="50" value="1" required>
+            </div>
+            <button type="submit" class="btn btn-verde">Sumar cafés</button>
+        </form>
+
+        <?php if ($disponibles !== []): ?>
+            <hr style="margin:24px 0;border:0;border-top:1px solid var(--color-beige);">
+            <p><strong>✔ Tiene <?= count($disponibles) ?> recompensa(s) por canjear:</strong></p>
+            <?php foreach ($disponibles as $d): ?>
+                <form method="post" action="/admin/lealtad/canjear/consultar" style="margin-bottom:8px;">
+                    <?= Csrf::campo() ?>
+                    <input type="hidden" name="codigo" value="<?= htmlspecialchars($d['codigo'], ENT_QUOTES, 'UTF-8') ?>">
+                    <button type="submit" class="btn btn-secundario">Canjear <?= htmlspecialchars($d['codigo'], ENT_QUOTES, 'UTF-8') ?></button>
+                </form>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
 
 <?php if ($recompensa !== null): ?>
     <div class="tarjeta" style="max-width:480px;margin-top:24px;">

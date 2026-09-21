@@ -6,6 +6,7 @@ namespace App\Controllers\Public;
 
 use App\Core\ClienteAuth;
 use App\Core\Controller;
+use App\Core\Logger;
 use App\Core\Session;
 use App\Core\Validator;
 use App\Middleware\ClienteAuthMiddleware;
@@ -134,8 +135,18 @@ class CuentaController extends Controller
         $cliente = (new Cliente())->buscarPorId($clienteId);
         $umbral = LealtadService::obtenerUmbral();
 
+        // Código personal para sumar cafés. Si falla (ej. falta aplicar la migración
+        // 001), la cuenta sigue funcionando sin ese QR en vez de dar un error 500.
+        try {
+            $codigoQr = $cliente !== null ? (new Cliente())->obtenerCodigoQr($clienteId) : null;
+        } catch (\Throwable $e) {
+            Logger::error('No se pudo obtener el código QR del cliente ' . $clienteId . ': ' . $e->getMessage());
+            $codigoQr = null;
+        }
+
         $this->vistaCuenta('public/cuenta/panel', [
             'cliente'     => $cliente,
+            'codigoQr'    => $codigoQr,
             'umbral'      => $umbral,
             'recompensas' => (new Recompensa())->listarPorCliente($clienteId),
         ]);

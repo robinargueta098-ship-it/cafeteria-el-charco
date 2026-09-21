@@ -131,12 +131,78 @@ class LealtadController extends Controller
     {
         $this->requerirRol(1, 2);
 
-        $codigo = Recompensa::normalizarCodigo((string) ($_POST['codigo'] ?? ''));
+        $entrada = (string) ($_POST['codigo'] ?? '');
         $telefono = Cliente::normalizarTelefono((string) ($_POST['telefono'] ?? ''));
+
+        // Un mismo escáner/campo sirve para los dos códigos: el QR personal del
+        // cliente ("CL-…", suma un café) y el de una recompensa ("XXXX-XXXX", la canjea).
+        $codigoQr = Cliente::normalizarCodigoQr($entrada);
+        if ($codigoQr !== '') {
+            $this->consultarClientePorQr($codigoQr, $telefono);
+            return;
+        }
+
+        $codigo = Recompensa::normalizarCodigo($entrada);
 
         [, $recompensa, $error] = $this->resolverCanje($codigo, $telefono);
 
         $this->vistaCanjear($codigo, $telefono, $recompensa, $error);
+    }
+
+    /**
+     * QR personal escaneado: se muestra a quién pertenece (y si tiene
+     * recompensas por canjear) para que el cajero confirme cuántos cafés sumar.
+     */
+    private function consultarClientePorQr(string $codigoQr, string $telefono): void
+    {
+        $cliente = (new Cliente())->buscarPorCodigoQr($codigoQr);
+
+        if ($cliente === null) {
+            $this->vistaCanjear($codigoQr, $telefono, null, 'No se encontró ningún cliente con ese código. Revisa que esté bien escrito.');
+            return;
+        }
+
+        if ($telefono !== '' && $telefono !== Cliente::normalizarTelefono((string) $cliente['telefono'])) {
+            $this->vistaCanjear($codigoQr, $telefono, null, 'Ese código no pertenece al cliente con ese teléfono.');
+            return;
+        }
+
+        $this->vistaCanjear($codigoQr, $telefono, null, null, $cliente);
+    }
+
+    /**
+     * Suma cafés a partir del QR personal. El cliente se resuelve en el
+     * servidor desde el código (nada de un id enviado por el formulario), y
+     * el registro pasa por LealtadService como cualquier otro consumo.
+     */
+    public function sumarConsumoPorQr(): void
+    {
+        $this->requerirRol(1, 2);
+
+        $codigoQr = Cliente::normalizarCodigoQr((string) ($_POST['codigo_qr'] ?? ''));
+        $cantidad = (int) ($_POST['cantidad'] ?? 0);
+        $usuario = Auth::usuario();
+
+        $cliente = $codigoQr !== '' ? (new Cliente())->buscarPorCodigoQr($codigoQr) : null;
+
+        if ($cliente === null) {
+            $this->vistaCanjear($codigoQr, '', null, 'No se encontró ningún cliente con ese código.');
+            return;
+        }
+
+        $resultado = LealtadService::registrarConsumo((int) $cliente['id'], $cantidad, $usuario['id'], 'Escaneo de QR personal');
+
+        if (!$resultado['ok']) {
+            $this->vistaCanjear($codigoQr, '', null, $resultado['error'], $cliente);
+            return;
+        }
+
+        $mensaje = "Se sumaron {$cantidad} café(s) a {$cliente['nombre']}.";
+        if ($resultado['codigos_generados'] !== []) {
+            $mensaje .= ' ¡Completó su café gratis! Ya tiene una recompensa disponible en su cuenta.';
+        }
+        Flash::exito($mensaje);
+        $this->redirigir('/admin/lealtad/canjear');
     }
 
     /**
@@ -195,15 +261,27 @@ class LealtadController extends Controller
         return [$cliente, $recompensa, null];
     }
 
-    private function vistaCanjear(string $codigo, string $telefono, ?array $recompensa, ?string $error): void
+    /** @param array<string,mixed>|null $clienteEscaneado cliente identificado por su QR personal */
+    private function vistaCanjear(string $codigo, string $telefono, ?array $recompensa, ?string $error, ?array $clienteEscaneado = null): void
     {
+        $disponibles = [];
+        if ($clienteEscaneado !== null) {
+            $disponibles = array_values(array_filter(
+                (new Recompensa())->listarPorCliente((int) $clienteEscaneado['id']),
+                fn ($r) => $r['estado'] === 'disponible'
+            ));
+        }
+
         $this->vista('admin/lealtad/canjear', [
-            'seccionActiva' => 'canjear',
-            'telefono'      => $telefono,
-            'codigo'        => $codigo,
-            'recompensa'    => $recompensa,
-            'error'         => $error,
-            'productos'     => (new Producto())->listarActivos(),
+            'seccionActiva'    => 'canjear',
+            'telefono'         => $telefono,
+            'codigo'           => $codigo,
+            'recompensa'       => $recompensa,
+            'error'            => $error,
+            'productos'        => (new Producto())->listarActivos(),
+            'clienteEscaneado' => $clienteEscaneado,
+            'umbral'           => LealtadService::obtenerUmbral(),
+            'disponibles'      => $disponibles,
         ]);
     }
 }

@@ -88,6 +88,7 @@ $router->post('/admin/clientes/{id}/editar', [ClienteController::class, 'actuali
 $router->get('/admin/lealtad', [LealtadController::class, 'index']);
 $router->get('/admin/lealtad/canjear', [LealtadController::class, 'mostrarCanjear']);
 $router->post('/admin/lealtad/canjear/consultar', [LealtadController::class, 'consultarCodigo']);
+$router->post('/admin/lealtad/canjear/sumar', [LealtadController::class, 'sumarConsumoPorQr']);
 $router->post('/admin/lealtad/canjear/confirmar', [LealtadController::class, 'confirmarCanje']);
 $router->get('/admin/lealtad/{id}', [LealtadController::class, 'mostrarCliente']);
 $router->post('/admin/lealtad/{id}/consumo', [LealtadController::class, 'registrarConsumo']);

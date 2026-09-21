@@ -588,6 +588,33 @@ UNIQUE, 8 caracteres aleatorios, se genera solo al llegar a 10 cafés; ver
   `http://elcharco.localhost` (agregar `ServerAlias elcharco.localhost` al
   VirtualHost) o el campo manual, que no depende de la cámara.
 
+### 4.10 QR personal para sumar cafés (misma lógica que el canje)
+
+Sumar un café también se hace escaneando, con el mismo escáner y el mismo
+campo manual de §4.9. Hay dos códigos, que se distinguen por su forma:
+
+| Código | Forma | Vive en | Al leerlo |
+|---|---|---|---|
+| QR personal del cliente | `CL-` + 10 caracteres | `clientes.codigo_qr` (UNIQUE) | muestra al cliente y **suma cafés** |
+| QR de recompensa | `XXXX-XXXX` | `recompensas.codigo` (UNIQUE) | muestra al dueño y **canjea** |
+
+- El QR personal es **permanente** y se muestra siempre en `/cuenta`. Es
+  aleatorio (`random_int`), no se deriva del teléfono ni del id, y se asigna la
+  primera vez que el cliente abre su cuenta (`Cliente::obtenerCodigoQr`). Ante
+  una colisión, el UNIQUE obliga a generar otro.
+- Sumar (`POST /admin/lealtad/canjear/sumar`): el servidor resuelve al cliente
+  desde el código (no acepta un id del formulario) y registra el consumo con
+  `LealtadService::registrarConsumo`, o sea con el mismo candado, libro mayor y
+  auditoría que el registro manual; si llega a 10 cafés genera la recompensa.
+- Si el cliente escaneado ya tiene recompensas disponibles, la pantalla ofrece
+  canjearlas desde ahí.
+- Esquema: columna nueva en `clientes` (`schema.sql` y
+  `database/migrations/001_clientes_codigo_qr.sql`). Sin la columna, `/cuenta`
+  sigue funcionando pero sin ese QR.
+- Riesgo asumido: el QR personal es un "portador"; quien lo fotografíe podría
+  hacer que le sumen cafés a otro. El cajero ve siempre el nombre del cliente
+  antes de sumar, y cada suma queda auditada.
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)

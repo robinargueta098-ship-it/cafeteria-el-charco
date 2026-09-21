@@ -40,6 +40,21 @@ $etiquetasEstado = [
             <p>Cafés acumulados hacia tu próximo café gratis.</p>
         </div>
 
+        <?php if (!empty($codigoQr)): ?>
+            <?php $qrPersonal = CodigoQr::dataUri($codigoQr); ?>
+            <div class="tarjeta" style="text-align:center;margin-bottom:24px;">
+                <h2 style="margin-top:0;">Tu QR para sumar cafés</h2>
+                <p class="campo-ayuda" style="margin-bottom:12px;">Muéstralo en el mostrador cada vez que compres: el cajero lo escanea y te suma el café. Es siempre el mismo.</p>
+                <?php if ($qrPersonal !== null): ?>
+                    <img class="qr-recompensa" src="<?= htmlspecialchars($qrPersonal, ENT_QUOTES, 'UTF-8') ?>" width="240" height="240"
+                         alt="Tu código QR personal <?= htmlspecialchars($codigoQr, ENT_QUOTES, 'UTF-8') ?>">
+                <?php endif; ?>
+                <div class="codigo-recompensa-texto" style="font-size:1.4rem;font-weight:700;letter-spacing:2px;color:var(--color-cafe-oscuro);">
+                    <?= htmlspecialchars($codigoQr, ENT_QUOTES, 'UTF-8') ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <?php if ($disponibles !== []): ?>
             <h2>🎉 Tienes <?= count($disponibles) ?> recompensa(s) disponible(s)</h2>
             <p class="sitio-seccion-intro">Muestra este código QR en el mostrador para canjearlo, o díctale el código al cajero.</p>
@@ -63,7 +78,7 @@ $etiquetasEstado = [
                 <p style="margin:0;">
                     Todavía no tienes una recompensa disponible. Cuando completes
                     <?= (int) $umbral ?> cafés (te faltan <?= max(0, $umbral - $saldo) ?>), aquí aparecerá tu
-                    código QR para canjear un café gratis.
+                    QR de recompensa para canjear un café gratis.
                 </p>
             </div>
         <?php endif; ?>
