@@ -18,6 +18,7 @@ use App\Controllers\Admin\ConfiguracionController;
 use App\Controllers\Admin\DashboardController;
 use App\Controllers\Admin\GaleriaController;
 use App\Controllers\Admin\LealtadController;
+use App\Controllers\Admin\PortadaController;
 use App\Controllers\Admin\PromocionController;
 use App\Controllers\Admin\ProductoController;
 use App\Controllers\Admin\RecompensaController;
@@ -99,6 +100,11 @@ $router->post('/admin/recompensas/{id}/cancelar', [RecompensaController::class, 
 // --- Configuración ---
 $router->get('/admin/configuracion', [ConfiguracionController::class, 'mostrar']);
 $router->post('/admin/configuracion', [ConfiguracionController::class, 'actualizar']);
+
+// Imágenes del fondo de la portada (se administran desde Configuración, tabla propia)
+$router->post('/admin/configuracion/portada', [PortadaController::class, 'subir']);
+$router->post('/admin/configuracion/portada/{id}/mover', [PortadaController::class, 'mover']);
+$router->post('/admin/configuracion/portada/{id}/eliminar', [PortadaController::class, 'eliminar']);
 
 // --- Usuarios ---
 $router->get('/admin/usuarios', [UsuarioController::class, 'index']);

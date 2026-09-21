@@ -77,6 +77,11 @@ erDiagram
         varchar imagen
         varchar titulo
     }
+    PORTADA_IMAGENES {
+        int id PK
+        varchar imagen
+        smallint orden
+    }
     PROMOCIONES {
         int id PK
         varchar nombre

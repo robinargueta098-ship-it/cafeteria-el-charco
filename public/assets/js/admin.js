@@ -7,20 +7,24 @@
 document.addEventListener('DOMContentLoaded', function () {
   inicializarAlcancePromocion();
   inicializarTipoPromocion();
-  inicializarSubidaGaleria();
+  document.querySelectorAll('input[data-subida-multiple]').forEach(inicializarSubidaMultiple);
 });
 
 /**
- * Subida de varias fotos: avisa de inmediato si alguna es muy pesada, tiene
- * un formato no permitido o son demasiadas, en vez de esperar a que el
- * servidor rechace todo el envío. Es solo comodidad — el servidor valida
- * cada archivo de nuevo (tipo real, tamaño) y es quien decide.
+ * Subida de varias fotos (galería y portada): avisa de inmediato si alguna
+ * es muy pesada, tiene un formato no permitido o son demasiadas, en vez de
+ * esperar a que el servidor rechace todo el envío. Es solo comodidad — el
+ * servidor valida cada archivo de nuevo (tipo real, tamaño, cupo) y es
+ * quien decide.
+ *
+ * El input indica dónde escribir el resumen y qué botón bloquear con
+ * data-resumen / data-boton (ids), y sus límites con data-max-archivos y
+ * data-max-bytes.
  */
-function inicializarSubidaGaleria() {
-  var input = document.getElementById('imagenes');
-  var resumen = document.getElementById('resumen-subida');
-  var boton = document.getElementById('boton-subir');
-  if (!input || !resumen || !boton) {
+function inicializarSubidaMultiple(input) {
+  var resumen = document.getElementById(input.getAttribute('data-resumen'));
+  var boton = document.getElementById(input.getAttribute('data-boton'));
+  if (!resumen || !boton) {
     return;
   }
 

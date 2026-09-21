@@ -14,6 +14,7 @@
  * @var array<int,array<string,mixed>> $temporadas
  * @var array<int,array<string,mixed>> $productosTemporada
  * @var array<int,array<string,mixed>> $galeria
+ * @var array<int,array<string,mixed>> $portada
  * @var array<int,array<string,mixed>> $promociones
  * @var int $umbralLealtad
  */
@@ -26,24 +27,20 @@ require APP_PATH . '/Views/layouts/header_publico.php';
 $nombreSitio = $config['nombre_sitio'] ?? 'Cafetería El Charco';
 $frase = $config['frase_hero'] ?? '';
 $descripcionCorta = $config['descripcion_corta'] ?? '';
-$heroImagen = $config['hero_imagen'] ?? '';
 $whatsappNumero = $config['whatsapp_numero'] ?? '';
 
 /**
- * Fondo del hero: las primeras fotos activas de la galería (máx. 6),
- * en el orden que se les dio en el panel. Si la galería está vacía se
- * usa la "foto de portada" de Configuración como única imagen (fondo
- * fijo, sin carrusel); si tampoco hay, se muestra el marcador de
- * "pendiente". Cada foto usa sus versiones WebP reducidas cuando existen.
+ * Fondo del hero: las imágenes de la tabla `portada_imagenes` (las que se
+ * administran en Configuración), en el orden que se les dio. Son
+ * independientes de la Galería. Con una sola imagen el fondo queda fijo;
+ * sin ninguna se muestra el marcador de "pendiente". Cada imagen usa sus
+ * versiones WebP reducidas cuando existen.
  *
  * @var array<int,array{src:string,srcset:string}> $diapositivasHero
  */
 $diapositivasHero = [];
-foreach (array_slice($galeria, 0, 6) as $fotoHero) {
-    $diapositivasHero[] = ImagenOptimizada::atributos(UPLOADS_PATH . '/galeria', UPLOADS_URL . '/galeria', $fotoHero['imagen']);
-}
-if ($diapositivasHero === [] && $heroImagen !== '') {
-    $diapositivasHero[] = ['src' => UPLOADS_URL . '/sitio/' . $heroImagen, 'srcset' => ''];
+foreach ($portada as $imagenPortada) {
+    $diapositivasHero[] = ImagenOptimizada::atributos(UPLOADS_PATH . '/portada', UPLOADS_URL . '/portada', $imagenPortada['imagen']);
 }
 
 /**

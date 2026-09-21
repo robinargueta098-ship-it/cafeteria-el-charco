@@ -2,9 +2,9 @@
 
 /**
  * Genera las versiones optimizadas (WebP reducido) de las fotos de la
- * galería que ya estaban subidas. Las fotos que se suban desde el panel
- * después de tener GD activo las generan solas; esto sirve para las
- * anteriores.
+ * galería y de las imágenes de portada que ya estaban subidas. Las que
+ * se suban desde el panel después de tener GD activo las generan solas;
+ * esto sirve para las anteriores.
  *
  * Solo por línea de comandos:
  *   php -d extension=gd bin/optimizar_imagenes.php            (solo las que no tienen)
@@ -34,6 +34,7 @@ spl_autoload_register(function (string $clase): void {
 
 use App\Core\ImagenOptimizada;
 use App\Models\Galeria;
+use App\Models\PortadaImagen;
 
 if (!ImagenOptimizada::disponible()) {
     fwrite(STDERR, "La extensión GD (con soporte WebP) no está disponible.\n"
@@ -42,52 +43,60 @@ if (!ImagenOptimizada::disponible()) {
 }
 
 $forzar = in_array('--forzar', $argv, true);
-$carpeta = UPLOADS_PATH . '/galeria';
 $kb = fn (string $ruta): string => number_format(filesize($ruta) / 1024, 0) . ' KB';
 
-$fotos = (new Galeria())->listarTodas();
-if ($fotos === []) {
-    echo "No hay fotos en la galería.\n";
-    exit(0);
-}
+/** @var array<string,array{carpeta:string,fotos:array<int,array<string,mixed>>}> $conjuntos */
+$conjuntos = [
+    'Galería' => ['carpeta' => UPLOADS_PATH . '/galeria', 'fotos' => (new Galeria())->listarTodas()],
+    'Portada' => ['carpeta' => UPLOADS_PATH . '/portada', 'fotos' => (new PortadaImagen())->listar()],
+];
 
 $totalOriginal = 0;
 $totalVersiones = 0;
 
-foreach ($fotos as $foto) {
-    $nombre = $foto['imagen'];
-    $original = $carpeta . '/' . $nombre;
+foreach ($conjuntos as $titulo => ['carpeta' => $carpeta, 'fotos' => $fotos]) {
+    echo "== {$titulo} ==\n";
 
-    if (!is_file($original)) {
-        echo "  [!] {$nombre}: el archivo no existe en disco, se omite.\n";
+    if ($fotos === []) {
+        echo "  (sin imágenes)\n";
         continue;
     }
 
-    if ($forzar) {
-        ImagenOptimizada::eliminarVersiones($carpeta, $nombre);
+    foreach ($fotos as $foto) {
+        $nombre = $foto['imagen'];
+        $original = $carpeta . '/' . $nombre;
+
+        if (!is_file($original)) {
+            echo "  [!] {$nombre}: el archivo no existe en disco, se omite.\n";
+            continue;
+        }
+
+        if ($forzar) {
+            ImagenOptimizada::eliminarVersiones($carpeta, $nombre);
+        }
+
+        $existentes = ImagenOptimizada::versiones($carpeta, $nombre);
+        if ($existentes !== []) {
+            echo "  [=] {$nombre}: ya tiene versiones (" . implode(', ', array_keys($existentes)) . " px), se omite.\n";
+            continue;
+        }
+
+        $generadas = ImagenOptimizada::generar($original);
+
+        if ($generadas === []) {
+            echo "  [!] {$nombre}: no se generaron versiones (revisa storage/logs).\n";
+            continue;
+        }
+
+        $detalle = [];
+        foreach ($generadas as $ruta) {
+            $detalle[] = basename($ruta) . ' (' . $kb($ruta) . ')';
+            $totalVersiones += filesize($ruta);
+        }
+        $totalOriginal += filesize($original);
+
+        echo "  [+] {$nombre} (" . $kb($original) . ") -> " . implode(', ', $detalle) . "\n";
     }
-
-    $existentes = ImagenOptimizada::versiones($carpeta, $nombre);
-    if ($existentes !== []) {
-        echo "  [=] {$nombre}: ya tiene versiones (" . implode(', ', array_keys($existentes)) . " px), se omite.\n";
-        continue;
-    }
-
-    $generadas = ImagenOptimizada::generar($original);
-
-    if ($generadas === []) {
-        echo "  [!] {$nombre}: no se generaron versiones (revisa storage/logs).\n";
-        continue;
-    }
-
-    $detalle = [];
-    foreach ($generadas as $ruta) {
-        $detalle[] = basename($ruta) . ' (' . $kb($ruta) . ')';
-        $totalVersiones += filesize($ruta);
-    }
-    $totalOriginal += filesize($original);
-
-    echo "  [+] {$nombre} (" . $kb($original) . ") -> " . implode(', ', $detalle) . "\n";
 }
 
 if ($totalOriginal > 0) {

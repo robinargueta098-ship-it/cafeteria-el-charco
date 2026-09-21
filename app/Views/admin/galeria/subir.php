@@ -38,6 +38,7 @@ $maxMb = (int) round($maxBytes / 1024 / 1024);
             <label for="imagenes">Fotos</label>
             <input type="file" id="imagenes" name="imagenes[]" multiple required
                    accept=".jpg,.jpeg,.png,.webp"
+                   data-subida-multiple data-resumen="resumen-subida" data-boton="boton-subir"
                    data-max-archivos="<?= (int) $maxArchivos ?>"
                    data-max-bytes="<?= (int) $maxBytes ?>">
             <span class="campo-ayuda">

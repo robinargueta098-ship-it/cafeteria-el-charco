@@ -3,15 +3,117 @@
  * @var array<string,string> $config
  * @var array<int,array<string,mixed>> $horarios
  * @var array<int,string> $errores
+ * @var array<int,array<string,mixed>> $portada imágenes del fondo de la portada, en orden
+ * @var int $portadaMax máximo de imágenes de portada
+ * @var int $portadaLote cuántas se pueden subir en este momento (cupo restante, tope por envío)
+ * @var int $portadaMaxBytes tamaño máximo por imagen
+ * @var bool $optimiza si el servidor tiene GD para crear versiones reducidas
  */
 use App\Core\Csrf;
 
 require APP_PATH . '/Views/layouts/panel_header.php';
 
 $nombresDias = [0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado'];
+$totalPortada = count($portada);
 ?>
 
 <h1>Configuración del sitio</h1>
+
+<?php
+/*
+ * Imágenes de portada. Va en su PROPIA tarjeta, fuera del formulario grande de
+ * abajo: cada imagen necesita sus propios botones (subir, ▲▼, eliminar) y HTML
+ * no permite formularios anidados. Cada acción se aplica al instante.
+ */
+?>
+<div class="tarjeta" id="portada" style="max-width:720px;margin-bottom:24px;">
+    <h2 style="margin-top:0;">Imágenes de portada</h2>
+    <p class="campo-ayuda" style="margin-top:0;">
+        Fondo de la portada del sitio público: las imágenes se alternan solas cada 5 segundos,
+        con un fundido suave, detrás del título y los botones. Son independientes de la Galería.
+        Lo ideal son fotos horizontales y bien iluminadas (sobre ellas va un filtro oscuro para que el texto se lea).
+        <strong>Estas acciones se aplican al instante</strong>; no dependen del botón
+        «Guardar configuración» de más abajo.
+    </p>
+
+    <?php if (!$optimiza): ?>
+        <div class="alerta alerta-error" style="background:#fdf1cf;color:#7a5b00;border-color:#d9b84a;">
+            Este servidor no tiene la extensión GD de PHP, así que las imágenes se guardan tal cual, sin las
+            versiones reducidas que aceleran el sitio en el celular. Funciona igual, solo que más pesado.
+            (En Hostinger normalmente está activa.)
+        </div>
+    <?php endif; ?>
+
+    <p style="margin-bottom:8px;">
+        <strong><?= $totalPortada ?> de <?= (int) $portadaMax ?></strong> imágenes
+        <?php if ($totalPortada === 0): ?>
+            — sin imágenes, la portada muestra un aviso de «pendiente» en lugar de fondo.
+        <?php elseif ($totalPortada === 1): ?>
+            — con una sola imagen el fondo queda fijo; agrega al menos una más para que se alternen.
+        <?php endif; ?>
+    </p>
+
+    <?php if ($totalPortada > 0): ?>
+        <div class="tabla-contenedor" style="margin-bottom:16px;">
+            <table class="tabla">
+                <thead><tr><th>#</th><th>Imagen</th><th>Orden</th><th>Acciones</th></tr></thead>
+                <tbody>
+                    <?php foreach ($portada as $indice => $p): ?>
+                        <tr>
+                            <td><?= $indice + 1 ?></td>
+                            <td><img class="miniatura" style="width:96px;height:64px;" src="<?= UPLOADS_URL ?>/portada/<?= htmlspecialchars($p['imagen'], ENT_QUOTES, 'UTF-8') ?>" alt="Imagen de portada <?= $indice + 1 ?>"></td>
+                            <td>
+                                <div class="acciones-tabla">
+                                    <?php foreach (['subir' => ['▲', 'Subir', $indice === 0], 'bajar' => ['▼', 'Bajar', $indice === $totalPortada - 1]] as $direccion => [$simbolo, $etiqueta, $deshabilitado]): ?>
+                                        <form method="post" action="/admin/configuracion/portada/<?= (int) $p['id'] ?>/mover">
+                                            <?= Csrf::campo() ?>
+                                            <input type="hidden" name="direccion" value="<?= $direccion ?>">
+                                            <button type="submit" class="btn btn-secundario btn-pequeno"
+                                                    aria-label="<?= $etiqueta ?> imagen <?= $indice + 1 ?>"
+                                                    <?= $deshabilitado ? 'disabled' : '' ?>><?= $simbolo ?></button>
+                                        </form>
+                                    <?php endforeach; ?>
+                                </div>
+                            </td>
+                            <td>
+                                <form method="post" action="/admin/configuracion/portada/<?= (int) $p['id'] ?>/eliminar"
+                                      onsubmit="return confirm('¿Eliminar esta imagen de la portada? No se puede deshacer.');">
+                                    <?= Csrf::campo() ?>
+                                    <button type="submit" class="btn btn-peligro btn-pequeno">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($portadaLote > 0): ?>
+        <form method="post" action="/admin/configuracion/portada" enctype="multipart/form-data">
+            <?= Csrf::campo() ?>
+            <div class="campo">
+                <label for="portada_imagenes">Agregar imágenes</label>
+                <input type="file" id="portada_imagenes" name="imagenes[]" multiple required
+                       accept=".jpg,.jpeg,.png,.webp"
+                       data-subida-multiple data-resumen="portada-resumen-subida" data-boton="portada-boton-subir"
+                       data-max-archivos="<?= (int) $portadaLote ?>"
+                       data-max-bytes="<?= (int) $portadaMaxBytes ?>">
+                <span class="campo-ayuda">
+                    Puedes elegir varias a la vez (ahora puedes agregar hasta <?= (int) $portadaLote ?>).
+                    JPG, PNG o WEBP, máximo <?= (int) round($portadaMaxBytes / 1024 / 1024) ?> MB cada una.
+                    Se agregan al final; reordénalas con las flechas.
+                </span>
+                <div id="portada-resumen-subida" class="campo-ayuda" aria-live="polite"></div>
+            </div>
+            <button type="submit" class="btn" id="portada-boton-subir">Subir imágenes</button>
+        </form>
+    <?php else: ?>
+        <p class="campo-ayuda">
+            Llegaste al máximo de <?= (int) $portadaMax ?> imágenes. Elimina alguna para poder agregar otra.
+        </p>
+    <?php endif; ?>
+</div>
 
 <div class="tarjeta" style="max-width:720px;">
     <?php if ($errores !== []): ?>
@@ -38,14 +140,6 @@ $nombresDias = [0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 
             <?php endif; ?>
             <input type="file" id="logo" name="logo" accept=".jpg,.jpeg,.png,.webp">
             <span class="campo-ayuda">JPG, PNG o WEBP. Deja vacío para conservar el actual.</span>
-        </div>
-        <div class="campo">
-            <label for="hero_imagen">Foto de portada (hero)</label>
-            <?php if (!empty($config['hero_imagen'])): ?>
-                <div style="margin-bottom:8px;"><img class="miniatura" src="<?= UPLOADS_URL ?>/sitio/<?= htmlspecialchars($config['hero_imagen'], ENT_QUOTES, 'UTF-8') ?>" alt="" style="width:120px;height:80px;"></div>
-            <?php endif; ?>
-            <input type="file" id="hero_imagen" name="hero_imagen" accept=".jpg,.jpeg,.png,.webp">
-            <span class="campo-ayuda">Foto grande de portada del sitio público. JPG, PNG o WEBP.</span>
         </div>
         <div class="campo">
             <label for="frase_hero">Frase de bienvenida (portada)</label>

@@ -8,6 +8,7 @@ use App\Core\Controller;
 use App\Models\Configuracion;
 use App\Models\Galeria;
 use App\Models\HorarioAtencion;
+use App\Models\PortadaImagen;
 use App\Models\Producto;
 use App\Models\Promocion;
 use App\Models\Temporada;
@@ -28,6 +29,7 @@ class HomeController extends Controller
             'temporadas'      => (new Temporada())->listarVigentes(),
             'productosTemporada' => $productoModelo->listarEnTemporadaVigente(),
             'galeria'         => (new Galeria())->listarActivas(),
+            'portada'         => (new PortadaImagen())->listar(), // fondo del hero: independiente de la galería
             'promociones'     => (new Promocion())->listarVigentesAhora(),
             'umbralLealtad'   => LealtadService::obtenerUmbral(),
         ]);

@@ -87,6 +87,46 @@ class SubidaArchivo
         return ['ok' => true, 'nombre' => $nombreGuardado];
     }
 
+    /**
+     * PHP entrega varios archivos como name[]/tmp_name[]/... (un array
+     * de columnas). Lo convierte en una lista de archivos individuales
+     * con la misma forma que un $_FILES de un solo archivo, y descarta
+     * los campos vacíos (ningún archivo elegido).
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function normalizarMultiples(mixed $entrada): array
+    {
+        if (!is_array($entrada) || !isset($entrada['name']) || !is_array($entrada['name'])) {
+            return [];
+        }
+
+        $archivos = [];
+        foreach (array_keys($entrada['name']) as $i) {
+            if (($entrada['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+
+            $archivos[] = [
+                'name'     => (string) $entrada['name'][$i],
+                'type'     => (string) ($entrada['type'][$i] ?? ''),
+                'tmp_name' => (string) ($entrada['tmp_name'][$i] ?? ''),
+                'error'    => (int) $entrada['error'][$i],
+                'size'     => (int) ($entrada['size'][$i] ?? 0),
+            ];
+        }
+
+        return $archivos;
+    }
+
+    /** El nombre lo elige quien sube el archivo: se recorta antes de mostrarlo en un mensaje. */
+    public static function nombreParaMostrar(string $nombre): string
+    {
+        $nombre = basename(str_replace('\\', '/', $nombre));
+
+        return mb_strlen($nombre) > 40 ? mb_substr($nombre, 0, 37) . '…' : $nombre;
+    }
+
     public static function eliminar(string $carpeta, ?string $nombreArchivo): void
     {
         if ($nombreArchivo === null || $nombreArchivo === '') {

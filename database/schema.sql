@@ -153,6 +153,23 @@ CREATE TABLE galeria (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
+-- 9b. portada_imagenes — fotos del fondo automático de la portada
+--     (hero). Deliberadamente SEPARADA de `galeria`: son cosas
+--     distintas (la galería es contenido para mirar, esto es un fondo
+--     decorativo), se administran en pantallas distintas y borrar una
+--     foto de un lado nunca afecta al otro. Solo se guarda el nombre de
+--     archivo (aleatorio) dentro de public/uploads/portada/.
+-- ---------------------------------------------------------------------
+CREATE TABLE portada_imagenes (
+  id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  imagen        VARCHAR(255) NOT NULL,
+  orden         SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  creado_en     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_portada_imagen (imagen),
+  INDEX idx_portada_orden (orden)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
 -- 10. promociones
 -- ---------------------------------------------------------------------
 CREATE TABLE promociones (
@@ -440,7 +457,6 @@ INSERT INTO configuracion_sistema (clave, valor, descripcion) VALUES
   ('facebook_url', '', 'Enlace a la página de Facebook — pendiente de proporcionar'),
   ('frase_hero', '', 'Frase corta de bienvenida en la portada — pendiente de redactar/aprobar'),
   ('descripcion_corta', '', 'Descripción breve de la cafetería en la portada — pendiente de redactar/aprobar'),
-  ('hero_imagen', '', 'Nombre de archivo de la foto de portada — pendiente de que el negocio la proporcione'),
   ('lealtad_dias_vencimiento_recompensa', '90', 'Días que dura disponible una recompensa generada antes de vencer. Vacío o 0 = no vence.');
 
 -- Horario semanal: se crean las 7 filas marcadas como "cerrado/sin

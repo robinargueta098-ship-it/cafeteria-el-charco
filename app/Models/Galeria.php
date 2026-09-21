@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Core\Database;
+use App\Core\OrdenLista;
 
 class Galeria
 {
@@ -59,59 +60,18 @@ class Galeria
     /** Posición para una foto nueva: al final de la galería. */
     public function siguienteOrden(): int
     {
-        return (int) Database::conexion()->query('SELECT COALESCE(MAX(orden), 0) + 1 FROM galeria')->fetchColumn();
+        return OrdenLista::siguiente('galeria');
     }
 
     /**
-     * Intercambia la foto con su vecina ('subir' o 'bajar').
-     *
-     * Antes de intercambiar, renumera TODAS las fotos como 1..n según su
-     * orden actual: así funciona aunque haya empates o huecos en `orden`
-     * (ej. fotos viejas que quedaron todas en 0), en vez de "intercambiar"
-     * dos números iguales y no lograr nada. Todo dentro de una transacción
-     * con las filas bloqueadas, para que dos clics simultáneos no se pisen.
+     * Intercambia la foto con su vecina ('subir' o 'bajar'); la regla
+     * (renumerar 1..n en transacción con filas bloqueadas) es compartida
+     * con la portada, ver App\Core\OrdenLista.
      *
      * @return array{resultado:string,desde?:int,hasta?:int} resultado: 'movida' | 'extremo' | 'no_existe'
      */
     public function mover(int $id, string $direccion): array
     {
-        $pdo = Database::conexion();
-
-        try {
-            $pdo->beginTransaction();
-
-            $ids = array_map(
-                'intval',
-                $pdo->query('SELECT id FROM galeria ORDER BY orden ASC, id ASC FOR UPDATE')->fetchAll(\PDO::FETCH_COLUMN)
-            );
-
-            $posicion = array_search($id, $ids, true);
-            if ($posicion === false) {
-                $pdo->rollBack();
-                return ['resultado' => 'no_existe'];
-            }
-
-            $destino = $direccion === 'subir' ? $posicion - 1 : $posicion + 1;
-            if ($destino < 0 || $destino >= count($ids)) {
-                $pdo->rollBack();
-                return ['resultado' => 'extremo'];
-            }
-
-            [$ids[$posicion], $ids[$destino]] = [$ids[$destino], $ids[$posicion]];
-
-            $stmt = $pdo->prepare('UPDATE galeria SET orden = :orden WHERE id = :id');
-            foreach ($ids as $indice => $idFoto) {
-                $stmt->execute(['orden' => $indice + 1, 'id' => $idFoto]);
-            }
-
-            $pdo->commit();
-
-            return ['resultado' => 'movida', 'desde' => $posicion + 1, 'hasta' => $destino + 1];
-        } catch (\Throwable $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            throw $e;
-        }
+        return OrdenLista::mover('galeria', $id, $direccion);
     }
 }

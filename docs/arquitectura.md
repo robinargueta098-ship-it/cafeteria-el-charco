@@ -156,9 +156,10 @@ falta.
 
 Config nueva que no estaba en la Fase 2/3 (agregada directo a
 `configuracion_sistema`, seguimos antes del lanzamiento): `frase_hero`,
-`descripcion_corta`, `hero_imagen`, `facebook_url` — todas editables
-desde `/admin/configuracion`, `logo` y `hero_imagen` ahora se suben
-como archivo (antes solo existían como texto).
+`descripcion_corta`, `facebook_url` — todas editables desde
+`/admin/configuracion`; `logo` se sube como archivo (antes solo existía
+como texto). (`hero_imagen` existió un tiempo y se reemplazó por la
+tabla `portada_imagenes`, ver §4.6.)
 
 Dos decisiones de la Fase 7 documentadas para quien revise el código
 después:
@@ -444,11 +445,42 @@ nombre original, en `public/uploads/galeria/`.
 
 ### 4.6 Fondo automático del hero
 
-Las primeras 6 fotos activas de la galería, en el orden del panel, se
-funden entre sí cada 5 s como fondo de la portada. Solo decorativo: sin
-flechas ni puntos, `aria-hidden`, y el texto, los botones y el overlay
-no se tocan (verificado contra la versión anterior). La sección Galería
-sigue siendo el carrusel manual, sin cambios.
+Las imágenes de la tabla **`portada_imagenes`**, en el orden del panel,
+se funden entre sí cada 5 s como fondo de la portada. Solo decorativo:
+sin flechas ni puntos, `aria-hidden`, y el texto, los botones y el
+overlay no se tocan (verificado contra la versión anterior). La sección
+Galería sigue siendo el carrusel manual, sin cambios.
+
+**Administración** (`/admin/configuracion`, tarjeta "Imágenes de
+portada", solo rol Administrador): subir varias a la vez, reordenar con
+▲▼ y eliminar. Cada acción es un POST propio que se aplica al instante
+y regresa a la misma tarjeta (no depende del botón "Guardar
+configuración"; por eso va en una tarjeta aparte: HTML no permite
+formularios anidados). `PortadaController` + `PortadaImagen`.
+
+- **Tabla y carpeta propias, separadas de la Galería**:
+  `portada_imagenes` (`id`, `imagen`, `orden`, `creado_en`; `imagen` es
+  único) y `public/uploads/portada/`. Borrar una foto de un lado nunca
+  toca la del otro (probado: con toda la galería desactivada el hero
+  sigue con sus imágenes). Se guarda solo el nombre de archivo aleatorio.
+  Se llama `imagen` (no `ruta_imagen`) por coherencia con `galeria` y
+  `productos`.
+- **Validación** igual que en la galería (comparten `SubidaArchivo`):
+  extensión permitida, tipo MIME real con `finfo`, `getimagesize()`,
+  ≤ 5 MB. Un archivo inválido no bloquea a los demás y el mensaje dice
+  cuál falló y por qué. Tope de **8 imágenes** en total
+  (`PortadaController::MAX_IMAGENES`) y 10 por envío: el hero descarga
+  cada imagen durante su ciclo, así que un número ilimitado terminaría
+  pesando en la página. Un envío que excede el cupo restante se rechaza
+  completo con un mensaje claro.
+- **Orden y borrado**: la regla de orden (renumerar 1..n en una
+  transacción con filas bloqueadas) es compartida con la galería en
+  `App\Core\OrdenLista`, con lista blanca de tablas (un nombre de tabla
+  no se puede parametrizar en SQL). Eliminar borra la fila, el archivo y
+  sus versiones WebP. Todo queda en la bitácora de auditoría.
+- **Configuración obsoleta**: la clave `hero_imagen` (una sola foto) se
+  eliminó de `configuracion_sistema`, del formulario y de `schema.sql`.
+  El archivo antiguo (`uploads/sitio/`, 246×497 px) no se borró.
 
 - **Fundido sin parpadeo**: la opacidad 0.55 (la de la foto fija de
   antes) va en el contenedor y las fotos son opacas; la nueva entra
@@ -465,9 +497,12 @@ sigue siendo el carrusel manual, sin cambios.
   hero fuera de pantalla; no se mueve (ni descarga las demás) con
   `prefers-reduced-motion` ni con modo ahorro de datos / conexión 2G;
   sin JavaScript se ve la primera foto fija.
-- **Respaldos**: sin versiones optimizadas usa los originales; con la
-  galería vacía usa la "foto de portada" de Configuración como fondo
-  fijo; si tampoco hay, el marcador `[PENDIENTE: fotografía de portada]`.
+- **Respaldos**: sin versiones optimizadas usa los originales; con una
+  sola imagen el fondo queda fijo (sin carrusel; el panel lo avisa); sin
+  ninguna, el marcador `[PENDIENTE: fotografía de portada]`.
+- **Limitación conocida del panel**: la barra lateral es de ancho fijo,
+  así que ninguna pantalla del panel (esta incluida) es cómoda en un
+  celular; se usa desde computadora o tableta.
 
 ---
 

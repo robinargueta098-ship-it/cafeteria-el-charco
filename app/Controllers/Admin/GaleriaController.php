@@ -45,7 +45,7 @@ class GaleriaController extends Controller
     {
         $this->requerirRol(1);
 
-        $archivos = $this->normalizarArchivos($_FILES['imagenes'] ?? null);
+        $archivos = SubidaArchivo::normalizarMultiples($_FILES['imagenes'] ?? null);
 
         if ($archivos === []) {
             $this->vistaSubir(['Selecciona al menos una foto para subir.']);
@@ -65,7 +65,7 @@ class GaleriaController extends Controller
             $resultado = SubidaArchivo::guardarImagen($archivo, UPLOADS_PATH . '/galeria', true);
 
             if (!$resultado['ok']) {
-                $fallidas[] = $this->nombreParaMostrar($archivo['name']) . ' (' . rtrim($resultado['error'], '.') . ')';
+                $fallidas[] = SubidaArchivo::nombreParaMostrar($archivo['name']) . ' (' . rtrim($resultado['error'], '.') . ')';
                 continue;
             }
 
@@ -216,46 +216,6 @@ class GaleriaController extends Controller
             'maxBytes'      => SubidaArchivo::TAMANO_MAXIMO_BYTES,
             'optimiza'      => ImagenOptimizada::disponible(),
         ]);
-    }
-
-    /**
-     * PHP entrega varios archivos como name[]/tmp_name[]/... (un array
-     * de columnas). Lo convierte en una lista de archivos individuales
-     * con la misma forma que un $_FILES de un solo archivo, y descarta
-     * los campos vacíos (ningún archivo elegido).
-     *
-     * @return array<int,array<string,mixed>>
-     */
-    private function normalizarArchivos(mixed $entrada): array
-    {
-        if (!is_array($entrada) || !isset($entrada['name']) || !is_array($entrada['name'])) {
-            return [];
-        }
-
-        $archivos = [];
-        foreach (array_keys($entrada['name']) as $i) {
-            if (($entrada['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
-                continue;
-            }
-
-            $archivos[] = [
-                'name'     => (string) $entrada['name'][$i],
-                'type'     => (string) ($entrada['type'][$i] ?? ''),
-                'tmp_name' => (string) ($entrada['tmp_name'][$i] ?? ''),
-                'error'    => (int) $entrada['error'][$i],
-                'size'     => (int) ($entrada['size'][$i] ?? 0),
-            ];
-        }
-
-        return $archivos;
-    }
-
-    /** El nombre lo elige quien sube el archivo: se recorta antes de mostrarlo en un mensaje. */
-    private function nombreParaMostrar(string $nombre): string
-    {
-        $nombre = basename(str_replace('\\', '/', $nombre));
-
-        return mb_strlen($nombre) > 40 ? mb_substr($nombre, 0, 37) . '…' : $nombre;
     }
 
     /** @return array<string,mixed> */

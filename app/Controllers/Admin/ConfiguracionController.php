@@ -6,34 +6,61 @@ namespace App\Controllers\Admin;
 
 use App\Core\Controller;
 use App\Core\Flash;
+use App\Core\ImagenOptimizada;
 use App\Core\SubidaArchivo;
 use App\Core\Validator;
 use App\Models\Configuracion;
 use App\Models\HorarioAtencion;
+use App\Models\PortadaImagen;
 use App\Services\AuditoriaService;
 
 class ConfiguracionController extends Controller
 {
     /** Claves editables desde este formulario (evita que alguien inyecte una clave nueva arbitraria). */
     private const CLAVES_EDITABLES = [
-        'nombre_sitio', 'logo', 'direccion_texto', 'frase_hero', 'descripcion_corta', 'hero_imagen',
+        'nombre_sitio', 'logo', 'direccion_texto', 'frase_hero', 'descripcion_corta',
         'whatsapp_numero', 'instagram_usuario', 'facebook_nombre', 'facebook_url',
         'umbral_lealtad', 'google_maps_embed', 'google_calificacion',
         'google_calificacion_url', 'sobre_nosotros_texto',
     ];
 
-    /** Estas dos se suben como archivo, no se escriben a mano — se manejan aparte del resto. */
-    private const CLAVES_ARCHIVO = ['logo', 'hero_imagen'];
+    /**
+     * Se sube como archivo, no se escribe a mano — se maneja aparte del resto.
+     * (Las imágenes del fondo de la portada YA NO están aquí: viven en su
+     * propia tabla y las administra PortadaController.)
+     */
+    private const CLAVES_ARCHIVO = ['logo'];
 
     public function mostrar(): void
     {
         $this->requerirRol(1);
 
+        $this->vistaFormulario((new Configuracion())->obtenerTodas(), []);
+    }
+
+    /**
+     * Pantalla de Configuración: el formulario grande de ajustes + la
+     * tarjeta aparte de "Imágenes de portada" (que necesita sus propios
+     * formularios, y HTML no permite formularios anidados).
+     *
+     * @param array<string,string> $config
+     * @param array<int,string> $errores
+     */
+    private function vistaFormulario(array $config, array $errores): void
+    {
+        $portada = new PortadaImagen();
+        $cupo = PortadaController::MAX_IMAGENES - $portada->contar();
+
         $this->vista('admin/configuracion/formulario', [
-            'seccionActiva' => 'configuracion',
-            'config'        => (new Configuracion())->obtenerTodas(),
-            'horarios'      => (new HorarioAtencion())->listarTodos(),
-            'errores'       => [],
+            'seccionActiva'   => 'configuracion',
+            'config'          => $config,
+            'horarios'        => (new HorarioAtencion())->listarTodos(),
+            'errores'         => $errores,
+            'portada'         => $portada->listar(),
+            'portadaMax'      => PortadaController::MAX_IMAGENES,
+            'portadaLote'     => max(0, min(PortadaController::MAX_ARCHIVOS_POR_LOTE, $cupo)),
+            'portadaMaxBytes' => SubidaArchivo::TAMANO_MAXIMO_BYTES,
+            'optimiza'        => ImagenOptimizada::disponible(),
         ]);
     }
 
@@ -55,12 +82,7 @@ class ConfiguracionController extends Controller
         $errores = $this->validar($datos);
 
         if ($errores !== []) {
-            $this->vista('admin/configuracion/formulario', [
-                'seccionActiva' => 'configuracion',
-                'config'        => $datos + array_intersect_key($configActual, array_flip(self::CLAVES_ARCHIVO)),
-                'horarios'      => (new HorarioAtencion())->listarTodos(),
-                'errores'       => $errores,
-            ]);
+            $this->vistaFormulario($datos + array_intersect_key($configActual, array_flip(self::CLAVES_ARCHIVO)), $errores);
             return;
         }
 
@@ -78,12 +100,7 @@ class ConfiguracionController extends Controller
         }
 
         if ($errores !== []) {
-            $this->vista('admin/configuracion/formulario', [
-                'seccionActiva' => 'configuracion',
-                'config'        => $configActual,
-                'horarios'      => (new HorarioAtencion())->listarTodos(),
-                'errores'       => $errores,
-            ]);
+            $this->vistaFormulario($configActual, $errores);
             return;
         }
 
