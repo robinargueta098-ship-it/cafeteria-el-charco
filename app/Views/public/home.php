@@ -17,6 +17,7 @@
  * @var array<int,array<string,mixed>> $promociones
  * @var int $umbralLealtad
  */
+use App\Core\ImagenOptimizada;
 use App\Core\Vista;
 use App\Core\WhatsApp;
 
@@ -27,6 +28,23 @@ $frase = $config['frase_hero'] ?? '';
 $descripcionCorta = $config['descripcion_corta'] ?? '';
 $heroImagen = $config['hero_imagen'] ?? '';
 $whatsappNumero = $config['whatsapp_numero'] ?? '';
+
+/**
+ * Fondo del hero: las primeras fotos activas de la galería (máx. 6),
+ * en el orden que se les dio en el panel. Si la galería está vacía se
+ * usa la "foto de portada" de Configuración como única imagen (fondo
+ * fijo, sin carrusel); si tampoco hay, se muestra el marcador de
+ * "pendiente". Cada foto usa sus versiones WebP reducidas cuando existen.
+ *
+ * @var array<int,array{src:string,srcset:string}> $diapositivasHero
+ */
+$diapositivasHero = [];
+foreach (array_slice($galeria, 0, 6) as $fotoHero) {
+    $diapositivasHero[] = ImagenOptimizada::atributos(UPLOADS_PATH . '/galeria', UPLOADS_URL . '/galeria', $fotoHero['imagen']);
+}
+if ($diapositivasHero === [] && $heroImagen !== '') {
+    $diapositivasHero[] = ['src' => UPLOADS_URL . '/sitio/' . $heroImagen, 'srcset' => ''];
+}
 
 /**
  * Tarjeta de producto reutilizada en Más vendidos / Destacados /
@@ -62,12 +80,32 @@ $tarjetaProducto = function (array $p) {
 
 <!-- ===================== HERO / INICIO ===================== -->
 <section class="hero" id="inicio">
-    <?php if ($heroImagen !== ''): ?>
-        <img class="hero-imagen-fondo" src="<?= UPLOADS_URL ?>/sitio/<?= htmlspecialchars($heroImagen, ENT_QUOTES, 'UTF-8') ?>" alt="" loading="eager">
+    <?php if ($diapositivasHero !== []): ?>
+        <?php /*
+            Fondo decorativo y automático (sin flechas ni puntos): sitio.js hace
+            el fundido entre fotos. La primera carga con prioridad alta; las
+            demás NO traen src: sitio.js las carga una por una DESPUÉS de que la
+            página terminó de cargar, así no compiten con el contenido. Sin
+            JavaScript simplemente se ve la primera foto fija.
+        */ ?>
+        <div class="hero-fondo" aria-hidden="true" data-hero-fondo>
+            <?php foreach ($diapositivasHero as $i => $d): ?>
+                <?php if ($i === 0): ?>
+                    <img class="hero-slide activo" alt="" sizes="(max-width: 767px) 65vw, 100vw" decoding="async" fetchpriority="high"
+                         src="<?= htmlspecialchars($d['src'], ENT_QUOTES, 'UTF-8') ?>"
+                         <?php if ($d['srcset'] !== ''): ?>srcset="<?= htmlspecialchars($d['srcset'], ENT_QUOTES, 'UTF-8') ?>"<?php endif; ?>>
+                <?php else: ?>
+                    <img class="hero-slide" alt="" sizes="(max-width: 767px) 65vw, 100vw" decoding="async"
+                         src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+                         data-src="<?= htmlspecialchars($d['src'], ENT_QUOTES, 'UTF-8') ?>"
+                         <?php if ($d['srcset'] !== ''): ?>data-srcset="<?= htmlspecialchars($d['srcset'], ENT_QUOTES, 'UTF-8') ?>"<?php endif; ?>>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </div>
     <?php endif; ?>
     <div class="hero-overlay"></div>
     <div class="hero-contenido">
-        <?php if ($heroImagen === ''): ?>
+        <?php if ($diapositivasHero === []): ?>
             <div class="hero-marcador"><?= Vista::pendiente('fotografía de portada') ?></div>
         <?php endif; ?>
         <h1><?= htmlspecialchars($nombreSitio, ENT_QUOTES, 'UTF-8') ?></h1>

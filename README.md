@@ -123,6 +123,12 @@ hasta que así se indique explícitamente.
       teléfono, uso único con fecha, y trigger opcional
       (`database/opcional_trigger_recompensas.sql`). 31 pruebas + carrera
       de 6 procesos: ver docs/arquitectura.md §4.2b.
+- [x] Hero con fondo automático: las fotos de la galería se funden cada
+      5 s detrás del título y los botones (sin controles; el texto y el
+      overlay no cambiaron y la Galería sigue igual). Imágenes WebP
+      reducidas, la primera con prioridad alta y las demás cargadas
+      después del `load`. Ver docs/arquitectura.md §4.5-4.6. Para las
+      fotos ya subidas: `php -d extension=gd bin/optimizar_imagenes.php`.
 - [ ] Resto de fases (diseño visual/pulido, despliegue): ver el
       plan en docs/arquitectura.md §9
 

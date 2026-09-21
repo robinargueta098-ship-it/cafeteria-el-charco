@@ -175,13 +175,49 @@ img {
   overflow: hidden;
 }
 
-.hero-imagen-fondo {
+/*
+ * Fondo con fotos que se funden entre sí. La opacidad de 0.55 (la misma
+ * que tenía la foto fija de antes) va en el CONTENEDOR y las fotos son
+ * opacas: así, mientras una entra y otra sale, el brillo total no baja.
+ * Si cada foto tuviera 0.55 por su cuenta, a mitad del fundido se vería
+ * un parpadeo oscuro (las dos semitransparentes dejan pasar el fondo).
+ *
+ * La foto nueva se coloca ENCIMA (.activo) y la anterior (.saliente) se
+ * queda debajo, totalmente opaca, hasta que la nueva termina de aparecer.
+ */
+.hero-fondo {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55;
+  overflow: hidden;
+}
+
+.hero-slide {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.55;
+  opacity: 0;
+  z-index: 0;
+  transition: opacity 1.7s ease-in-out;
+}
+
+.hero-slide.activo {
+  opacity: 1;
+  z-index: 2;
+}
+
+.hero-slide.saliente {
+  opacity: 1;
+  z-index: 1;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide {
+    transition: none;
+  }
 }
 
 .hero-overlay {

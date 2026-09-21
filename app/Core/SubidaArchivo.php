@@ -26,9 +26,11 @@ class SubidaArchivo
 
     /**
      * @param array $archivo una entrada de $_FILES (ej. $_FILES['imagen'])
+     * @param bool $generarVersiones si es true y el servidor tiene GD, además crea versiones
+     *             WebP reducidas (ver ImagenOptimizada) para servirlas según el tamaño de pantalla
      * @return array{ok:bool,error?:string,nombre?:string} nombre = nombre de archivo ya guardado en $carpetaDestino
      */
-    public static function guardarImagen(array $archivo, string $carpetaDestino): array
+    public static function guardarImagen(array $archivo, string $carpetaDestino, bool $generarVersiones = false): array
     {
         if (($archivo['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
             return ['ok' => false, 'error' => 'No se seleccionó ningún archivo.'];
@@ -77,6 +79,11 @@ class SubidaArchivo
             return ['ok' => false, 'error' => 'No se pudo guardar la imagen.'];
         }
 
+        if ($generarVersiones) {
+            // Nunca lanza ni hace fallar la subida: sin versiones se usa el original.
+            ImagenOptimizada::generar($rutaDestino);
+        }
+
         return ['ok' => true, 'nombre' => $nombreGuardado];
     }
 
@@ -87,10 +94,14 @@ class SubidaArchivo
         }
 
         // basename() evita que un nombre con "../" salga de la carpeta.
-        $ruta = rtrim($carpeta, '/\\') . DIRECTORY_SEPARATOR . basename($nombreArchivo);
+        $nombreArchivo = basename($nombreArchivo);
+        $ruta = rtrim($carpeta, '/\\') . DIRECTORY_SEPARATOR . $nombreArchivo;
 
         if (is_file($ruta)) {
             @unlink($ruta);
         }
+
+        // Si la foto tenía versiones optimizadas, se van con ella.
+        ImagenOptimizada::eliminarVersiones($carpeta, $nombreArchivo);
     }
 }

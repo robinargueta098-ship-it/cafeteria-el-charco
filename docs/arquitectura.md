@@ -428,12 +428,46 @@ nombre original, en `public/uploads/galeria/`.
   móvil, 2 en tablet, 3 en escritorio; con pocas fotos se centran y
   desaparecen flechas/puntos. Recalcula con `ResizeObserver` (rotar el
   teléfono, cambiar el zoom).
-- **Límite conocido**: las fotos se guardan tal cual se suben (hasta
-  5 MB). La extensión GD de PHP no está activada en el XAMPP local
-  (sí suele estarlo en Hostinger), así que no se redimensionan ni
-  comprimen automáticamente todavía; con fotos de teléfono de varios MB
-  el carrusel cargará más lento en datos móviles. Mejora futura:
-  generar versiones reducidas al subir cuando GD esté disponible.
+- **Optimización de imágenes** (`App\Core\ImagenOptimizada`): al
+  subir una foto a la galería, si el servidor tiene GD, se generan
+  versiones WebP reducidas junto al original
+  (`{nombre}-w640.webp`, `-w1280`, `-w1600`; nunca se amplía: una foto de
+  1200 px produce 640 y 1200). Se descubren con un `glob`, sin tabla
+  extra, y se borran junto con la foto. Aplica la orientación EXIF
+  (las fotos de teléfono "de lado") antes de reducir. Nunca lanza: sin
+  GD, con una foto corrupta o de más de 25 megapíxeles simplemente no
+  hay versiones y se usa el original. Las fotos ya existentes se
+  procesan con `php -d extension=gd bin/optimizar_imagenes.php`
+  (`--forzar` regenera todas). El panel avisa cuando el servidor no
+  tiene GD (el XAMPP local no lo trae activo en Apache; Hostinger
+  normalmente sí).
+
+### 4.6 Fondo automático del hero
+
+Las primeras 6 fotos activas de la galería, en el orden del panel, se
+funden entre sí cada 5 s como fondo de la portada. Solo decorativo: sin
+flechas ni puntos, `aria-hidden`, y el texto, los botones y el overlay
+no se tocan (verificado contra la versión anterior). La sección Galería
+sigue siendo el carrusel manual, sin cambios.
+
+- **Fundido sin parpadeo**: la opacidad 0.55 (la de la foto fija de
+  antes) va en el contenedor y las fotos son opacas; la nueva entra
+  encima mientras la anterior espera debajo. Con dos fotos
+  semitransparentes, a mitad del fundido se vería un bajón oscuro.
+- **Carga**: solo la primera foto viene en el HTML (`fetchpriority=high`,
+  WebP de ~50–115 KB); las demás no traen `src` y `sitio.js` las baja de
+  a una, DESPUÉS del evento `load`, y solo muestra la siguiente cuando ya
+  llegó. Medido: al cargar la página se descarga 1 foto; en todo el ciclo
+  ~550 KB frente a ~1 235 KB de los originales. `srcset` + `sizes` eligen
+  la versión según la pantalla; en teléfonos (`max-width: 767px`) se pide
+  la de 640 px (23–46 KB) porque es un fondo tenue bajo un overlay oscuro.
+- **Cuida batería y datos**: se pausa con la pestaña oculta y con el
+  hero fuera de pantalla; no se mueve (ni descarga las demás) con
+  `prefers-reduced-motion` ni con modo ahorro de datos / conexión 2G;
+  sin JavaScript se ve la primera foto fija.
+- **Respaldos**: sin versiones optimizadas usa los originales; con la
+  galería vacía usa la "foto de portada" de Configuración como fondo
+  fijo; si tampoco hay, el marcador `[PENDIENTE: fotografía de portada]`.
 
 ---
 

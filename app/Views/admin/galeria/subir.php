@@ -3,6 +3,7 @@
  * @var array<int,string> $errores
  * @var int $maxArchivos
  * @var int $maxBytes
+ * @var bool $optimiza si el servidor tiene GD para crear versiones reducidas
  */
 use App\Core\Csrf;
 
@@ -14,6 +15,14 @@ $maxMb = (int) round($maxBytes / 1024 / 1024);
 <h1>Subir fotos</h1>
 
 <div class="tarjeta" style="max-width:640px;">
+    <?php if (!$optimiza): ?>
+        <div class="alerta alerta-error" style="background:#fdf1cf;color:#7a5b00;border-color:#d9b84a;">
+            Este servidor no tiene la extensión GD de PHP, así que las fotos se guardan tal cual, sin las
+            versiones reducidas que aceleran el sitio en el celular. Sigue funcionando, solo que más pesado.
+            (En Hostinger normalmente está activa.)
+        </div>
+    <?php endif; ?>
+
     <?php if ($errores !== []): ?>
         <div class="alerta alerta-error">
             <ul style="margin:0;padding-left:20px;">

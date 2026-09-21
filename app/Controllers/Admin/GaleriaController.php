@@ -6,6 +6,7 @@ namespace App\Controllers\Admin;
 
 use App\Core\Controller;
 use App\Core\Flash;
+use App\Core\ImagenOptimizada;
 use App\Core\SubidaArchivo;
 use App\Core\Validator;
 use App\Models\Galeria;
@@ -61,7 +62,7 @@ class GaleriaController extends Controller
         $fallidas = [];
 
         foreach ($archivos as $archivo) {
-            $resultado = SubidaArchivo::guardarImagen($archivo, UPLOADS_PATH . '/galeria');
+            $resultado = SubidaArchivo::guardarImagen($archivo, UPLOADS_PATH . '/galeria', true);
 
             if (!$resultado['ok']) {
                 $fallidas[] = $this->nombreParaMostrar($archivo['name']) . ' (' . rtrim($resultado['error'], '.') . ')';
@@ -153,7 +154,7 @@ class GaleriaController extends Controller
         $imagenNueva = null;
 
         if (($_FILES['imagen']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
-            $subida = SubidaArchivo::guardarImagen($_FILES['imagen'], UPLOADS_PATH . '/galeria');
+            $subida = SubidaArchivo::guardarImagen($_FILES['imagen'], UPLOADS_PATH . '/galeria', true);
             if (!$subida['ok']) {
                 $datos['id'] = $id;
                 $datos['imagen'] = $existente['imagen'];
@@ -213,6 +214,7 @@ class GaleriaController extends Controller
             'errores'       => $errores,
             'maxArchivos'   => self::MAX_ARCHIVOS_POR_LOTE,
             'maxBytes'      => SubidaArchivo::TAMANO_MAXIMO_BYTES,
+            'optimiza'      => ImagenOptimizada::disponible(),
         ]);
     }
 

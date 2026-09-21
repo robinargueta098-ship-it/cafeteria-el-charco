@@ -6,8 +6,121 @@
  */
 document.addEventListener('DOMContentLoaded', function () {
   inicializarMenuMovil();
+  inicializarHeroFondo();
   document.querySelectorAll('[data-carrusel]').forEach(inicializarCarrusel);
 });
+
+/**
+ * Fondo automático del hero (sin controles): funde una foto con la
+ * siguiente cada 5 s. Cuida el rendimiento:
+ *  - solo la primera foto viene en el HTML; las demás se cargan de a una,
+ *    DESPUÉS de que la página terminó de cargar, y nunca se muestra una
+ *    que aún no llegó (si la red es lenta, simplemente espera);
+ *  - no se mueve si el usuario pidió "reducir movimiento" ni en modo
+ *    ahorro de datos / conexión 2G (se queda la primera foto fija, y ni
+ *    siquiera se descargan las demás);
+ *  - se pausa cuando el hero no está en pantalla o la pestaña está oculta.
+ */
+function inicializarHeroFondo() {
+  var fondo = document.querySelector('[data-hero-fondo]');
+  if (!fondo) {
+    return;
+  }
+
+  var slides = Array.prototype.slice.call(fondo.querySelectorAll('.hero-slide'));
+  if (slides.length < 2) {
+    return;
+  }
+
+  var conexion = navigator.connection || {};
+  var ahorroDeDatos = conexion.saveData === true || /(^|-)2g$/.test(conexion.effectiveType || '');
+  var reducirMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (ahorroDeDatos || reducirMovimiento) {
+    return;
+  }
+
+  var INTERVALO_MS = 5000;
+  var FUNDIDO_MS = 1700; // igual que la transición de .hero-slide en sitio.css
+
+  var actual = 0;
+  var enTransicion = false;
+  var esperandoCarga = false;
+  var visible = true;
+
+  slides[0].setAttribute('data-cargada', '1');
+
+  function cargar(indice, alTerminar) {
+    var img = slides[indice];
+
+    if (img.getAttribute('data-cargada') === '1') {
+      alTerminar(true);
+      return;
+    }
+
+    img.addEventListener('load', function () {
+      img.setAttribute('data-cargada', '1');
+      alTerminar(true);
+    }, { once: true });
+    img.addEventListener('error', function () { alTerminar(false); }, { once: true });
+
+    // srcset antes que src: así el navegador elige la versión adecuada al tamaño de pantalla.
+    var srcset = img.getAttribute('data-srcset');
+    if (srcset) {
+      img.srcset = srcset;
+    }
+    img.src = img.getAttribute('data-src');
+  }
+
+  function mostrar(indice) {
+    var anterior = slides[actual];
+
+    slides[indice].classList.add('activo');
+    anterior.classList.remove('activo');
+    anterior.classList.add('saliente'); // se queda debajo, opaca, mientras entra la nueva
+
+    actual = indice;
+    enTransicion = true;
+
+    window.setTimeout(function () {
+      anterior.classList.remove('saliente');
+      enTransicion = false;
+    }, FUNDIDO_MS + 100);
+  }
+
+  function siguiente() {
+    if (enTransicion || esperandoCarga || !visible || document.hidden) {
+      return;
+    }
+
+    var indice = (actual + 1) % slides.length;
+    esperandoCarga = true;
+
+    cargar(indice, function (ok) {
+      esperandoCarga = false;
+      if (ok && !enTransicion && indice !== actual) {
+        mostrar(indice);
+      }
+    });
+  }
+
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (entradas) {
+      visible = entradas[0].isIntersecting;
+    }).observe(fondo.parentNode);
+  }
+
+  function empezar() {
+    // Adelanta la 2.ª foto para que esté lista al primer cambio, sin competir con la carga inicial.
+    cargar(1, function () {});
+    window.setInterval(siguiente, INTERVALO_MS);
+  }
+
+  if (document.readyState === 'complete') {
+    window.setTimeout(empezar, 800);
+  } else {
+    window.addEventListener('load', function () { window.setTimeout(empezar, 800); });
+  }
+}
 
 function inicializarMenuMovil() {
   var boton = document.querySelector('.sitio-nav-boton-menu');
