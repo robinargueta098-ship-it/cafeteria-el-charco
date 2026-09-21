@@ -534,6 +534,29 @@ elementos en 28 pantallas antes y después → 0 diferencias.
 - **Corrección incidental**: crear un producto sin foto daba error 500
   (`imagen` no llegaba al modelo); ahora se guarda como NULL.
 
+### 4.8 Sesión vencida: adiós al callejón sin salida del 403
+
+**Síntoma**: tras iniciar o cerrar sesión el panel "se trababa" y F5 no
+ayudaba. **Causa**: un POST con token CSRF inválido mostraba un 403 cuyo
+único enlace llevaba al sitio público; F5 sobre esa página reenvía el mismo
+POST, que vuelve a fallar. El token queda inválido cuando la sesión vence
+(los archivos de sesión de XAMPP se borraban a los 24 min de inactividad, en
+una carpeta compartida con otras aplicaciones PHP y con la cookie genérica
+`PHPSESSID`) o cuando una pantalla vieja sobrevive a un cierre de sesión.
+
+- `CsrfMiddleware`: en `/admin/*` un token inválido ya no muestra 403; el POST
+  **no se ejecuta** y se redirige con un aviso ("Tu sesión expiró…" al login,
+  o "La página estaba desactualizada…" al panel si sigue con sesión).
+- `Session`: cookie propia `ELCHARCO_SESION`, carpeta `storage/sessions`
+  (fuera del webroot, ignorada por git), vida de 8 h y `use_strict_mode`.
+- `Auth`: el token CSRF se rota al iniciar sesión; `verificado()` comprueba
+  en cada petición que el usuario siga existiendo y activo (antes una sesión
+  abierta seguía valiendo tras desactivar o borrar a la persona) y toma el
+  rol de la base.
+- Páginas 403/404 dentro de `/admin` ofrecen "Volver al panel".
+- Consecuencia única: las sesiones abiertas antes de este cambio se cierran
+  una vez (cookie nueva).
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)

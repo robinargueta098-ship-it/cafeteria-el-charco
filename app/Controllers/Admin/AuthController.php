@@ -6,6 +6,7 @@ namespace App\Controllers\Admin;
 
 use App\Core\Auth;
 use App\Core\Controller;
+use App\Core\Flash;
 use App\Core\Validator;
 use App\Middleware\GuestMiddleware;
 use App\Services\AuditoriaService;
@@ -15,7 +16,8 @@ class AuthController extends Controller
     public function mostrarLogin(): void
     {
         GuestMiddleware::manejar();
-        $this->vista('admin/login', ['error' => null]);
+        // Aviso de una sola lectura (ej. "Tu sesión expiró"), puesto por CsrfMiddleware.
+        $this->vista('admin/login', ['error' => Flash::tomar()['mensaje'] ?? null]);
     }
 
     public function iniciarSesion(): void

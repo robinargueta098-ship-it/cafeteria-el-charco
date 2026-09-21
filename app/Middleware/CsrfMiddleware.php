@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Middleware;
 
+use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Flash;
 
 /**
  * Valida el token CSRF en cada POST. Se llama al inicio de toda acción
@@ -31,9 +33,35 @@ class CsrfMiddleware
         $token = $_POST['csrf_token'] ?? null;
 
         if (!Csrf::validar($token)) {
-            http_response_code(403);
-            require APP_PATH . '/Views/errores/403.php';
+            self::tokenInvalido();
+        }
+    }
+
+    /**
+     * Un token inválido casi nunca es un ataque: lo normal es una sesión
+     * vencida por inactividad, o una pantalla vieja que quedó abierta en
+     * otra pestaña después de cerrar sesión. Mostrar un "403" sin salida
+     * dejaba al usuario atrapado (F5 reenvía el mismo POST y vuelve a
+     * fallar). En el panel se redirige con un aviso a una pantalla GET,
+     * que sí carga con un token nuevo; el POST rechazado no se ejecuta.
+     */
+    private static function tokenInvalido(): void
+    {
+        $ruta = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+
+        if ($ruta === '/admin' || str_starts_with($ruta, '/admin/')) {
+            if (Auth::verificado()) {
+                Flash::error('La página estaba desactualizada y no se guardó nada. Vuelve a intentarlo.');
+                header('Location: /admin');
+            } else {
+                Flash::error('Tu sesión expiró. Inicia sesión de nuevo.');
+                header('Location: /admin/login');
+            }
             exit;
         }
+
+        http_response_code(403);
+        require APP_PATH . '/Views/errores/403.php';
+        exit;
     }
 }

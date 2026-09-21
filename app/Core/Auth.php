@@ -63,6 +63,9 @@ class Auth
         }
 
         Session::regenerar();
+        // Token CSRF nuevo para la sesión ya autenticada: el del formulario de
+        // login (anónimo) no debe seguir valiendo dentro del panel.
+        unset($_SESSION['csrf_token']);
         $_SESSION['usuario_id']     = (int) $registro['id'];
         $_SESSION['usuario_nombre'] = $registro['nombre'];
         $_SESSION['usuario_rol']    = (int) $registro['rol_id'];
@@ -72,9 +75,39 @@ class Auth
         return true;
     }
 
+    /**
+     * Hay sesión de panel Y el usuario sigue existiendo y activo. Se consulta
+     * la base una vez por petición: si a alguien lo desactivan o lo borran
+     * mientras tiene la sesión abierta, pierde el acceso de inmediato (antes
+     * seguía entrando hasta que cerrara sesión). El rol también se toma de la
+     * base, así un cambio de rol se aplica sin volver a iniciar sesión.
+     */
     public static function verificado(): bool
     {
-        return !empty($_SESSION['usuario_id']);
+        if (empty($_SESSION['usuario_id'])) {
+            return false;
+        }
+
+        static $revisadoPara = null;
+        if ($revisadoPara === $_SESSION['usuario_id']) {
+            return true;
+        }
+
+        $registro = (new Usuario())->buscarPorId((int) $_SESSION['usuario_id']);
+
+        if (!$registro || !(int) $registro['activo']) {
+            // Sesión huérfana: se descarta y se abre una vacía y limpia para
+            // que la pantalla de login pueda generar su token CSRF.
+            Session::destruir();
+            Session::iniciar();
+            return false;
+        }
+
+        $_SESSION['usuario_nombre'] = $registro['nombre'];
+        $_SESSION['usuario_rol']    = (int) $registro['rol_id'];
+        $revisadoPara = $_SESSION['usuario_id'];
+
+        return true;
     }
 
     /** @return array{id:int,nombre:string,rol_id:int}|null */

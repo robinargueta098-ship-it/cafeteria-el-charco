@@ -11,7 +11,8 @@
     <div class="tarjeta">
         <h1>404 — Página no encontrada</h1>
         <p>La página que buscas no existe o fue movida.</p>
-        <a class="btn" href="/">Volver al inicio</a>
+        <?php $enPanel = str_starts_with((string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH), '/admin'); ?>
+        <a class="btn" href="<?= $enPanel ? '/admin' : '/' ?>"><?= $enPanel ? 'Volver al panel' : 'Volver al inicio' ?></a>
     </div>
 </main>
 </body>

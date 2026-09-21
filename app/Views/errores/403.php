@@ -11,7 +11,8 @@
     <div class="tarjeta">
         <h1>403 — Acceso denegado</h1>
         <p>No tienes permiso para ver esta página.</p>
-        <a class="btn" href="/">Volver al inicio</a>
+        <?php $enPanel = str_starts_with((string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH), '/admin'); ?>
+        <a class="btn" href="<?= $enPanel ? '/admin' : '/' ?>"><?= $enPanel ? 'Volver al panel' : 'Volver al inicio' ?></a>
     </div>
 </main>
 </body>
