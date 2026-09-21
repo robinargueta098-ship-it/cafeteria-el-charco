@@ -58,6 +58,14 @@ $etiquetasEstado = [
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>
+        <?php else: ?>
+            <div class="tarjeta" style="text-align:center;margin-bottom:24px;">
+                <p style="margin:0;">
+                    Todavía no tienes una recompensa disponible. Cuando completes
+                    <?= (int) $umbral ?> cafés (te faltan <?= max(0, $umbral - $saldo) ?>), aquí aparecerá tu
+                    código QR para canjear un café gratis.
+                </p>
+            </div>
         <?php endif; ?>
 
         <h2>Historial de recompensas</h2>
