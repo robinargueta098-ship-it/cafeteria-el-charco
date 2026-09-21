@@ -107,6 +107,15 @@ hasta que así se indique explícitamente.
       (PDO rechazaba parámetros de más al reusar la fila completa en un
       UPDATE). Ver docs/arquitectura.md §4.1-4.4 y §5.1. **Pendiente de
       tu revisión**
+- [x] Galería con carrusel: el sitio público muestra las fotos en un
+      carrusel responsive (deslizable con el dedo, flechas, puntos,
+      avance automático que se detiene al interactuar y respeta
+      "reducir movimiento"); sin librerías. En el panel, subida de
+      **varias fotos a la vez** (cada una validada por tipo real y
+      ≤5 MB, hasta 10 por envío), orden con flechas ▲▼ y eliminación
+      que borra también el archivo. Probado en 360/375/390/414/768/
+      1024/1366/1920 px. Ver docs/arquitectura.md §4.5. **Pendiente
+      de que subas al menos 6 fotos reales** (hoy hay 1).
 - [ ] Resto de fases (diseño visual/pulido, despliegue): ver el
       plan en docs/arquitectura.md §9
 

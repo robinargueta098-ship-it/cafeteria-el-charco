@@ -7,7 +7,69 @@
 document.addEventListener('DOMContentLoaded', function () {
   inicializarAlcancePromocion();
   inicializarTipoPromocion();
+  inicializarSubidaGaleria();
 });
+
+/**
+ * Subida de varias fotos: avisa de inmediato si alguna es muy pesada, tiene
+ * un formato no permitido o son demasiadas, en vez de esperar a que el
+ * servidor rechace todo el envío. Es solo comodidad — el servidor valida
+ * cada archivo de nuevo (tipo real, tamaño) y es quien decide.
+ */
+function inicializarSubidaGaleria() {
+  var input = document.getElementById('imagenes');
+  var resumen = document.getElementById('resumen-subida');
+  var boton = document.getElementById('boton-subir');
+  if (!input || !resumen || !boton) {
+    return;
+  }
+
+  var maxArchivos = parseInt(input.getAttribute('data-max-archivos'), 10);
+  var maxBytes = parseInt(input.getAttribute('data-max-bytes'), 10);
+  var extensionesOk = /\.(jpe?g|png|webp)$/i;
+
+  function mb(bytes) {
+    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  }
+
+  input.addEventListener('change', function () {
+    var archivos = Array.prototype.slice.call(input.files);
+    var problemas = [];
+
+    if (archivos.length > maxArchivos) {
+      problemas.push('Elegiste ' + archivos.length + ' fotos; el máximo por envío es ' + maxArchivos + '.');
+    }
+
+    archivos.forEach(function (archivo) {
+      if (!extensionesOk.test(archivo.name)) {
+        problemas.push(archivo.name + ': formato no permitido (solo JPG, PNG o WEBP).');
+      } else if (archivo.size > maxBytes) {
+        problemas.push(archivo.name + ': pesa ' + mb(archivo.size) + ' (máximo ' + mb(maxBytes) + ').');
+      }
+    });
+
+    resumen.textContent = '';
+
+    if (problemas.length > 0) {
+      var lista = document.createElement('ul');
+      lista.style.color = 'var(--color-error)';
+      problemas.forEach(function (texto) {
+        var item = document.createElement('li');
+        item.textContent = texto; // textContent: el nombre del archivo nunca se interpreta como HTML
+        lista.appendChild(item);
+      });
+      resumen.appendChild(lista);
+      boton.disabled = true;
+      return;
+    }
+
+    boton.disabled = false;
+    if (archivos.length > 0) {
+      var total = archivos.reduce(function (suma, a) { return suma + a.size; }, 0);
+      resumen.textContent = archivos.length + ' foto(s) seleccionada(s), ' + mb(total) + ' en total.';
+    }
+  });
+}
 
 function inicializarAlcancePromocion() {
   var radios = document.querySelectorAll('input[name="alcance"]');

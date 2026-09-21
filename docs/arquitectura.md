@@ -333,6 +333,47 @@ hay superficie real de condición de carrera aquí.
   con algún hash — real o ficticio — para que el tiempo de respuesta no
   revele si un usuario existe o no.
 
+### 4.5 Galería (carrusel público + administración)
+
+Tabla `galeria` (`imagen`, `titulo`, `descripcion`, `orden`, `activo`,
+`creado_en`). Los nombres difieren de los que se sugirieron como
+ejemplo (`ruta_imagen`, `fecha_subida`) pero cumplen exactamente el
+mismo papel; no se renombraron para no tocar un esquema que ya
+funciona. Solo se guarda el nombre de archivo (aleatorio), nunca el
+nombre original, en `public/uploads/galeria/`.
+
+- **Subida**: varias fotos por envío (máx. 10). Cada archivo se valida
+  por separado en el servidor (extensión permitida, tipo MIME real con
+  `finfo`, `getimagesize()`, ≤ 5 MB); uno inválido no impide que se
+  suban las demás, y el mensaje dice cuál falló y por qué. Probado con
+  un `.php` renombrado a `.jpg`, un GIF y un archivo de 6 MB: los tres
+  rechazados, nada raro en disco. El navegador avisa antes de enviar
+  (`admin.js`), pero solo por comodidad: el servidor decide.
+- **Lote demasiado grande**: si el envío completo supera
+  `post_max_size`, PHP descarta `$_POST` y `$_FILES` y el token CSRF
+  parecía "faltar" (403 engañoso). `CsrfMiddleware` ahora lo detecta y
+  responde 413 con un mensaje claro.
+- **Orden**: flechas ▲▼ (`Galeria::mover()`). Antes de intercambiar
+  renumera todas las fotos 1..n dentro de una transacción con las
+  filas bloqueadas, así que funciona aunque haya empates o huecos en
+  `orden` (fotos antiguas que quedaron todas en 0) y dos clics
+  simultáneos no se pisan. Cada movimiento queda en la auditoría.
+  Las fotos nuevas se agregan al final.
+- **Carrusel público**: contenedor con `scroll-snap` (se desliza sin
+  JavaScript); `sitio.js` agrega flechas, puntos y avance automático
+  cada 5 s que se detiene ante cualquier interacción, con el mouse
+  encima, con el foco dentro, con la pestaña oculta y si el usuario
+  pidió "reducir movimiento". 1 foto (+ borde de la siguiente) en
+  móvil, 2 en tablet, 3 en escritorio; con pocas fotos se centran y
+  desaparecen flechas/puntos. Recalcula con `ResizeObserver` (rotar el
+  teléfono, cambiar el zoom).
+- **Límite conocido**: las fotos se guardan tal cual se suben (hasta
+  5 MB). La extensión GD de PHP no está activada en el XAMPP local
+  (sí suele estarlo en Hostinger), así que no se redimensionan ni
+  comprimen automáticamente todavía; con fotos de teléfono de varios MB
+  el carrusel cargará más lento en datos móviles. Mejora futura:
+  generar versiones reducidas al subir cuando GD esté disponible.
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)

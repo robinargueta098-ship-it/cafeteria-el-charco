@@ -412,31 +412,172 @@ img {
 
 /* ---------- Galería ---------- */
 
-.galeria-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+/*
+ * Carrusel. La pista es un contenedor con scroll horizontal + scroll-snap:
+ * funciona deslizando con el dedo o la rueda aun sin JavaScript. Las
+ * flechas y los puntos solo aparecen cuando sitio.js agrega .carrusel--js.
+ * En móvil cada foto ocupa ~86% del ancho, así se asoma la siguiente y se
+ * entiende que se puede deslizar; 2 fotos visibles en tablet y 3 en escritorio.
+ */
+
+.carrusel {
+  position: relative;
+  --carrusel-separacion: 12px;
+  --carrusel-visibles: 1;
 }
 
-@media (min-width: 768px) {
-  .galeria-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+@media (min-width: 600px) {
+  .carrusel {
+    --carrusel-separacion: 16px;
+    --carrusel-visibles: 2;
   }
 }
 
 @media (min-width: 1024px) {
-  .galeria-grid {
-    grid-template-columns: repeat(4, 1fr);
+  .carrusel {
+    --carrusel-visibles: 3;
   }
 }
 
-.galeria-grid img,
-.galeria-grid .foto-pendiente {
-  aspect-ratio: 1 / 1;
-  width: 100%;
-  object-fit: cover;
+.carrusel-pista {
+  position: relative; /* para que item.offsetLeft se mida desde la pista */
+  display: flex;
+  gap: var(--carrusel-separacion);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   border-radius: var(--radio-borde);
+}
+
+.carrusel-pista::-webkit-scrollbar {
+  display: none;
+}
+
+.carrusel-pista:focus-visible {
+  outline: 3px solid var(--color-verde);
+  outline-offset: 4px;
+}
+
+.carrusel-item {
+  position: relative;
+  flex: 0 0 86%;
+  margin: 0;
+  scroll-snap-align: start;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--radio-borde);
+  background: var(--color-beige);
+}
+
+@media (min-width: 600px) {
+  .carrusel-item {
+    flex-basis: calc((100% - (var(--carrusel-visibles) - 1) * var(--carrusel-separacion)) / var(--carrusel-visibles));
+  }
+}
+
+.carrusel-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carrusel-item figcaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 24px 16px 12px;
+  color: var(--color-beige-claro);
+  font-size: 0.95rem;
+  background: linear-gradient(to top, rgba(59, 36, 21, 0.85), rgba(59, 36, 21, 0));
+}
+
+/* Con pocas fotos (todas caben) se centran en vez de quedar pegadas a la izquierda. */
+.carrusel--corto .carrusel-pista {
+  justify-content: center;
+}
+
+.carrusel-boton {
+  display: none;
+  position: absolute;
+  top: calc(50% - 22px);
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0 4px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(250, 246, 238, 0.92);
+  color: var(--color-cafe-oscuro);
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(59, 36, 21, 0.3);
+}
+
+.carrusel-boton:hover,
+.carrusel-boton:focus-visible {
+  background: var(--color-verde);
+  color: var(--color-blanco);
+}
+
+.carrusel-anterior {
+  left: 8px;
+}
+
+.carrusel-siguiente {
+  right: 8px;
+}
+
+.carrusel--js:not(.carrusel--corto) .carrusel-boton {
+  display: flex;
+}
+
+.carrusel-puntos {
+  display: none;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.carrusel--js:not(.carrusel--corto) .carrusel-puntos {
+  display: flex;
+}
+
+/* Botón de 24px (área táctil cómoda) que dibuja un punto de 10px. */
+.carrusel-punto {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.carrusel-punto::before {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: var(--color-beige);
+  box-shadow: inset 0 0 0 1px var(--color-cafe);
+}
+
+.carrusel-punto.activo::before {
+  background: var(--color-verde);
+  box-shadow: none;
+}
+
+.carrusel-punto:focus-visible {
+  outline: 2px solid var(--color-verde);
+  border-radius: 50%;
 }
 
 /* ---------- Sobre nosotros ---------- */

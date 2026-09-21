@@ -18,6 +18,16 @@ class CsrfMiddleware
             return;
         }
 
+        // Si el cuerpo de la petición superó post_max_size, PHP descarta
+        // $_POST y $_FILES por completo: sin este chequeo, el token CSRF
+        // parecería "faltante" y el usuario vería un 403 engañoso en vez
+        // de saber que sus archivos fueron demasiado pesados.
+        if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0 && $_POST === [] && $_FILES === []) {
+            http_response_code(413);
+            require APP_PATH . '/Views/errores/413.php';
+            exit;
+        }
+
         $token = $_POST['csrf_token'] ?? null;
 
         if (!Csrf::validar($token)) {

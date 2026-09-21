@@ -204,10 +204,31 @@ $tarjetaProducto = function (array $p) {
         <?php if ($galeria === []): ?>
             <p class="sitio-seccion-intro"><?= Vista::pendiente('fotografías de la galería') ?></p>
         <?php else: ?>
-            <div class="galeria-grid">
-                <?php foreach ($galeria as $foto): ?>
-                    <?= Vista::fotoOMarcador($foto['imagen'], UPLOADS_URL . '/galeria', $foto['titulo'] ?? $nombreSitio) ?>
-                <?php endforeach; ?>
+            <?php /*
+                Carrusel: la "pista" es un contenedor con scroll horizontal y
+                scroll-snap, así que ya se puede deslizar con el dedo o la
+                rueda SIN JavaScript. sitio.js solo agrega flechas, puntos y
+                avance automático encima de eso.
+            */ ?>
+            <div class="carrusel" data-carrusel role="region" aria-roledescription="carrusel" aria-label="Galería de fotos">
+                <div class="carrusel-pista" tabindex="0">
+                    <?php foreach ($galeria as $indice => $foto): ?>
+                        <?php
+                        $textoAlt = $foto['titulo'] ?: ($foto['descripcion'] ?: $nombreSitio . ' — foto ' . ($indice + 1));
+                        ?>
+                        <figure class="carrusel-item">
+                            <img src="<?= htmlspecialchars(UPLOADS_URL . '/galeria/' . $foto['imagen'], ENT_QUOTES, 'UTF-8') ?>"
+                                 alt="<?= htmlspecialchars($textoAlt, ENT_QUOTES, 'UTF-8') ?>"
+                                 loading="lazy" decoding="async">
+                            <?php if (!empty($foto['titulo'])): ?>
+                                <figcaption><?= htmlspecialchars($foto['titulo'], ENT_QUOTES, 'UTF-8') ?></figcaption>
+                            <?php endif; ?>
+                        </figure>
+                    <?php endforeach; ?>
+                </div>
+                <button type="button" class="carrusel-boton carrusel-anterior" aria-label="Foto anterior">‹</button>
+                <button type="button" class="carrusel-boton carrusel-siguiente" aria-label="Foto siguiente">›</button>
+                <div class="carrusel-puntos" role="group" aria-label="Elegir foto"></div>
             </div>
         <?php endif; ?>
     </div>

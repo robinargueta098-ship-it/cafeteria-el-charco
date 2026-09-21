@@ -54,6 +54,7 @@ $router->get('/admin/galeria/crear', [GaleriaController::class, 'mostrarCrear'])
 $router->post('/admin/galeria/crear', [GaleriaController::class, 'crear']);
 $router->get('/admin/galeria/{id}/editar', [GaleriaController::class, 'mostrarEditar']);
 $router->post('/admin/galeria/{id}/editar', [GaleriaController::class, 'actualizar']);
+$router->post('/admin/galeria/{id}/mover', [GaleriaController::class, 'mover']);
 $router->post('/admin/galeria/{id}/eliminar', [GaleriaController::class, 'eliminar']);
 
 // --- Temporadas ---

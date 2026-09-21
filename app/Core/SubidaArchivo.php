@@ -21,7 +21,8 @@ class SubidaArchivo
         'image/webp' => ['webp'],
     ];
 
-    private const TAMANO_MAXIMO_BYTES = 5 * 1024 * 1024; // 5 MB
+    /** Público para que el formulario del panel muestre y valide el mismo límite en el navegador. */
+    public const TAMANO_MAXIMO_BYTES = 5 * 1024 * 1024; // 5 MB
 
     /**
      * @param array $archivo una entrada de $_FILES (ej. $_FILES['imagen'])
