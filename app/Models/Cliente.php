@@ -36,12 +36,15 @@ class Cliente
         // preparado, solo de resultados incorrectos).
         $comodin = '%' . str_replace(['%', '_'], ['\%', '\_'], $termino) . '%';
 
+        // Dos parámetros distintos (:nombre / :telefono) con el mismo valor: con
+        // ATTR_EMULATE_PREPARES=false PDO no permite repetir un mismo nombre de
+        // parámetro en la sentencia (error "Invalid parameter number" → 500).
         $stmt = Database::conexion()->prepare(
             "SELECT * FROM clientes
-             WHERE nombre LIKE :termino ESCAPE '\\\\' OR telefono LIKE :termino ESCAPE '\\\\'
+             WHERE nombre LIKE :por_nombre ESCAPE '\\\\' OR telefono LIKE :por_telefono ESCAPE '\\\\'
              ORDER BY nombre ASC LIMIT 50"
         );
-        $stmt->execute(['termino' => $comodin]);
+        $stmt->execute(['por_nombre' => $comodin, 'por_telefono' => $comodin]);
 
         return $stmt->fetchAll();
     }
