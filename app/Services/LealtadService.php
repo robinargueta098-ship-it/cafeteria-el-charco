@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Core\Database;
 use App\Core\Logger;
+use App\Models\Cliente;
 use App\Models\Configuracion;
 use App\Models\LealtadMovimiento;
 use App\Models\Producto;
@@ -34,6 +35,9 @@ class LealtadService
 {
     private const MAX_INTENTOS_PIN = 5;
     private const BLOQUEO_PIN_MINUTOS = 15;
+
+    /** Con 31^8 combinaciones una colisión ya es rarísima; 10 intentos seguidos indicarían un fallo real. */
+    private const MAX_INTENTOS_CODIGO = 10;
 
     public static function obtenerUmbral(): int
     {
@@ -202,18 +206,25 @@ class LealtadService
 
     /**
      * Valida un código de recompensa y, si todo está en regla, la
-     * marca canjeada con el producto elegido. Verifica en este orden:
-     * existencia, pertenencia (el código ya identifica un único
-     * cliente, no hay ambigüedad posible), disponibilidad y
-     * vencimiento — exactamente lo pedido.
+     * marca canjeada (con fecha) y registra el producto entregado.
+     * Verifica en este orden: existencia, PERTENENCIA (el código debe
+     * ser de $clienteId, el cliente que el cajero identificó por
+     * separado — un código ajeno nunca se canjea), disponibilidad y
+     * vencimiento.
      *
+     * @param int $clienteId cliente que dice ser el dueño; lo resuelve el
+     *                       controlador desde el teléfono, nunca viene del código
      * @return array{ok:bool,error?:string,cliente_nombre?:string,producto_nombre?:string}
      */
-    public static function validarYCanjearRecompensa(string $codigo, int $productoId, int $usuarioId): array
+    public static function validarYCanjearRecompensa(string $codigo, int $clienteId, int $productoId, int $usuarioId): array
     {
-        $codigo = strtoupper(trim($codigo));
+        $codigo = Recompensa::normalizarCodigo($codigo);
         if ($codigo === '') {
             return ['ok' => false, 'error' => 'Ingresa un código.'];
+        }
+
+        if ($clienteId <= 0) {
+            return ['ok' => false, 'error' => 'Identifica primero al cliente.'];
         }
 
         $pdo = Database::conexion();
@@ -230,6 +241,17 @@ class LealtadService
             if ($recompensa === null) {
                 $pdo->rollBack();
                 return ['ok' => false, 'error' => 'Ese código no existe. Verifica que esté bien escrito.'];
+            }
+
+            // Pertenencia, ANTES de revelar nada del estado del código:
+            // un código de otro cliente no dice si está canjeado, vencido, etc.
+            if ((int) $recompensa['cliente_id'] !== $clienteId) {
+                $pdo->rollBack();
+                Logger::error(sprintf(
+                    'Intento de canje con código ajeno: código %s pertenece al cliente %d, se intentó con el cliente %d (usuario %d).',
+                    $codigo, (int) $recompensa['cliente_id'], $clienteId, $usuarioId
+                ));
+                return ['ok' => false, 'error' => 'Ese código no pertenece a este cliente.'];
             }
 
             if ($recompensa['estado'] === 'canjeada') {
@@ -270,22 +292,31 @@ class LealtadService
                 $codigo
             );
 
-            $recompensas->marcarCanjeada((int) $recompensa['id'], $productoId, $usuarioId, $movimientoId);
+            // Defensa en profundidad: el UPDATE exige estado='disponible'.
+            // Si por cualquier razón ya no lo estaba, no se confirma nada.
+            if (!$recompensas->marcarCanjeada((int) $recompensa['id'], $productoId, $usuarioId, $movimientoId)) {
+                $pdo->rollBack();
+                return ['ok' => false, 'error' => 'Esta recompensa ya no está disponible.'];
+            }
 
             $pdo->commit();
         } catch (Throwable $e) {
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             Logger::error('Error canjeando recompensa: ' . $e->getMessage());
             return ['ok' => false, 'error' => 'No se pudo procesar el canje.'];
         }
 
         AuditoriaService::registrar('recompensas', (int) $recompensa['id'], 'canje',
             ['estado' => 'disponible'],
-            ['estado' => 'canjeada', 'producto_id' => $productoId, 'usuario_id' => $usuarioId]);
+            ['estado' => 'canjeada', 'cliente_id' => $clienteId, 'producto_id' => $productoId, 'usuario_id' => $usuarioId]);
+
+        $cliente = (new Cliente())->buscarPorId($clienteId);
 
         return [
             'ok'              => true,
-            'cliente_nombre'  => $recompensa['cliente_nombre'] ?? '',
+            'cliente_nombre'  => $cliente['nombre'] ?? '',
             'producto_nombre' => $producto['nombre'],
         ];
     }
@@ -346,26 +377,12 @@ class LealtadService
         $diasVencimiento = self::obtenerDiasVencimiento();
         $codigosGenerados = [];
 
-        $movimientos = new LealtadMovimiento();
-        $recompensas = new Recompensa();
-
         while ($saldo >= $umbral) {
-            $codigo = $recompensas->generarCodigoUnico();
-
-            $movimientoId = $movimientos->insertar($clienteId, 'recompensa_generada', -$umbral, $usuarioId, null, $codigo);
-
             $fechaVencimiento = $diasVencimiento !== null
                 ? date('Y-m-d H:i:s', strtotime("+{$diasVencimiento} days"))
                 : null;
 
-            $recompensas->crear([
-                'cliente_id'              => $clienteId,
-                'codigo'                  => $codigo,
-                'movimiento_generador_id' => $movimientoId,
-                'fecha_vencimiento'       => $fechaVencimiento,
-            ]);
-
-            $codigosGenerados[] = $codigo;
+            $codigosGenerados[] = self::crearRecompensaConCodigoUnico($clienteId, $umbral, $usuarioId, $fechaVencimiento);
             $saldo -= $umbral;
         }
 
@@ -373,5 +390,58 @@ class LealtadService
             ->execute(['saldo' => $saldo, 'id' => $clienteId]);
 
         return ['ok' => true, 'codigos_generados' => $codigosGenerados];
+    }
+
+    /**
+     * Crea UNA recompensa (su movimiento en el historial + su fila con el
+     * código) garantizando que el código sea único.
+     *
+     * Comprobar "¿existe ya?" y luego guardar no es atómico: entre las
+     * dos cosas otra petición puede haber generado el mismo código. La
+     * garantía real es el UNIQUE de `recompensas.codigo`; si el INSERT
+     * choca (error 1062) se deshace SOLO este intento (SAVEPOINT, para no
+     * dejar un movimiento huérfano en el historial) y se prueba con otro
+     * código, hasta MAX_INTENTOS_CODIGO veces. Cualquier otro error se
+     * propaga tal cual.
+     *
+     * Debe llamarse dentro de una transacción ya abierta.
+     *
+     * @return string el código con el que quedó guardada la recompensa
+     */
+    private static function crearRecompensaConCodigoUnico(int $clienteId, int $umbral, int $usuarioId, ?string $fechaVencimiento): string
+    {
+        $pdo = Database::conexion();
+        $movimientos = new LealtadMovimiento();
+        $recompensas = new Recompensa();
+
+        for ($intento = 1; $intento <= self::MAX_INTENTOS_CODIGO; $intento++) {
+            $codigo = $recompensas->generarCodigoUnico();
+
+            $pdo->exec('SAVEPOINT nueva_recompensa');
+
+            try {
+                $movimientoId = $movimientos->insertar($clienteId, 'recompensa_generada', -$umbral, $usuarioId, null, $codigo);
+
+                $recompensas->crear([
+                    'cliente_id'              => $clienteId,
+                    'codigo'                  => $codigo,
+                    'movimiento_generador_id' => $movimientoId,
+                    'fecha_vencimiento'       => $fechaVencimiento,
+                ]);
+
+                $pdo->exec('RELEASE SAVEPOINT nueva_recompensa');
+
+                return $codigo;
+            } catch (\PDOException $e) {
+                if (!Recompensa::esViolacionDeUnicidad($e)) {
+                    throw $e;
+                }
+
+                $pdo->exec('ROLLBACK TO SAVEPOINT nueva_recompensa');
+                Logger::error("Colisión de código de recompensa ({$codigo}) en el intento {$intento}; se genera otro.");
+            }
+        }
+
+        throw new \RuntimeException('No se pudo generar un código de recompensa único tras ' . self::MAX_INTENTOS_CODIGO . ' intentos.');
     }
 }

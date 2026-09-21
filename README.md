@@ -116,6 +116,13 @@ hasta que así se indique explícitamente.
       que borra también el archivo. Probado en 360/375/390/414/768/
       1024/1366/1920 px. Ver docs/arquitectura.md §4.5. **Pendiente
       de que subas al menos 6 fotos reales** (hoy hay 1).
+- [x] Código de canje blindado: unicidad en 3 capas (UNIQUE +
+      comprobación previa + reintento automático ante colisión con
+      SAVEPOINT), restricciones nuevas en BD (CHECK y UNIQUE), el canje
+      ahora exige que el código pertenezca al cliente identificado por
+      teléfono, uso único con fecha, y trigger opcional
+      (`database/opcional_trigger_recompensas.sql`). 31 pruebas + carrera
+      de 6 procesos: ver docs/arquitectura.md §4.2b.
 - [ ] Resto de fases (diseño visual/pulido, despliegue): ver el
       plan en docs/arquitectura.md §9
 

@@ -269,6 +269,67 @@ nunca se pierden cafés en silencio.
    por el cajero. Por ahora acumular sigue siendo siempre vía cajero +
    búsqueda por teléfono.
 
+### 4.2b Código de canje: unicidad, pertenencia y uso único
+
+Columna `recompensas.codigo`. Una recompensa = un código = un cliente
+(`cliente_id`); un cliente puede tener varias recompensas, cada una con
+su propio código.
+
+**Generación** (`Recompensa::nuevoCodigoAleatorio()`): 8 caracteres con
+`random_int()` (aleatorio criptográfico) de un alfabeto de 31 símbolos
+sin ambigüedades (sin 0/O/1/I/L), formato `XXXX-XXXX`: 31⁸ ≈ 8,5×10¹¹
+combinaciones, no consecutivos ni deducibles. En 20 000 códigos
+generados: todos válidos y todos distintos.
+
+**Unicidad, en tres capas:**
+1. `UNIQUE` en la columna (la garantía real). La colación
+   `utf8mb4_unicode_ci` la hace insensible a mayúsculas: `abcd-efgh` y
+   `ABCD-EFGH` cuentan como el mismo código.
+2. Comprobación previa (`generarCodigoUnico()` no devuelve uno que ya
+   exista) — solo una optimización: comprobar y luego guardar NO es
+   atómico, otra petición puede generar el mismo código en medio.
+3. Reintento automático ante colisión
+   (`LealtadService::crearRecompensaConCodigoUnico()`): si el INSERT
+   choca con el `UNIQUE` (error 1062) se deshace solo ese intento con un
+   `SAVEPOINT` (así no queda un movimiento huérfano en el historial) y se
+   genera otro código, hasta 10 veces; agotados, se deshace toda la
+   operación y el usuario ve un error genérico (el detalle va al log).
+   Probado forzando 2 colisiones seguidas: la recompensa quedó con el
+   3.er código y el historial sin residuos.
+
+**Restricciones de la base (`schema.sql`)**: `UNIQUE` sobre
+`movimiento_generador_id` (un movimiento no genera dos recompensas) y
+sobre `movimiento_canje_id`; `CHECK` de longitud mínima del código;
+`CHECK` de que una recompensa `canjeada` siempre trae fecha, producto,
+usuario y movimiento de canje (no existe un canje a medias). Los `CHECK`
+los aplica MariaDB ≥ 10.2 y MySQL ≥ 8.0.16 (versiones anteriores de
+MySQL los aceptan pero los ignoran).
+
+**Uso único ("usada" + fecha)**: al canjear, `estado='canjeada'` y
+`fecha_canjeada`. `marcarCanjeada()` ejecuta
+`UPDATE ... WHERE estado='disponible'` y devuelve si tocó una fila, así
+que aun sin el candado una recompensa no disponible no se vuelve a
+canjear. Probado con 6 procesos canjeando el mismo código a la vez:
+exactamente 1 exitoso, 5 rechazados, 1 solo movimiento en el historial.
+
+**Pertenencia al canjear**: el cajero identifica al cliente por
+teléfono **y** escribe el código; el servidor resuelve el cliente desde
+el teléfono y, con la recompensa ya bloqueada, exige
+`recompensa.cliente_id === cliente.id` *antes* de revelar nada de su
+estado. Un código ajeno se rechaza con "no pertenece a este cliente" y
+queda registrado en el log (posible intento de fraude). El paso de
+confirmar repite toda la validación; nada del paso de consulta se da por
+bueno. Los códigos se normalizan (`abcd 2345`, `ABCD2345`, `abcd-2345`).
+
+**Barrera opcional en la propia BD**
+(`database/opcional_trigger_recompensas.sql`, aparte de `schema.sql`):
+trigger `BEFORE UPDATE` que impide, aun con un `UPDATE` manual, cambiar
+el código o el dueño, o sacar una recompensa de un estado final
+(canjeada/cancelada/vencida) de vuelta a `disponible` (que sería
+reutilizarla). Va separado porque algunos hostings compartidos
+restringen crear triggers (error 1419): si en Hostinger falla se puede
+omitir sin afectar nada, la aplicación se protege sola.
+
 ### 4.3 Cuenta simple del cliente
 Teléfono + PIN de 4 dígitos, sin correo ni verificación
 (`App\Core\ClienteAuth`, sesión completamente separada de `Auth` del

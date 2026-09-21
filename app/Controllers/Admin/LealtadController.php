@@ -108,42 +108,54 @@ class LealtadController extends Controller
     {
         $this->requerirRol(1, 2);
 
-        $this->vista('admin/lealtad/canjear', [
-            'seccionActiva' => 'lealtad',
-            'codigo'        => (string) ($_GET['codigo'] ?? ''),
-            'recompensa'    => null,
-            'error'         => null,
-            'productos'     => (new Producto())->listarActivos(),
-        ]);
+        $this->vistaCanjear(
+            Cliente::normalizarTelefono((string) ($_GET['telefono'] ?? '')),
+            Recompensa::normalizarCodigo((string) ($_GET['codigo'] ?? '')),
+            null,
+            null
+        );
     }
 
-    /** Paso 1: solo consultar el código (sin canjear todavía) para mostrarle al cajero a quién pertenece. */
+    /**
+     * Paso 1: consultar (sin canjear todavía). El cajero identifica al
+     * cliente por su teléfono Y escribe el código; el detalle de la
+     * recompensa solo se muestra si ese código es realmente de ese cliente.
+     */
     public function consultarCodigo(): void
     {
         $this->requerirRol(1, 2);
 
-        $codigo = strtoupper(trim((string) ($_POST['codigo'] ?? '')));
-        $recompensa = $codigo !== '' ? (new Recompensa())->buscarPorCodigo($codigo) : null;
+        $telefono = Cliente::normalizarTelefono((string) ($_POST['telefono'] ?? ''));
+        $codigo = Recompensa::normalizarCodigo((string) ($_POST['codigo'] ?? ''));
 
-        $this->vista('admin/lealtad/canjear', [
-            'seccionActiva' => 'lealtad',
-            'codigo'        => $codigo,
-            'recompensa'    => $recompensa,
-            'error'         => $recompensa === null ? 'No se encontró ninguna recompensa con ese código.' : null,
-            'productos'     => (new Producto())->listarActivos(),
-        ]);
+        [$cliente, $recompensa, $error] = $this->resolverCanje($telefono, $codigo);
+
+        $this->vistaCanjear($telefono, $codigo, $recompensa, $error);
     }
 
-    /** Paso 2: confirmar el canje (aquí sí se valida todo y se marca canjeada, con bloqueo contra doble canje). */
+    /**
+     * Paso 2: confirmar el canje. El cliente se vuelve a resolver desde el
+     * teléfono en el servidor y LealtadService verifica de nuevo, con la
+     * fila bloqueada, que el código sea suyo, esté disponible y no haya
+     * vencido — nada de lo mostrado en el paso 1 se da por bueno.
+     */
     public function confirmarCanje(): void
     {
         $this->requerirRol(1, 2);
 
-        $codigo = strtoupper(trim((string) ($_POST['codigo'] ?? '')));
+        $telefono = Cliente::normalizarTelefono((string) ($_POST['telefono'] ?? ''));
+        $codigo = Recompensa::normalizarCodigo((string) ($_POST['codigo'] ?? ''));
         $productoId = (int) ($_POST['producto_id'] ?? 0);
         $usuario = Auth::usuario();
 
-        $resultado = LealtadService::validarYCanjearRecompensa($codigo, $productoId, $usuario['id']);
+        $cliente = $telefono !== '' ? (new Cliente())->buscarPorTelefono($telefono) : null;
+
+        if ($cliente === null) {
+            $this->vistaCanjear($telefono, $codigo, null, 'No se encontró un cliente con ese teléfono.');
+            return;
+        }
+
+        $resultado = LealtadService::validarYCanjearRecompensa($codigo, (int) $cliente['id'], $productoId, $usuario['id']);
 
         if ($resultado['ok']) {
             Flash::exito("Canje confirmado: {$resultado['producto_nombre']} entregado a {$resultado['cliente_nombre']}.");
@@ -151,11 +163,48 @@ class LealtadController extends Controller
             return;
         }
 
+        [, $recompensa] = $this->resolverCanje($telefono, $codigo);
+
+        $this->vistaCanjear($telefono, $codigo, $recompensa, $resultado['error']);
+    }
+
+    /**
+     * Busca al cliente por teléfono y la recompensa por código, y solo
+     * devuelve la recompensa si pertenece a ese cliente.
+     *
+     * @return array{0:array<string,mixed>|null,1:array<string,mixed>|null,2:string|null} [cliente, recompensa, error]
+     */
+    private function resolverCanje(string $telefono, string $codigo): array
+    {
+        if ($telefono === '' || $codigo === '') {
+            return [null, null, 'Escribe el teléfono del cliente y el código de la recompensa.'];
+        }
+
+        $cliente = (new Cliente())->buscarPorTelefono($telefono);
+        if ($cliente === null) {
+            return [null, null, 'No se encontró un cliente con ese teléfono.'];
+        }
+
+        $recompensa = (new Recompensa())->buscarPorCodigo($codigo);
+        if ($recompensa === null) {
+            return [$cliente, null, 'No se encontró ninguna recompensa con ese código.'];
+        }
+
+        if ((int) $recompensa['cliente_id'] !== (int) $cliente['id']) {
+            return [$cliente, null, 'Ese código no pertenece a este cliente.'];
+        }
+
+        return [$cliente, $recompensa, null];
+    }
+
+    private function vistaCanjear(string $telefono, string $codigo, ?array $recompensa, ?string $error): void
+    {
         $this->vista('admin/lealtad/canjear', [
             'seccionActiva' => 'lealtad',
+            'telefono'      => $telefono,
             'codigo'        => $codigo,
-            'recompensa'    => (new Recompensa())->buscarPorCodigo($codigo),
-            'error'         => $resultado['error'],
+            'recompensa'    => $recompensa,
+            'error'         => $error,
             'productos'     => (new Producto())->listarActivos(),
         ]);
     }

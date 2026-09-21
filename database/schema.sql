@@ -262,7 +262,26 @@ CREATE TABLE recompensas (
   CONSTRAINT fk_recompensa_producto FOREIGN KEY (producto_canjeado_id) REFERENCES productos(id),
   CONSTRAINT fk_recompensa_usuario_canjeo FOREIGN KEY (usuario_canjeo_id) REFERENCES usuarios(id),
   CONSTRAINT fk_recompensa_usuario_cancel FOREIGN KEY (usuario_cancelacion_id) REFERENCES usuarios(id),
-  INDEX idx_recompensa_cliente (cliente_id, estado)
+  INDEX idx_recompensa_cliente (cliente_id, estado),
+
+  -- Garantías a nivel de base de datos (la aplicación también las
+  -- cumple, pero un bug o un UPDATE manual no debe poder romperlas):
+  --  * codigo UNIQUE (arriba): dos recompensas nunca comparten código.
+  --    La colación _ci lo hace insensible a mayúsculas: 'abcd-efgh' y
+  --    'ABCD-EFGH' cuentan como el mismo código.
+  --  * un movimiento generador produce a lo sumo UNA recompensa (no hay
+  --    doble generación) y un movimiento de canje pertenece a UNA sola.
+  UNIQUE KEY uq_recompensa_mov_gen (movimiento_generador_id),
+  UNIQUE KEY uq_recompensa_mov_canje (movimiento_canje_id),
+  --  * un código nunca puede quedar demasiado corto/vacío.
+  CONSTRAINT chk_recompensa_codigo_longitud CHECK (CHAR_LENGTH(codigo) >= 8),
+  --  * "usada" siempre lleva fecha, producto entregado, quién la canjeó
+  --    y su movimiento: no existe un canje a medias.
+  CONSTRAINT chk_recompensa_canje_completo CHECK (
+    estado <> 'canjeada'
+    OR (fecha_canjeada IS NOT NULL AND producto_canjeado_id IS NOT NULL
+        AND usuario_canjeo_id IS NOT NULL AND movimiento_canje_id IS NOT NULL)
+  )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------

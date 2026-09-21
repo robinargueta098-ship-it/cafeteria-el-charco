@@ -31,7 +31,10 @@ $etiquetasEstadoRecompensa = ['disponible' => 'Disponible', 'canjeada' => 'Canje
         <div class="progreso-lealtad-barra" style="width:<?= $porcentaje ?>%;"></div>
     </div>
     <?php if ($disponibles !== []): ?>
-        <p><strong>✔ Tiene <?= count($disponibles) ?> recompensa(s) disponible(s) para canjear en /admin/lealtad/canjear.</strong></p>
+        <p>
+            <strong>✔ Tiene <?= count($disponibles) ?> recompensa(s) disponible(s).</strong>
+            <a class="btn btn-verde btn-pequeno" href="/admin/lealtad/canjear?telefono=<?= urlencode((string) $cliente['telefono']) ?>">Canjear</a>
+        </p>
     <?php endif; ?>
 </div>
 
