@@ -1,0 +1,14 @@
+{
+    "name": "elcharco/sitio",
+    "description": "Sitio y panel de Cafeteria El Charco",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Robin",
+            "email": "josdavi1999@gmail.com"
+        }
+    ],
+    "require": {
+        "chillerlan/php-qrcode": "^5.0"
+    }
+}

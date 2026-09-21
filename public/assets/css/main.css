@@ -714,3 +714,18 @@ table.tabla th {
   .js .panel-body .panel-sidebar,
   .js .panel-body .panel-menu-fondo { transition: none; }
 }
+
+/* ---------------------------------------------------------------
+   Canje por QR (panel) y QR del cliente (cuenta).
+   --------------------------------------------------------------- */
+.canje-columnas { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.canje-tarjeta { flex: 1 1 320px; max-width: 480px; }
+.lector-qr { width: 100%; max-width: 420px; margin: 0 auto 12px; border-radius: 8px; overflow: hidden; }
+.lector-qr[hidden] { display: none; }
+.campo-codigo { text-transform: uppercase; font-size: 1.3rem; text-align: center; letter-spacing: 2px; }
+.qr-recompensa { display: block; width: 240px; max-width: 100%; height: auto; margin: 0 auto 8px; background: #fff; }
+
+@media (max-width: 767.98px) {
+  .panel-body .canje-tarjeta { max-width: none; flex-basis: 100%; }
+  .panel-body #boton-escanear { width: 100%; }
+}

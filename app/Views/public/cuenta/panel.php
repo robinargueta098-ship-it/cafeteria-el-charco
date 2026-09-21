@@ -7,6 +7,7 @@
  * @var array<int,array<string,mixed>> $horarios
  */
 use App\Core\Csrf;
+use App\Core\CodigoQr;
 
 require APP_PATH . '/Views/layouts/header_publico.php';
 
@@ -41,10 +42,15 @@ $etiquetasEstado = [
 
         <?php if ($disponibles !== []): ?>
             <h2>🎉 Tienes <?= count($disponibles) ?> recompensa(s) disponible(s)</h2>
-            <p class="sitio-seccion-intro">Muestra este código en el mostrador para canjearlo.</p>
+            <p class="sitio-seccion-intro">Muestra este código QR en el mostrador para canjearlo, o díctale el código al cajero.</p>
             <?php foreach ($disponibles as $r): ?>
+                <?php $qr = CodigoQr::dataUri($r['codigo']); ?>
                 <div class="tarjeta" style="text-align:center;margin-bottom:16px;">
-                    <div style="font-size:1.8rem;font-weight:700;letter-spacing:2px;color:var(--color-verde);">
+                    <?php if ($qr !== null): ?>
+                        <img class="qr-recompensa" src="<?= htmlspecialchars($qr, ENT_QUOTES, 'UTF-8') ?>" width="240" height="240"
+                             alt="Código QR de tu recompensa <?= htmlspecialchars($r['codigo'], ENT_QUOTES, 'UTF-8') ?>">
+                    <?php endif; ?>
+                    <div class="codigo-recompensa-texto" style="font-size:1.8rem;font-weight:700;letter-spacing:2px;color:var(--color-verde);">
                         <?= htmlspecialchars($r['codigo'], ENT_QUOTES, 'UTF-8') ?>
                     </div>
                     <?php if ($r['fecha_vencimiento'] !== null): ?>

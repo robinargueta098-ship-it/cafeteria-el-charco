@@ -26,6 +26,7 @@ $enlaces = [
     'promociones'    => ['Promociones', '/admin/promociones', true],
     'clientes'       => ['Clientes', '/admin/clientes', false],
     'lealtad'        => ['Lealtad', '/admin/lealtad', false],
+    'canjear'        => ['Canjear código', '/admin/lealtad/canjear', false],
     'recompensas'    => ['Recompensas', '/admin/recompensas', false],
     'configuracion'  => ['Configuración', '/admin/configuracion', true],
     'usuarios'       => ['Usuarios', '/admin/usuarios', true],

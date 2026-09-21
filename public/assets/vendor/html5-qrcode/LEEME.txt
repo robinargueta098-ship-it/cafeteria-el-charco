@@ -1,0 +1,1 @@
+html5-qrcode 2.3.8 (Apache-2.0) — https://github.com/mebjas/html5-qrcode — copia local, sin CDN.

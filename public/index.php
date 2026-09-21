@@ -8,7 +8,14 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/config/config.php';
 
-// Autoload manual, sin Composer (docs/arquitectura.md §2.3):
+// Librería externa (solo el generador de QR): vendor/ va en el repositorio, así el
+// despliegue en Hostinger no necesita ejecutar Composer. Es opcional: si falta,
+// las pantallas muestran el código como texto y el canje manual sigue funcionando.
+if (is_file(BASE_PATH . '/vendor/autoload.php')) {
+    require BASE_PATH . '/vendor/autoload.php';
+}
+
+// Autoload manual del código propio (docs/arquitectura.md §2.3):
 // App\Controllers\Public\HomeController  =>  app/Controllers/Public/HomeController.php
 spl_autoload_register(function (string $clase): void {
     $prefijo = 'App\\';

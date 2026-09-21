@@ -557,6 +557,37 @@ una carpeta compartida con otras aplicaciones PHP y con la cookie genérica
 - Consecuencia única: las sesiones abiertas antes de este cambio se cierran
   una vez (cookie nueva).
 
+### 4.9 Canje por QR (cámara) con respaldo de código manual
+
+El código único de recompensa ya existía (tabla `recompensas`, `codigo`
+UNIQUE, 8 caracteres aleatorios, se genera solo al llegar a 10 cafés; ver
+§4.4). Lo nuevo es cómo se presenta y se lee:
+
+- **QR del cliente** (`/cuenta`): por cada recompensa disponible se muestra
+  un QR y, debajo, el mismo código como texto (para dictarlo). El QR contiene
+  únicamente el código. Se genera en el servidor con
+  `chillerlan/php-qrcode` 5.0.5 (`App\Core\CodigoQr`, salida SVG, sin GD ni
+  servicios externos). `vendor/` va en el repositorio para que Hostinger no
+  necesite Composer; si faltara, la pantalla muestra el código como texto y
+  el canje manual sigue funcionando.
+- **Pantalla de canje** (`/admin/lealtad/canjear`, Administrador y Cajero):
+  botón "Escanear código" (html5-qrcode 2.3.8, copia local en
+  `public/assets/vendor/`) y, al lado, el campo de código manual. Ambos
+  llenan el mismo formulario: buscar el código → mostrar a qué cliente
+  pertenece → confirmar. El teléfono es opcional (doble verificación).
+- **Seguridad del canje** (sin cambios en `LealtadService`): al confirmar, el
+  servidor compara el `cliente_id` recibido con el dueño real del código con
+  la fila bloqueada (`FOR UPDATE`); un código ajeno, vencido o ya canjeado se
+  rechaza. Al canjear queda `estado = canjeada` con fecha, producto y quién lo
+  entregó, y una restricción CHECK de la base impide una "canjeada" incompleta.
+- **Cajero**: ve Dashboard, Clientes, Lealtad, Canjear código y Recompensas;
+  Usuarios, Configuración, Auditoría y catálogo devuelven 403.
+- **Limitación de la cámara**: los navegadores solo dan acceso a la cámara en
+  páginas seguras (HTTPS o localhost). En producción (HTTPS) funciona; en
+  local, `http://elcharco.local` NO cuenta como seguro: usar
+  `http://elcharco.localhost` (agregar `ServerAlias elcharco.localhost` al
+  VirtualHost) o el campo manual, que no depende de la cámara.
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)
