@@ -16,7 +16,7 @@ $etiquetasEstado = ['disponible' => 'Disponible', 'canjeada' => 'Canjeada', 'can
 </div>
 
 <div class="tarjeta" style="margin-bottom:16px;">
-    <form method="get" action="/admin/recompensas" style="display:flex;gap:12px;align-items:flex-end;">
+    <form method="get" action="/admin/recompensas" class="form-filtros" style="display:flex;gap:12px;align-items:flex-end;">
         <div class="campo" style="margin-bottom:0;">
             <label for="estado">Estado</label>
             <select id="estado" name="estado">
@@ -34,7 +34,7 @@ $etiquetasEstado = ['disponible' => 'Disponible', 'canjeada' => 'Canjeada', 'can
     <?php if ($canjes === []): ?>
         <p class="tabla-vacio">No hay recompensas con ese filtro.</p>
     <?php else: ?>
-        <table class="tabla">
+        <table class="tabla tabla-primera-sin-corte">
             <thead><tr><th>Código</th><th>Cliente</th><th>Estado</th><th>Generada</th><th>Café entregado</th><th>Acciones</th></tr></thead>
             <tbody>
                 <?php foreach ($canjes as $r): ?>

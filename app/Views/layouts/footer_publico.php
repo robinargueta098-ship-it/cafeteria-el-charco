@@ -78,6 +78,6 @@ foreach ($horarios as $h) {
        target="_blank" rel="noopener" aria-label="Escribir por WhatsApp">💬</a>
 <?php endif; ?>
 
-<script src="/assets/js/sitio.js"></script>
+<script src="<?= htmlspecialchars(Vista::asset('/assets/js/sitio.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body>
 </html>

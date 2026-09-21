@@ -132,6 +132,9 @@ hasta que así se indique explícitamente.
       reducidas, la primera con prioridad alta y las demás cargadas
       después del `load`. Ver docs/arquitectura.md §4.5-4.6. Para las
       imágenes ya subidas: `php -d extension=gd bin/optimizar_imagenes.php`.
+- [x] Panel administrativo responsive: menú de hamburguesa, tablas con
+      scroll, formularios en una columna y Galería/portada usables desde el
+      celular (360–414 px). Escritorio sin cambios. docs/arquitectura.md §4.7.
 - [ ] Resto de fases (diseño visual/pulido, despliegue): ver el
       plan en docs/arquitectura.md §9
 

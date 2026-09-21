@@ -344,3 +344,373 @@ table.tabla th {
   background: var(--color-verde);
   height: 100%;
 }
+
+/* =====================================================================
+   PANEL ADMINISTRATIVO — pantallas chicas (celular)
+
+   Regla de oro: el diseño de ESCRITORIO no cambia. Lo nuevo de este
+   bloque o bien está oculto por defecto (display: none / display:
+   contents, sin efecto en el diseño) o bien vive dentro de
+   @media (max-width: 767.98px) y acotado a .panel-body, así que
+   tampoco afecta al sitio público, que comparte este archivo.
+
+   767.98px = justo por debajo del punto de corte de 768px del sitio
+   público (tabletas en vertical y mayores siguen con la barra fija).
+   ===================================================================== */
+
+/* --- Elementos que solo existen para celular: ocultos en escritorio --- */
+.panel-menu-boton,
+.panel-topbar-marca,
+.panel-menu-fondo,
+.tabla-pista {
+  display: none;
+}
+
+/* En escritorio este contenedor "no existe" para el diseño de la fila de horario. */
+.horario-horas {
+  display: contents;
+}
+
+/* Antes era un estilo en línea de 96×64 en la tarjeta de portada. */
+.miniatura-portada {
+  width: 96px;
+  height: 64px;
+}
+
+@media (max-width: 767.98px) {
+
+  /* ---------- Sin JavaScript: el menú va arriba, apilado y visible ---------- */
+
+  html:not(.js) .panel-body .panel-layout { flex-direction: column; }
+  html:not(.js) .panel-body .panel-sidebar { width: 100%; padding: 8px 0; }
+  html:not(.js) .panel-body .panel-sidebar-marca { border-bottom: 0; margin-bottom: 0; padding-bottom: 8px; }
+  html:not(.js) .panel-body .panel-nav { display: flex; flex-wrap: wrap; }
+  html:not(.js) .panel-body .panel-logout { border-top: 0; padding: 4px 16px; }
+
+  /* ---------- Con JavaScript: menú lateral que sale al tocar la hamburguesa ---------- */
+
+  .js .panel-body .panel-sidebar {
+    position: fixed;
+    top: 56px; /* debajo de la barra superior, que sigue visible para poder cerrar */
+    left: 0;
+    bottom: 0;
+    z-index: 60;
+    width: min(280px, 85vw);
+    padding: 8px 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateX(-100%);
+    visibility: hidden; /* cerrado: sus enlaces no reciben foco ni lectores de pantalla */
+    transition: transform 0.25s ease, visibility 0s linear 0.25s;
+  }
+
+  .js .panel-body .panel-sidebar.abierto {
+    transform: none;
+    visibility: visible;
+    transition: transform 0.25s ease, visibility 0s;
+  }
+
+  .js .panel-body .panel-sidebar-marca { display: none; } /* ya está en la barra superior */
+
+  .js .panel-body .panel-menu-fondo {
+    display: block;
+    position: fixed;
+    top: 56px;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 55;
+    background: rgba(59, 36, 21, 0.55);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0s linear 0.25s;
+  }
+
+  .js .panel-body.menu-abierto .panel-menu-fondo {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.25s ease, visibility 0s;
+  }
+
+  .js .panel-body.menu-abierto { overflow: hidden; } /* el contenido de atrás no se desplaza */
+
+  .js .panel-body .panel-menu-boton { display: inline-flex; }
+  .js .panel-body .panel-menu-boton[aria-expanded="true"] .icono-hamburguesa,
+  .js .panel-body .panel-menu-boton:not([aria-expanded="true"]) .icono-cerrar { display: none; }
+
+  .panel-body .panel-nav a {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+  }
+
+  .panel-body .btn-enlace { min-height: 44px; padding: 0; }
+  .panel-body .panel-logout { padding: 8px 16px; }
+
+  /* ---------- Barra superior fija (marca + saludo + hamburguesa) ---------- */
+
+  .panel-body .panel-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 56px;
+    padding: 0 12px;
+  }
+
+  .panel-body .panel-topbar-marca {
+    display: block;
+    min-width: 0;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .panel-body .panel-topbar-usuario {
+    margin-left: auto;
+    min-width: 0;
+    font-size: 0.9rem;
+    color: #6b5a4d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .panel-body .panel-menu-boton {
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radio-borde);
+    background: transparent;
+    color: var(--color-cafe-oscuro);
+    cursor: pointer;
+  }
+
+  .panel-body .panel-menu-boton:hover,
+  .panel-body .panel-menu-boton:focus-visible {
+    background: var(--color-beige);
+  }
+
+  /* ---------- Contenido ---------- */
+
+  .panel-body .panel-main {
+    padding: 16px 12px 32px;
+    overflow-wrap: anywhere; /* una palabra larguísima no debe ensanchar la pantalla */
+  }
+
+  .panel-body .panel-main h1 { font-size: 1.5rem; line-height: 1.25; }
+  .panel-body .panel-main h2 { font-size: 1.2rem; }
+  .panel-body .tarjeta { padding: 16px; }
+
+  /* Saltar a un ancla (#portada) no debe dejar el título tapado por la barra fija. */
+  .panel-body [id] { scroll-margin-top: 72px; }
+
+  /* Título y botón de acción: uno debajo del otro, botón a todo lo ancho. */
+  .panel-body .panel-encabezado { flex-direction: column; align-items: stretch; gap: 12px; }
+  .panel-body .panel-encabezado h1 { margin: 0; }
+  .panel-body .panel-encabezado > .btn { width: 100%; }
+
+  /* ---------- Botones: tamaño cómodo para el dedo ---------- */
+
+  .panel-body .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 16px;
+    text-align: center;
+  }
+
+  .panel-body .btn-pequeno {
+    min-width: 44px;
+    min-height: 40px;
+    padding: 8px 14px;
+    font-size: 0.95rem;
+  }
+
+  /* Botones de acción de los formularios (Guardar, Cancelar, Filtrar...): a todo lo ancho. */
+  .panel-body .tarjeta form .btn:not(.btn-pequeno) { width: 100%; margin-top: 8px; }
+  /* "Buscar" junto a su campo: mismo peso (especificidad) que la regla de arriba y va después, así la anula. */
+  .panel-body .tarjeta form .campo .btn { width: auto; margin-top: 0; }
+
+  /* ---------- Formularios: una columna, campos cómodos de tocar ---------- */
+
+  .panel-body .campo input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .panel-body .campo select {
+    min-height: 44px;
+  }
+
+  .panel-body .campo textarea { min-height: 96px; }
+
+  .panel-body .campo-checkbox { min-height: 44px; }
+
+  .panel-body .campo-checkbox input[type="checkbox"],
+  .panel-body .campo-checkbox input[type="radio"] {
+    flex: none;
+    width: 22px;
+    height: 22px;
+  }
+
+  .panel-body .campo-checkbox label { flex: 1; padding: 8px 0; }
+
+  /* Filtros (Auditoría, Recompensas): campos y botón en columna. */
+  .panel-body .form-filtros { flex-direction: column; align-items: stretch !important; }
+  .panel-body .form-filtros .campo { width: 100%; }
+
+  /* Búsqueda: el campo ocupa lo que sobre y "Buscar" mantiene su tamaño. */
+  .panel-body .campo-busqueda { flex-wrap: nowrap; }
+  /* flex-basis 0 (no "auto"): con auto el campo se colapsaba a ~18px de ancho. */
+  .panel-body .campo-busqueda input { flex: 1 1 0; width: auto; min-width: 0; }
+  .panel-body .campo-busqueda .btn { flex: none; }
+
+  /* Horario de atención: día en una línea; las dos horas juntas en la siguiente. */
+  .panel-body .horario-fila {
+    flex-wrap: wrap;
+    row-gap: 4px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--color-beige);
+  }
+
+  .panel-body .horario-fila .horario-dia { flex: 1 1 0; width: auto !important; min-width: 0; }
+
+  .panel-body .horario-horas {
+    display: flex;
+    flex: 1 1 100%;
+    align-items: center;
+    gap: 8px;
+    padding-left: 30px; /* alineadas con el nombre del día, no con la casilla */
+  }
+
+  /* 16px: con menos, el iPhone hace zoom automático al tocar el campo. */
+  .panel-body .horario-hora { flex: 1 1 0; min-width: 0; min-height: 44px; font-size: 1rem; }
+
+  /* Enlace suelto (no dentro de una frase): área táctil cómoda. */
+  .panel-body .enlace-tactil { display: inline-flex; align-items: center; min-height: 44px; }
+
+  /* ---------- Tablas: se deslizan hacia los lados dentro de su tarjeta ---------- */
+
+  .panel-body .tabla-contenedor {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  .panel-body table.tabla th,
+  .panel-body table.tabla td {
+    padding: 10px;
+    overflow-wrap: normal; /* las palabras no se parten a la mitad: la tabla se desliza */
+  }
+
+  .panel-body table.tabla .insignia,
+  .panel-body table.tabla .acciones-tabla { white-space: nowrap; }
+
+  /* Tablas cuya 1.ª columna es una fecha o un código: no se parte por el guion ("2026-" / "09-21"). */
+  .panel-body table.tabla-primera-sin-corte td:first-child { white-space: nowrap; }
+
+  .panel-body .tabla-pista {
+    display: block;
+    margin: 0 0 8px;
+    font-size: 0.85rem;
+    color: #6b5a4d;
+  }
+
+  /* ---------- Listas de fotos (Galería y Portada): tarjetas apiladas, sin deslizar ----------
+     Aquí se sube, ordena y elimina con el dedo, así que en vez de una tabla ancha cada foto
+     es una tarjeta con la miniatura a la izquierda y sus botones debajo, siempre a la vista. */
+
+  .panel-body .tabla-apilada,
+  .panel-body .tabla-apilada tbody { display: block; width: 100%; }
+
+  .panel-body .tabla-apilada thead { /* encabezados solo para lectores de pantalla */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .panel-body .tabla-apilada tr {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    column-gap: 12px;
+    row-gap: 8px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--color-beige);
+  }
+
+  .panel-body .tabla-apilada tr:last-child { border-bottom: 0; }
+
+  .panel-body .tabla-apilada td { display: block; padding: 0; border: 0; min-width: 0; }
+
+  .panel-body .tabla-apilada td.c-acciones,
+  .panel-body .tabla-apilada td.acciones-tabla {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-body .tabla-apilada .miniatura { width: 104px; height: 78px; }
+
+  .panel-body .tabla-apilada .c-num { font-weight: 700; color: var(--color-cafe-oscuro); }
+  .panel-body .tabla-apilada-galeria .c-num::before { content: "Foto "; }
+  .panel-body .tabla-apilada-portada .c-num::before { content: "Imagen "; }
+
+  .panel-body .tabla-apilada .c-titulo:empty::before {
+    content: "Sin título";
+    font-style: italic;
+    color: #6b5a4d;
+  }
+
+  .panel-body .tabla-apilada .c-img { grid-area: img; }
+  .panel-body .tabla-apilada .c-num { grid-area: num; }
+  .panel-body .tabla-apilada .c-titulo { grid-area: titulo; }
+  .panel-body .tabla-apilada .c-estado { grid-area: estado; }
+  .panel-body .tabla-apilada .c-orden { grid-area: orden; }
+  .panel-body .tabla-apilada .c-acciones { grid-area: acciones; }
+
+  .panel-body .tabla-apilada-galeria tr {
+    grid-template-areas:
+      "img   num"
+      "img   titulo"
+      "img   estado"
+      "orden acciones";
+  }
+
+  .panel-body .tabla-apilada-portada tr {
+    grid-template-areas:
+      "img   num"
+      "orden acciones";
+  }
+
+  /* Los botones ▲ ▼ ocupan justo la columna de la miniatura: sin relleno lateral
+     de la celda caben 44 + 8 + 44 = 96 de 104px, lado a lado. */
+  .panel-body .tabla-apilada .c-orden { padding-left: 0; padding-right: 0; }
+  .panel-body .tabla-apilada .c-orden .acciones-tabla { flex-wrap: nowrap; gap: 8px; }
+  .panel-body .tabla-apilada .c-orden .btn-pequeno { min-width: 44px; min-height: 44px; padding: 0; }
+}
+
+/* Pantalla de inicio de sesión (fuera del panel, con su propio layout). */
+@media (max-width: 767.98px) {
+  .login-body .contenedor { padding: 16px; }
+  .login-body .campo input { min-height: 44px; }
+  .login-body .tarjeta form .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 767.98px) and (prefers-reduced-motion: reduce) {
+  .js .panel-body .panel-sidebar,
+  .js .panel-body .panel-menu-fondo { transition: none; }
+}

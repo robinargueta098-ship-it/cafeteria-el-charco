@@ -10,7 +10,7 @@ require APP_PATH . '/Views/layouts/panel_header.php';
 
 <div class="tarjeta" style="margin-bottom:16px;">
     <form method="get" action="/admin/lealtad">
-        <div class="campo" style="margin-bottom:0;display:flex;gap:8px;">
+        <div class="campo campo-busqueda" style="margin-bottom:0;display:flex;gap:8px;">
             <input type="text" name="q" placeholder="Busca al cliente por nombre o teléfono..." autofocus
                    value="<?= htmlspecialchars($termino, ENT_QUOTES, 'UTF-8') ?>">
             <button type="submit" class="btn" style="white-space:nowrap;">Buscar</button>

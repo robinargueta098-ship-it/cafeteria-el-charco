@@ -29,22 +29,22 @@ $total = count($fotos);
         <p class="campo-ayuda" style="margin-top:0;">
             El orden de esta lista es el orden del carrusel en el sitio público. Usa ▲ ▼ para moverlas.
         </p>
-        <table class="tabla">
-            <thead><tr><th>#</th><th>Foto</th><th>Título</th><th>Estado</th><th>Orden</th><th>Acciones</th></tr></thead>
-            <tbody>
+        <table class="tabla tabla-apilada tabla-apilada-galeria" role="table">
+            <thead role="rowgroup"><tr role="row"><th role="columnheader">#</th><th role="columnheader">Foto</th><th role="columnheader">Título</th><th role="columnheader">Estado</th><th role="columnheader">Orden</th><th role="columnheader">Acciones</th></tr></thead>
+            <tbody role="rowgroup">
                 <?php foreach ($fotos as $indice => $f): ?>
-                    <tr>
-                        <td><?= $indice + 1 ?></td>
-                        <td><img class="miniatura" src="<?= UPLOADS_URL ?>/galeria/<?= htmlspecialchars($f['imagen'], ENT_QUOTES, 'UTF-8') ?>" alt=""></td>
-                        <td><?= htmlspecialchars((string) ($f['titulo'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                        <td>
+                    <tr role="row">
+                        <td class="c-num" role="cell"><?= $indice + 1 ?></td>
+                        <td class="c-img" role="cell"><img class="miniatura" src="<?= UPLOADS_URL ?>/galeria/<?= htmlspecialchars($f['imagen'], ENT_QUOTES, 'UTF-8') ?>" alt=""></td>
+                        <td class="c-titulo" role="cell"><?= htmlspecialchars((string) ($f['titulo'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td class="c-estado" role="cell">
                             <?php if ((int) $f['activo'] === 1): ?>
                                 <span class="insignia insignia-activo">Activa</span>
                             <?php else: ?>
                                 <span class="insignia insignia-inactivo">Inactiva</span>
                             <?php endif; ?>
                         </td>
-                        <td>
+                        <td class="c-orden" role="cell">
                             <div class="acciones-tabla">
                                 <?php foreach (['subir' => ['▲', 'Subir', $indice === 0], 'bajar' => ['▼', 'Bajar', $indice === $total - 1]] as $direccion => [$simbolo, $etiqueta, $deshabilitado]): ?>
                                     <form method="post" action="/admin/galeria/<?= (int) $f['id'] ?>/mover">
@@ -57,7 +57,7 @@ $total = count($fotos);
                                 <?php endforeach; ?>
                             </div>
                         </td>
-                        <td class="acciones-tabla">
+                        <td class="acciones-tabla c-acciones" role="cell">
                             <a class="btn btn-pequeno" href="/admin/galeria/<?= (int) $f['id'] ?>/editar">Editar</a>
                             <form method="post" action="/admin/galeria/<?= (int) $f['id'] ?>/eliminar" onsubmit="return confirm('¿Eliminar esta foto? No se puede deshacer.');">
                                 <?= Csrf::campo() ?>

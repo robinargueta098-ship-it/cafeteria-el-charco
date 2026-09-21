@@ -13,6 +13,23 @@ namespace App\Core;
 class Vista
 {
     /**
+     * URL de un archivo estático (CSS/JS) con su fecha de modificación como
+     * versión: `/assets/css/main.css?v=1758480000`. Cada vez que el archivo
+     * cambia, la URL cambia, así el navegador nunca mezcla HTML nuevo con un
+     * CSS/JS viejo guardado en su caché (ej. un botón nuevo que se ve porque
+     * le falta la regla que lo oculta). Devuelve la URL SIN escapar: quien la
+     * imprima debe pasarla por htmlspecialchars().
+     *
+     * @param string $rutaUrl ruta pública, con "/" inicial (ej. '/assets/css/main.css')
+     */
+    public static function asset(string $rutaUrl): string
+    {
+        $archivo = BASE_PATH . '/public' . $rutaUrl;
+
+        return is_file($archivo) ? $rutaUrl . '?v=' . filemtime($archivo) : $rutaUrl;
+    }
+
+    /**
      * Insignia de "falta este dato del negocio" — para hechos únicos
      * (dirección, horario, texto "sobre nosotros", reseña de Google,
      * foto de portada). Deliberadamente llamativa: es una tarea

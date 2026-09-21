@@ -8,7 +8,147 @@ document.addEventListener('DOMContentLoaded', function () {
   inicializarAlcancePromocion();
   inicializarTipoPromocion();
   document.querySelectorAll('input[data-subida-multiple]').forEach(inicializarSubidaMultiple);
+  inicializarMenuPanel();
+  inicializarPistaTablas();
 });
+
+/**
+ * Menú lateral en celular: se abre y se cierra con el botón hamburguesa de
+ * la barra superior (en escritorio ese botón no se ve y el menú siempre
+ * está a la vista). Se cierra también con Escape, tocando el fondo oscuro,
+ * al elegir una sección y al pasar a un ancho de escritorio. Mientras está
+ * abierto, Tab no se escapa hacia el contenido de atrás.
+ */
+function inicializarMenuPanel() {
+  var boton = document.querySelector('.panel-menu-boton');
+  var lateral = document.getElementById('panel-sidebar');
+  if (!boton || !lateral) {
+    return;
+  }
+
+  var fondo = document.querySelector('[data-panel-cerrar-menu]');
+  var esMovil = window.matchMedia('(max-width: 767.98px)');
+
+  function estaAbierto() {
+    return lateral.classList.contains('abierto');
+  }
+
+  function abrir() {
+    lateral.classList.add('abierto');
+    document.body.classList.add('menu-abierto');
+    boton.setAttribute('aria-expanded', 'true');
+    boton.setAttribute('aria-label', 'Cerrar menú');
+
+    var primerEnlace = lateral.querySelector('a');
+    if (primerEnlace) {
+      primerEnlace.focus();
+    }
+  }
+
+  function cerrar(devolverFoco) {
+    lateral.classList.remove('abierto');
+    document.body.classList.remove('menu-abierto');
+    boton.setAttribute('aria-expanded', 'false');
+    boton.setAttribute('aria-label', 'Abrir menú');
+
+    if (devolverFoco) {
+      boton.focus();
+    }
+  }
+
+  boton.addEventListener('click', function () {
+    if (estaAbierto()) {
+      cerrar(true);
+    } else {
+      abrir();
+    }
+  });
+
+  if (fondo) {
+    fondo.addEventListener('click', function () { cerrar(true); });
+  }
+
+  lateral.querySelectorAll('a').forEach(function (enlace) {
+    enlace.addEventListener('click', function () { cerrar(false); });
+  });
+
+  document.addEventListener('keydown', function (evento) {
+    if (!estaAbierto()) {
+      return;
+    }
+
+    if (evento.key === 'Escape') {
+      cerrar(true);
+      return;
+    }
+
+    if (evento.key === 'Tab') {
+      // El ciclo de foco incluye el menú y el propio botón (que sigue visible arriba).
+      var enfocables = Array.prototype.slice.call(lateral.querySelectorAll('a[href], button:not([disabled])'));
+      enfocables.push(boton);
+      var primero = enfocables[0];
+      var ultimo = enfocables[enfocables.length - 1];
+
+      if (evento.shiftKey && document.activeElement === primero) {
+        evento.preventDefault();
+        ultimo.focus();
+      } else if (!evento.shiftKey && document.activeElement === ultimo) {
+        evento.preventDefault();
+        primero.focus();
+      }
+    }
+  });
+
+  function alCambiarAncho(evento) {
+    if (!evento.matches) {
+      cerrar(false); // se giró a horizontal / se agrandó la ventana: el menú vuelve a ser fijo
+    }
+  }
+
+  if (esMovil.addEventListener) {
+    esMovil.addEventListener('change', alCambiarAncho);
+  } else if (esMovil.addListener) {
+    esMovil.addListener(alCambiarAncho); // Safari antiguo
+  }
+}
+
+/**
+ * En celular, las tablas que no caben se deslizan hacia los lados dentro de
+ * su tarjeta; esto agrega arriba un aviso corto para que se note (solo si de
+ * verdad desbordan, y solo en pantalla chica).
+ */
+function inicializarPistaTablas() {
+  var contenedores = Array.prototype.slice.call(document.querySelectorAll('.tabla-contenedor'));
+  if (contenedores.length === 0) {
+    return;
+  }
+
+  var esMovil = window.matchMedia('(max-width: 767.98px)');
+
+  function actualizar() {
+    contenedores.forEach(function (contenedor) {
+      if (!contenedor.querySelector('table.tabla:not(.tabla-apilada)')) {
+        return; // las listas de fotos se apilan, no se deslizan
+      }
+
+      var anterior = contenedor.previousElementSibling;
+      var pista = anterior && anterior.classList.contains('tabla-pista') ? anterior : null;
+      var desborda = esMovil.matches && contenedor.scrollWidth > contenedor.clientWidth + 2;
+
+      if (desborda && !pista) {
+        pista = document.createElement('p');
+        pista.className = 'tabla-pista';
+        pista.textContent = 'Desliza la tabla hacia los lados para ver más columnas ↔';
+        contenedor.parentNode.insertBefore(pista, contenedor);
+      } else if (!desborda && pista) {
+        pista.parentNode.removeChild(pista);
+      }
+    });
+  }
+
+  window.addEventListener('resize', actualizar);
+  actualizar();
+}
 
 /**
  * Subida de varias fotos (galería y portada): avisa de inmediato si alguna

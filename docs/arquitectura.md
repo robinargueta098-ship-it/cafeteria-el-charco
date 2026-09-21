@@ -500,9 +500,39 @@ formularios anidados). `PortadaController` + `PortadaImagen`.
 - **Respaldos**: sin versiones optimizadas usa los originales; con una
   sola imagen el fondo queda fijo (sin carrusel; el panel lo avisa); sin
   ninguna, el marcador `[PENDIENTE: fotografía de portada]`.
-- **Limitación conocida del panel**: la barra lateral es de ancho fijo,
-  así que ninguna pantalla del panel (esta incluida) es cómoda en un
-  celular; se usa desde computadora o tableta.
+- (La limitación de "panel solo para computadora" quedó resuelta: ver §4.7.)
+
+### 4.7 Panel responsive (celular)
+
+Hasta aquí solo el sitio público se adaptaba al celular; el panel tenía una
+barra lateral de ancho fijo. Ahora todo el panel funciona desde 360 px.
+El escritorio (≥ 768 px) no cambió: se comparó la geometría de 3 141
+elementos en 28 pantallas antes y después → 0 diferencias.
+
+- **Menú**: en pantallas < 768 px la barra lateral es un panel deslizable
+  que se abre con un botón de hamburguesa en la barra superior fija.
+  Se cierra con ✕, tocando el fondo oscuro, con Escape o al elegir una
+  sección; mientras está abierto el foco queda dentro (Tab/Shift+Tab) y la
+  página de atrás no se desplaza. Es mejora progresiva: `<html>` recibe la
+  clase `js` desde un script en línea, y sin JavaScript el menú simplemente
+  se apila arriba (nada queda inaccesible).
+- **Tablas**: desplazamiento horizontal dentro de su tarjeta, con la aviso
+  "Desliza…" solo cuando de verdad desbordan. Las de Galería e Imágenes de
+  portada se convierten en tarjetas apiladas (miniatura, título, estado,
+  ▲ ▼ y Eliminar) con botones de 44 px, porque se usan para subir y
+  ordenar fotos desde el teléfono. Las tablas cuya primera columna es una
+  fecha o código no la parten (`tabla-primera-sin-corte`).
+- **Formularios**: una sola columna, campos y botones a todo el ancho,
+  objetivos táctiles ≥ 44 px, horarios en dos líneas (día / horas).
+- **Caché**: `Vista::asset()` agrega `?v=<fecha de modificación>` a CSS/JS
+  en todos los layouts, para que un HTML nuevo nunca se mezcle con un CSS
+  viejo guardado en el navegador.
+- **Verificación**: 29 pantallas × 360/390/414 px medidas con un script
+  (desborde de página, elementos fuera de pantalla, texto recortado,
+  solapes, botones < 36 px): antes 15 pantallas desbordaban y había 226
+  objetivos pequeños; ahora 0 en todo. No se probó en un teléfono físico.
+- **Corrección incidental**: crear un producto sin foto daba error 500
+  (`imagen` no llegaba al modelo); ahora se guarda como NULL.
 
 ---
 

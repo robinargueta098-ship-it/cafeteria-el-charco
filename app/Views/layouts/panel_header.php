@@ -10,6 +10,7 @@
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Flash;
+use App\Core\Vista;
 
 $usuarioActual = Auth::usuario();
 $esAdministrador = $usuarioActual !== null && $usuarioActual['rol_id'] === 1;
@@ -39,13 +40,17 @@ $flash = Flash::tomar();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel — Cafetería El Charco</title>
-    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(Vista::asset('/assets/css/main.css'), ENT_QUOTES, 'UTF-8') ?>">
+    <?php /* Marca "hay JavaScript" antes de pintar: en celular el menú lateral solo se
+             oculta detrás del botón hamburguesa si el script que lo abre va a funcionar;
+             sin JavaScript el menú queda visible y apilado arriba (ver main.css). */ ?>
+    <script>document.documentElement.className += ' js';</script>
 </head>
 <body class="panel-body">
 <div class="panel-layout">
-    <aside class="panel-sidebar">
+    <aside class="panel-sidebar" id="panel-sidebar">
         <div class="panel-sidebar-marca">Cafetería El Charco</div>
-        <nav>
+        <nav aria-label="Navegación del panel">
             <ul class="panel-nav">
                 <?php foreach ($enlaces as $clave => [$etiqueta, $url, $soloAdmin]): ?>
                     <?php if ($soloAdmin && !$esAdministrador) continue; ?>
@@ -64,9 +69,18 @@ $flash = Flash::tomar();
         </form>
     </aside>
 
+    <?php /* Fondo oscuro que se ve solo en celular con el menú abierto (oculto en escritorio). */ ?>
+    <div class="panel-menu-fondo" data-panel-cerrar-menu></div>
+
     <div class="panel-contenido">
         <header class="panel-topbar">
-            <span>Hola, <?= htmlspecialchars($usuarioActual['nombre'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
+            <?php /* Solo en celular (en escritorio estos dos elementos están ocultos). */ ?>
+            <button type="button" class="panel-menu-boton" aria-controls="panel-sidebar" aria-expanded="false" aria-label="Abrir menú">
+                <svg class="icono-hamburguesa" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+                <svg class="icono-cerrar" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            </button>
+            <span class="panel-topbar-marca">Cafetería El Charco</span>
+            <span class="panel-topbar-usuario">Hola, <?= htmlspecialchars($usuarioActual['nombre'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
         </header>
 
         <main class="panel-main">

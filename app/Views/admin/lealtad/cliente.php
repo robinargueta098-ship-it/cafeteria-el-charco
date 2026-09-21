@@ -113,7 +113,7 @@ $etiquetasEstadoRecompensa = ['disponible' => 'Disponible', 'canjeada' => 'Canje
     <?php if ($historial === []): ?>
         <p class="tabla-vacio">Todavía no hay movimientos para este cliente.</p>
     <?php else: ?>
-        <table class="tabla">
+        <table class="tabla tabla-primera-sin-corte">
             <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Motivo</th><th>Referencia</th><th>Registrado por</th></tr></thead>
             <tbody>
                 <?php foreach ($historial as $m): ?>

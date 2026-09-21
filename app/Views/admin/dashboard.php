@@ -37,7 +37,7 @@ require APP_PATH . '/Views/layouts/panel_header.php';
         <?php if ($ultimaActividad === []): ?>
             <p class="tabla-vacio">Todavía no hay actividad registrada.</p>
         <?php else: ?>
-            <table class="tabla">
+            <table class="tabla tabla-primera-sin-corte">
                 <thead><tr><th>Fecha</th><th>Módulo</th><th>Acción</th><th>Usuario</th></tr></thead>
                 <tbody>
                     <?php foreach ($ultimaActividad as $r): ?>
@@ -50,7 +50,7 @@ require APP_PATH . '/Views/layouts/panel_header.php';
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            <p><a href="/admin/auditoria">Ver toda la auditoría →</a></p>
+            <p><a href="/admin/auditoria" class="enlace-tactil">Ver toda la auditoría →</a></p>
         <?php endif; ?>
     </div>
 <?php endif; ?>

@@ -18,7 +18,7 @@ $etiquetasAccion = [
 <h1>Auditoría</h1>
 
 <div class="tarjeta" style="margin-bottom:16px;">
-    <form method="get" action="/admin/auditoria" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+    <form method="get" action="/admin/auditoria" class="form-filtros" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
         <div class="campo" style="margin-bottom:0;">
             <label for="tabla">Módulo</label>
             <select id="tabla" name="tabla">
@@ -45,7 +45,7 @@ $etiquetasAccion = [
     <?php if ($registros === []): ?>
         <p class="tabla-vacio">No hay registros de auditoría con esos filtros.</p>
     <?php else: ?>
-        <table class="tabla">
+        <table class="tabla tabla-primera-sin-corte">
             <thead><tr><th>Fecha</th><th>Módulo</th><th>Acción</th><th>Registro</th><th>Usuario</th><th>IP</th></tr></thead>
             <tbody>
                 <?php foreach ($registros as $r): ?>

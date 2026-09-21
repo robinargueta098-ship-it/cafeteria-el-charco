@@ -55,14 +55,14 @@ $totalPortada = count($portada);
 
     <?php if ($totalPortada > 0): ?>
         <div class="tabla-contenedor" style="margin-bottom:16px;">
-            <table class="tabla">
-                <thead><tr><th>#</th><th>Imagen</th><th>Orden</th><th>Acciones</th></tr></thead>
-                <tbody>
+            <table class="tabla tabla-apilada tabla-apilada-portada" role="table">
+                <thead role="rowgroup"><tr role="row"><th role="columnheader">#</th><th role="columnheader">Imagen</th><th role="columnheader">Orden</th><th role="columnheader">Acciones</th></tr></thead>
+                <tbody role="rowgroup">
                     <?php foreach ($portada as $indice => $p): ?>
-                        <tr>
-                            <td><?= $indice + 1 ?></td>
-                            <td><img class="miniatura" style="width:96px;height:64px;" src="<?= UPLOADS_URL ?>/portada/<?= htmlspecialchars($p['imagen'], ENT_QUOTES, 'UTF-8') ?>" alt="Imagen de portada <?= $indice + 1 ?>"></td>
-                            <td>
+                        <tr role="row">
+                            <td class="c-num" role="cell"><?= $indice + 1 ?></td>
+                            <td class="c-img" role="cell"><img class="miniatura miniatura-portada" src="<?= UPLOADS_URL ?>/portada/<?= htmlspecialchars($p['imagen'], ENT_QUOTES, 'UTF-8') ?>" alt="Imagen de portada <?= $indice + 1 ?>"></td>
+                            <td class="c-orden" role="cell">
                                 <div class="acciones-tabla">
                                     <?php foreach (['subir' => ['▲', 'Subir', $indice === 0], 'bajar' => ['▼', 'Bajar', $indice === $totalPortada - 1]] as $direccion => [$simbolo, $etiqueta, $deshabilitado]): ?>
                                         <form method="post" action="/admin/configuracion/portada/<?= (int) $p['id'] ?>/mover">
@@ -75,7 +75,7 @@ $totalPortada = count($portada);
                                     <?php endforeach; ?>
                                 </div>
                             </td>
-                            <td>
+                            <td class="c-acciones" role="cell">
                                 <form method="post" action="/admin/configuracion/portada/<?= (int) $p['id'] ?>/eliminar"
                                       onsubmit="return confirm('¿Eliminar esta imagen de la portada? No se puede deshacer.');">
                                     <?= Csrf::campo() ?>
@@ -214,12 +214,15 @@ $totalPortada = count($portada);
                 }
                 $cerrado = $horario === null || (int) $horario['cerrado'] === 1;
             ?>
-            <div class="campo-checkbox" style="margin-bottom:4px;">
+            <div class="campo-checkbox horario-fila" style="margin-bottom:4px;">
                 <input type="checkbox" id="abierto_<?= $numero ?>" name="horario[<?= $numero ?>][abierto]" value="1" <?= !$cerrado ? 'checked' : '' ?>>
-                <label for="abierto_<?= $numero ?>" style="margin:0;width:90px;"><?= $nombreDia ?></label>
-                <input type="time" name="horario[<?= $numero ?>][apertura]" value="<?= htmlspecialchars((string) ($horario['hora_apertura'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" style="width:auto;">
-                a
-                <input type="time" name="horario[<?= $numero ?>][cierre]" value="<?= htmlspecialchars((string) ($horario['hora_cierre'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" style="width:auto;">
+                <label for="abierto_<?= $numero ?>" class="horario-dia" style="margin:0;width:90px;"><?= $nombreDia ?></label>
+                <?php /* En escritorio este contenedor no afecta el diseño (display: contents); en celular agrupa las dos horas en su propia línea. */ ?>
+                <span class="horario-horas">
+                    <input type="time" class="horario-hora" aria-label="<?= $nombreDia ?>: hora de apertura" name="horario[<?= $numero ?>][apertura]" value="<?= htmlspecialchars((string) ($horario['hora_apertura'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" style="width:auto;">
+                    a
+                    <input type="time" class="horario-hora" aria-label="<?= $nombreDia ?>: hora de cierre" name="horario[<?= $numero ?>][cierre]" value="<?= htmlspecialchars((string) ($horario['hora_cierre'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" style="width:auto;">
+                </span>
             </div>
         <?php endforeach; ?>
 

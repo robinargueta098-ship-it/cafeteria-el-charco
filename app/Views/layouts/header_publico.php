@@ -2,6 +2,7 @@
 /**
  * @var array<string,string> $config
  */
+use App\Core\Vista;
 use App\Core\WhatsApp;
 
 $nombreSitio = $config['nombre_sitio'] ?? 'Cafetería El Charco';
@@ -19,8 +20,8 @@ $enlaceWhatsappNav = WhatsApp::enlace($whatsappNumero, "Hola, escribo desde el s
     <?php if ($descripcionCorta !== ''): ?>
         <meta name="description" content="<?= htmlspecialchars($descripcionCorta, ENT_QUOTES, 'UTF-8') ?>">
     <?php endif; ?>
-    <link rel="stylesheet" href="/assets/css/main.css">
-    <link rel="stylesheet" href="/assets/css/sitio.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(Vista::asset('/assets/css/main.css'), ENT_QUOTES, 'UTF-8') ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars(Vista::asset('/assets/css/sitio.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="sitio-body">
 
