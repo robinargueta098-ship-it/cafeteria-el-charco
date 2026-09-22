@@ -9,6 +9,7 @@ use App\Core\Flash;
 use App\Core\SubidaArchivo;
 use App\Core\Validator;
 use App\Models\Categoria;
+use App\Models\CuponPromocion;
 use App\Models\Producto;
 use App\Models\Promocion;
 use App\Services\AuditoriaService;
@@ -130,6 +131,16 @@ class PromocionController extends Controller
         $promocion = $modelo->buscarPorId((int) $id);
         if ($promocion === null) {
             $this->error404();
+        }
+
+        // Si ya se reclamó algún cupón (§4.20), borrar la promoción dejaría ese
+        // historial sin promoción a la que apuntar — igual que Temporadas con
+        // sus productos asociados: se pide desactivarla en vez de borrarla.
+        $cupones = (new CuponPromocion())->contarPorPromocion((int) $id);
+        if ($cupones > 0) {
+            Flash::error("No se puede eliminar: {$cupones} cupón(es) ya reclamados apuntan a esta promoción. Desactívala en vez de eliminarla.");
+            $this->redirigir('/admin/promociones');
+            return;
         }
 
         $modelo->eliminar((int) $id);

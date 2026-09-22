@@ -8,6 +8,7 @@
  * @var array<string,mixed>|null $clienteEscaneado
  * @var int $umbral
  * @var array<int,array<string,mixed>> $disponibles
+ * @var array<string,mixed>|null $cupon
  */
 use App\Core\Csrf;
 use App\Core\Vista;
@@ -23,8 +24,9 @@ require APP_PATH . '/Views/layouts/panel_header.php';
 <ul>
     <li><strong>QR personal</strong> del cliente: identifica al cliente y <strong>suma cafés</strong>.</li>
     <li><strong>QR de recompensa</strong>: <strong>canjea</strong> el café gratis.</li>
+    <li><strong>QR de cupón de promoción</strong>: <strong>canjea</strong> el cupón (descuento, 2x1…).</li>
 </ul>
-<p class="campo-ayuda">Los dos son de 8 caracteres (ej. <code>G5S3WYHX</code>); no hace falta saber cuál es — se prueban los dos y se muestra a quién pertenece antes de aplicar nada.</p>
+<p class="campo-ayuda">Los tres son de 8 caracteres (ej. <code>G5S3WYHX</code>); no hace falta saber cuál es — se prueban los tres y se muestra a quién pertenece antes de aplicar nada.</p>
 
 <?php if ($error !== null): ?>
     <div class="alerta alerta-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
@@ -46,7 +48,7 @@ require APP_PATH . '/Views/layouts/panel_header.php';
         <form method="post" action="/admin/lealtad/canjear/consultar" id="formulario-codigo">
             <?= Csrf::campo() ?>
             <div class="campo">
-                <label for="codigo">Código (QR personal o de recompensa)</label>
+                <label for="codigo">Código (QR personal, de recompensa o de cupón)</label>
                 <input type="text" id="codigo" name="codigo" maxlength="20" required autofocus
                        autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="G5S3WYHX"
                        class="campo-codigo"
@@ -130,6 +132,39 @@ require APP_PATH . '/Views/layouts/panel_header.php';
         <?php else: ?>
             <p class="campo-ayuda">
                 Esta recompensa ya no se puede canjear (estado: <?= htmlspecialchars($recompensa['estado'], ENT_QUOTES, 'UTF-8') ?><?= $recompensa['fecha_canjeada'] !== null ? ', usada el ' . htmlspecialchars(substr($recompensa['fecha_canjeada'], 0, 16), ENT_QUOTES, 'UTF-8') : '' ?>).
+            </p>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
+
+<?php if ($cupon !== null): ?>
+    <div class="tarjeta" style="max-width:480px;margin-top:24px;">
+        <h2 style="margin-top:0;">Cupón de promoción encontrado</h2>
+        <p><strong>Cliente:</strong> <?= htmlspecialchars($cupon['cliente_nombre'], ENT_QUOTES, 'UTF-8') ?></p>
+        <p><strong>Teléfono:</strong> <?= htmlspecialchars($cupon['cliente_telefono'], ENT_QUOTES, 'UTF-8') ?></p>
+        <p><strong>Código:</strong> <?= htmlspecialchars($cupon['codigo'], ENT_QUOTES, 'UTF-8') ?></p>
+        <p><strong>Promoción:</strong> <?= htmlspecialchars($cupon['promocion_nombre'], ENT_QUOTES, 'UTF-8') ?>
+            <?php if (($etiquetaCupon = Vista::etiquetaPromocion(['tipo' => $cupon['promocion_tipo'], 'valor' => $cupon['promocion_valor']])) !== ''): ?>
+                — <strong style="color:var(--color-verde);"><?= htmlspecialchars($etiquetaCupon, ENT_QUOTES, 'UTF-8') ?></strong>
+            <?php endif; ?>
+        </p>
+        <p><strong>Estado:</strong> <?= htmlspecialchars($cupon['estado'], ENT_QUOTES, 'UTF-8') ?></p>
+        <p><strong>Válido hasta:</strong> <?= htmlspecialchars(Vista::fechaLarga($cupon['promocion_fecha_fin']), ENT_QUOTES, 'UTF-8') ?></p>
+
+        <?php if ($cupon['estado'] === 'disponible'): ?>
+            <form method="post" action="/admin/lealtad/canjear/confirmar-cupon">
+                <?= Csrf::campo() ?>
+                <?php /* El servidor vuelve a comprobar, con la fila bloqueada, el estado y la vigencia. */ ?>
+                <input type="hidden" name="codigo" value="<?= htmlspecialchars($cupon['codigo'], ENT_QUOTES, 'UTF-8') ?>">
+                <p class="campo-ayuda">El "premio" ya lo define la promoción — aplícalo en la caja al confirmar.</p>
+                <button type="submit" class="btn btn-verde"
+                        onclick="return confirm('¿Confirmar el canje de este cupón para <?= htmlspecialchars(addslashes($cupon['cliente_nombre']), ENT_QUOTES, 'UTF-8') ?>? No se puede deshacer.');">
+                    Confirmar canje
+                </button>
+            </form>
+        <?php else: ?>
+            <p class="campo-ayuda">
+                Este cupón ya no se puede canjear (estado: <?= htmlspecialchars($cupon['estado'], ENT_QUOTES, 'UTF-8') ?><?= $cupon['fecha_canje'] !== null ? ', usado el ' . htmlspecialchars(substr((string) $cupon['fecha_canje'], 0, 16), ENT_QUOTES, 'UTF-8') : '' ?>).
             </p>
         <?php endif; ?>
     </div>

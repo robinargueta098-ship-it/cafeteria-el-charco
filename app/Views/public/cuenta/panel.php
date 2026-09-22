@@ -7,6 +7,7 @@
  * @var array<int,array<string,mixed>> $horarios
  * @var array{tipo:string,mensaje:string}|null $flash
  * @var array<int,array<string,mixed>> $promocionesLealtad
+ * @var array<int,array<string,mixed>|null> $cuponesPorPromocion clave = id de la promoción
  */
 use App\Core\Csrf;
 use App\Core\CodigoQr;
@@ -88,12 +89,14 @@ $etiquetasEstado = [
         </div>
 
         <?php /*
-            Aviso puramente informativo (docs/arquitectura.md §4.19): no cambia el
-            saldo ni las reglas de canje de arriba, solo avisa que hay una
-            promoción vigente marcada "combinable con lealtad" en el panel.
+            Promociones vigentes "combinables con lealtad" (docs/arquitectura.md §4.20):
+            un cupón real, de un solo uso, por cliente y por promoción. Si el cliente
+            todavía no lo reclamó, se ofrece el botón; si ya lo tiene, se muestra su
+            código/QR igual que una recompensa de café gratis (nunca las dos cosas).
         */ ?>
         <?php foreach ($promocionesLealtad as $promo): ?>
-            <div class="tarjeta" style="margin-bottom:24px;border-color:var(--color-verde);">
+            <?php $cupon = $cuponesPorPromocion[(int) $promo['id']] ?? null; ?>
+            <div class="tarjeta" style="margin-bottom:24px;border-color:var(--color-verde);<?= $cupon !== null && $cupon['estado'] === 'disponible' ? 'text-align:center;' : '' ?>">
                 <p style="margin:0;">
                     🎁 <strong>Promoción especial:</strong>
                     <?= htmlspecialchars($promo['nombre'], ENT_QUOTES, 'UTF-8') ?>
@@ -103,8 +106,33 @@ $etiquetasEstado = [
                     <?php if (!empty($promo['descripcion'])): ?>
                         <br><?= htmlspecialchars($promo['descripcion'], ENT_QUOTES, 'UTF-8') ?>
                     <?php endif; ?>
-                    <br><span class="campo-ayuda">Válida hasta <?= htmlspecialchars(Vista::fechaLarga($promo['fecha_fin']), ENT_QUOTES, 'UTF-8') ?>. Se aplica junto con tu programa de lealtad — pregúntale al cajero.</span>
+                    <br><span class="campo-ayuda">Válida hasta <?= htmlspecialchars(Vista::fechaLarga($promo['fecha_fin']), ENT_QUOTES, 'UTF-8') ?>.</span>
                 </p>
+
+                <?php if ($cupon === null): ?>
+                    <form method="post" action="/cuenta/promociones/<?= (int) $promo['id'] ?>/reclamar" style="margin-top:12px;">
+                        <?= Csrf::campo() ?>
+                        <button type="submit" class="btn btn-verde">Reclamar cupón</button>
+                    </form>
+                <?php elseif ($cupon['estado'] === 'disponible'): ?>
+                    <?php $qrCupon = CodigoQr::dataUri($cupon['codigo']); ?>
+                    <div style="margin-top:12px;">
+                        <?php if ($qrCupon !== null): ?>
+                            <img class="qr-recompensa" src="<?= htmlspecialchars($qrCupon, ENT_QUOTES, 'UTF-8') ?>" width="200" height="200"
+                                 alt="Código QR de tu cupón <?= htmlspecialchars($cupon['codigo'], ENT_QUOTES, 'UTF-8') ?>">
+                        <?php endif; ?>
+                        <div class="codigo-recompensa-texto" style="font-size:1.6rem;font-weight:700;letter-spacing:2px;color:var(--color-verde);">
+                            <?= htmlspecialchars($cupon['codigo'], ENT_QUOTES, 'UTF-8') ?>
+                        </div>
+                        <p class="campo-ayuda" style="margin:4px 0 0;">Muestra este código en el mostrador, o díctaselo al cajero.</p>
+                    </div>
+                <?php elseif ($cupon['estado'] === 'canjeado'): ?>
+                    <p class="campo-ayuda" style="margin-top:8px;">
+                        Ya canjeaste este cupón el <?= htmlspecialchars(substr((string) $cupon['fecha_canje'], 0, 10), ENT_QUOTES, 'UTF-8') ?>.
+                    </p>
+                <?php else: ?>
+                    <p class="campo-ayuda" style="margin-top:8px;">Este cupón ya no está disponible.</p>
+                <?php endif; ?>
             </div>
         <?php endforeach; ?>
 

@@ -15,6 +15,7 @@ use App\Controllers\Admin\AuthController;
 use App\Controllers\Admin\CategoriaController;
 use App\Controllers\Admin\ClienteController;
 use App\Controllers\Admin\ConfiguracionController;
+use App\Controllers\Admin\CuponPromocionController;
 use App\Controllers\Admin\DashboardController;
 use App\Controllers\Admin\GaleriaController;
 use App\Controllers\Admin\LealtadController;
@@ -90,6 +91,7 @@ $router->get('/admin/lealtad/canjear', [LealtadController::class, 'mostrarCanjea
 $router->post('/admin/lealtad/canjear/consultar', [LealtadController::class, 'consultarCodigo']);
 $router->post('/admin/lealtad/canjear/sumar', [LealtadController::class, 'sumarConsumoPorQr']);
 $router->post('/admin/lealtad/canjear/confirmar', [LealtadController::class, 'confirmarCanje']);
+$router->post('/admin/lealtad/canjear/confirmar-cupon', [LealtadController::class, 'confirmarCanjeCupon']);
 $router->get('/admin/lealtad/{id}', [LealtadController::class, 'mostrarCliente']);
 $router->post('/admin/lealtad/{id}/consumo', [LealtadController::class, 'registrarConsumo']);
 $router->post('/admin/lealtad/{id}/ajuste', [LealtadController::class, 'registrarAjuste']);
@@ -97,6 +99,10 @@ $router->post('/admin/lealtad/{id}/ajuste', [LealtadController::class, 'registra
 // --- Recompensas ---
 $router->get('/admin/recompensas', [RecompensaController::class, 'index']);
 $router->post('/admin/recompensas/{id}/cancelar', [RecompensaController::class, 'cancelar']);
+
+// --- Cupones de promoción (§4.20) — cancelar es exclusivo de Administrador, ver el controlador ---
+$router->get('/admin/cupones', [CuponPromocionController::class, 'index']);
+$router->post('/admin/cupones/{id}/cancelar', [CuponPromocionController::class, 'cancelar']);
 
 // --- Configuración ---
 $router->get('/admin/configuracion', [ConfiguracionController::class, 'mostrar']);

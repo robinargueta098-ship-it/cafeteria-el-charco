@@ -28,6 +28,7 @@ $enlaces = [
     'lealtad'        => ['Lealtad', '/admin/lealtad', false],
     'canjear'        => ['Escanear código', '/admin/lealtad/canjear', false],
     'recompensas'    => ['Recompensas', '/admin/recompensas', false],
+    'cupones'        => ['Cupones', '/admin/cupones', false],
     'configuracion'  => ['Configuración', '/admin/configuracion', true],
     'usuarios'       => ['Usuarios', '/admin/usuarios', true],
     'auditoria'      => ['Auditoría', '/admin/auditoria', true],

@@ -206,7 +206,16 @@ $tarjetaProducto = function (array $p) {
         <p class="sitio-seccion-intro">Vigentes en este momento.</p>
         <div class="tarjetas-grid">
             <?php foreach ($promociones as $promo): ?>
-                <article class="tarjeta-producto">
+                <?php
+                    // Vinculada a lealtad: la tarjeta entera es un enlace a /cuenta, donde
+                    // se reclama el cupón real (§4.20). Sin sesión, ClienteAuthMiddleware
+                    // manda primero a iniciar sesión o crear cuenta, y de ahí ya cae en
+                    // /cuenta — nunca hace falta volver a hacer clic en la promoción.
+                    $esDeLealtad = (int) ($promo['combinable_con_lealtad'] ?? 0) === 1;
+                    $etiquetaHtml = $esDeLealtad ? 'a' : 'article';
+                ?>
+                <<?= $etiquetaHtml ?> class="tarjeta-producto<?= $esDeLealtad ? ' tarjeta-producto-enlace' : '' ?>"
+                    <?= $esDeLealtad ? 'href="/cuenta"' : '' ?>>
                     <?php if (!empty($promo['imagen'])): ?>
                         <img src="<?= UPLOADS_URL ?>/promociones/<?= htmlspecialchars($promo['imagen'], ENT_QUOTES, 'UTF-8') ?>" alt=""
                              loading="lazy" decoding="async">
@@ -216,6 +225,7 @@ $tarjetaProducto = function (array $p) {
                         <?php if (($etiqueta = Vista::etiquetaPromocion($promo)) !== ''): ?>
                             <div class="etiquetas-producto">
                                 <span class="etiqueta etiqueta-promocion"><?= htmlspecialchars($etiqueta, ENT_QUOTES, 'UTF-8') ?></span>
+                                <?php if ($esDeLealtad): ?><span class="etiqueta etiqueta-destacado">Programa de lealtad</span><?php endif; ?>
                             </div>
                         <?php endif; ?>
                         <?php if (!empty($promo['descripcion'])): ?>
@@ -225,8 +235,11 @@ $tarjetaProducto = function (array $p) {
                             <?= htmlspecialchars($promo['producto_nombre'] ?? $promo['categoria_nombre'] ?? 'Todo el menú', ENT_QUOTES, 'UTF-8') ?>
                         </p>
                         <p class="tarjeta-producto-descripcion">Válido hasta <?= htmlspecialchars(Vista::fechaLarga($promo['fecha_fin']), ENT_QUOTES, 'UTF-8') ?></p>
+                        <?php if ($esDeLealtad): ?>
+                            <p class="tarjeta-producto-descripcion" style="color:var(--color-verde);font-weight:700;">Reclama tu cupón en Mi cuenta →</p>
+                        <?php endif; ?>
                     </div>
-                </article>
+                </<?= $etiquetaHtml ?>>
             <?php endforeach; ?>
         </div>
     </div>

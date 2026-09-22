@@ -342,6 +342,18 @@ img {
   object-fit: cover;
 }
 
+/* Promoción vinculada a lealtad (§4.20): la tarjeta entera es un enlace a
+   /cuenta — sin el subrayado ni el color azul por defecto de un <a>. */
+.tarjeta-producto-enlace {
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s ease;
+}
+
+.tarjeta-producto-enlace:hover {
+  box-shadow: 0 4px 14px rgba(59, 36, 21, 0.16);
+}
+
 .tarjeta-producto-cuerpo {
   padding: 16px;
   display: flex;

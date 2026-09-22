@@ -311,6 +311,49 @@ CREATE TABLE recompensas (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
+-- 12c. cupones_promocion — cupón de una promoción marcada "combinable con
+--      lealtad" (docs/arquitectura.md §4.20). Concepto separado de
+--      `recompensas` (café gratis por acumular): aquí no hay cafés
+--      involucrados, el cliente reclama el cupón desde su cuenta y el
+--      cajero lo canjea por código/QR igual que una recompensa, pero el
+--      "premio" (descuento, 2x1, etc.) es el que ya define la promoción.
+-- ---------------------------------------------------------------------
+CREATE TABLE cupones_promocion (
+  id                      BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  codigo                  VARCHAR(12) NOT NULL UNIQUE,
+  cliente_id              INT UNSIGNED NOT NULL,
+  promocion_id            INT UNSIGNED NOT NULL,
+  estado                  ENUM('disponible','canjeado','cancelado','vencido') NOT NULL DEFAULT 'disponible',
+  fecha_reclamo           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  usuario_canjeo_id       INT UNSIGNED NULL,
+  fecha_canje             DATETIME NULL,
+
+  usuario_cancelacion_id  INT UNSIGNED NULL,
+  fecha_cancelacion       DATETIME NULL,
+  motivo_cancelacion      VARCHAR(255) NULL,
+
+  CONSTRAINT fk_cupon_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+  CONSTRAINT fk_cupon_promocion FOREIGN KEY (promocion_id) REFERENCES promociones(id),
+  CONSTRAINT fk_cupon_usuario_canjeo FOREIGN KEY (usuario_canjeo_id) REFERENCES usuarios(id),
+  CONSTRAINT fk_cupon_usuario_cancelacion FOREIGN KEY (usuario_cancelacion_id) REFERENCES usuarios(id),
+  INDEX idx_cupon_cliente (cliente_id, estado),
+
+  -- Un cliente reclama el cupón de una misma promoción una sola vez
+  -- (RN nueva de §4.20) — no solo lo valida la aplicación, lo garantiza
+  -- este UNIQUE: un segundo intento choca aquí aunque hubiera una
+  -- condición de carrera.
+  UNIQUE KEY uq_cupon_cliente_promocion (cliente_id, promocion_id),
+  CONSTRAINT chk_cupon_codigo_longitud CHECK (CHAR_LENGTH(codigo) >= 8),
+  CONSTRAINT chk_cupon_canje_completo CHECK (
+    estado <> 'canjeado' OR (fecha_canje IS NOT NULL AND usuario_canjeo_id IS NOT NULL)
+  ),
+  CONSTRAINT chk_cupon_cancelado_completo CHECK (
+    estado <> 'cancelado' OR (fecha_cancelacion IS NOT NULL AND usuario_cancelacion_id IS NOT NULL)
+  )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
 -- 13. configuracion_sistema — clave/valor para datos administrables
 --     del sitio (redes sociales, WhatsApp, mapa, textos, umbral de
 --     lealtad). La paleta de colores NO vive aquí: es un token de

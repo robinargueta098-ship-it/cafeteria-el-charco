@@ -13,9 +13,11 @@ use App\Core\Validator;
 use App\Middleware\ClienteAuthMiddleware;
 use App\Models\Cliente;
 use App\Models\Configuracion;
+use App\Models\CuponPromocion;
 use App\Models\HorarioAtencion;
 use App\Models\Promocion;
 use App\Models\Recompensa;
+use App\Services\CuponPromocionService;
 use App\Services\LealtadService;
 
 /**
@@ -150,18 +152,48 @@ class CuentaController extends Controller
             $codigoQr = null;
         }
 
+        // Promociones vigentes marcadas "combinable con lealtad" (§4.20): por cada
+        // una se busca si este cliente ya reclamó su cupón, para mostrar el botón
+        // "Reclamar cupón" o, si ya lo tiene, su código/QR — nunca las dos cosas.
+        $promocionesLealtad = (new Promocion())->listarVigentesCombinablesConLealtad();
+        $cuponesModelo = new CuponPromocion();
+        $cuponesPorPromocion = [];
+        foreach ($promocionesLealtad as $promo) {
+            $cuponesPorPromocion[(int) $promo['id']] = $cuponesModelo->buscarDeClientePorPromocion($clienteId, (int) $promo['id']);
+        }
+
         $this->vistaCuenta('public/cuenta/panel', [
             'cliente'     => $cliente,
             'codigoQr'    => $codigoQr,
             'umbral'      => $umbral,
             'recompensas' => (new Recompensa())->listarPorCliente($clienteId),
             // Aviso de una sola lectura (ej. tras un "Cerrar sesión" con una pantalla
-            // vieja), puesto por CsrfMiddleware.
+            // vieja, o al reclamar un cupón), puesto por CsrfMiddleware o por acá mismo.
             'flash'       => Flash::tomar(),
-            // Promociones vigentes marcadas "combinable con lealtad": puramente
-            // informativo, no cambia el saldo ni las reglas de canje (§4.19).
-            'promocionesLealtad' => (new Promocion())->listarVigentesCombinablesConLealtad(),
+            'promocionesLealtad'  => $promocionesLealtad,
+            'cuponesPorPromocion' => $cuponesPorPromocion,
         ]);
+    }
+
+    /**
+     * El cliente reclama el cupón de una promoción "combinable con lealtad"
+     * (§4.20). Una vez por cliente y por promoción — lo exige el UNIQUE de
+     * `cupones_promocion`, no solo la comprobación de CuponPromocionService.
+     */
+    public function reclamarCupon(string $id): void
+    {
+        ClienteAuthMiddleware::manejar();
+
+        $clienteId = ClienteAuth::cliente()['id'];
+        $resultado = CuponPromocionService::reclamar($clienteId, (int) $id);
+
+        if ($resultado['ok']) {
+            Flash::exito('¡Listo! Tu cupón ya está disponible abajo, con su código y QR.');
+        } else {
+            Flash::error($resultado['error']);
+        }
+
+        $this->redirigir('/cuenta');
     }
 
     /**

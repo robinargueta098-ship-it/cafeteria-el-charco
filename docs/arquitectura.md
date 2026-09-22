@@ -938,6 +938,70 @@ celular (390 px), sin desbordes. Los datos de prueba ya se borraron; los
 reales (la temporada "Día de los santos" y la promoción "2 ma 1") se
 dejaron intactos.
 
+### 4.20 Cupón real para las promociones vinculadas a lealtad
+
+El aviso de §4.19 era solo texto. Ahora una promoción "combinable con
+lealtad" se puede **reclamar** como un cupón real, de un solo uso, con su
+propio código de 8 caracteres y QR — el mismo mecanismo de canje que ya
+usa el cajero para las recompensas de café gratis, pero es un concepto
+aparte: no hay cafés acumulados de por medio, tabla propia
+(`cupones_promocion`, §5.1), y el "premio" ya lo define la promoción
+(descuento, 2x1…) — el cajero lo aplica en la caja al confirmar el canje,
+no hay que elegir ningún producto.
+
+- **Home → Lealtad**: una tarjeta de promoción marcada "combinable con
+  lealtad" es un enlace a `/cuenta` (no a la sección `#lealtad`, que es
+  la de bienvenida para quien todavía no tiene cuenta). Sin sesión,
+  `ClienteAuthMiddleware` ya manda primero a `/cuenta/login` (con enlace
+  a crear cuenta); al iniciar sesión, `CuentaController::iniciarSesion()`
+  ya redirige a `/cuenta` — así que "primero pedir sesión, después
+  Lealtad" salió de reutilizar exactamente lo que ya existía, sin
+  ninguna redirección nueva que mantener.
+- **Reclamar** (`CuponPromocionService::reclamar()`, cliente): genera el
+  código con `Recompensa::nuevoCodigoAleatorio()` — el generador se
+  reutiliza tal cual, solo cambia contra qué tabla se comprueba la
+  unicidad — con el mismo reintento ante colisión (SAVEPOINT) que ya usa
+  `LealtadService::crearRecompensaConCodigoUnico()`. Una vez por cliente
+  y por promoción: lo garantiza el `UNIQUE (cliente_id, promocion_id)` de
+  la tabla, no solo la comprobación previa — ante dos clics a la vez, el
+  segundo choca ahí y se le muestra el cupón que el primero ya creó, no
+  un error.
+- **Mi cuenta**: por cada promoción vigente combinable, si el cliente ya
+  tiene cupón se muestra su QR/código (igual que una recompensa) o, si
+  ya lo canjeó/canceló, un aviso; si no lo tiene, un botón "Reclamar
+  cupón".
+- **Cajero — "Escanear código"**: ahora reconoce automáticamente **tres**
+  tipos de código con el mismo campo/escáner (antes dos, §4.15): QR
+  personal (sumar), recompensa (canjear café gratis) y, desde ahora,
+  cupón de promoción (canjear). Se prueban en ese orden; el primero que
+  exista gana. `LealtadController::confirmarCanjeCupon()` es la acción
+  nueva; `CuponPromocionService::validarYCanjearCupon()` sigue exactamente
+  el mismo orden de validación que `validarYCanjearRecompensa()`
+  (existencia → estado → vencimiento) y el mismo candado (`FOR UPDATE`).
+- **Vencimiento automático**: perezoso, igual que las recompensas — no
+  hay una tarea programada marcando cupones vencidos por su cuenta; se
+  revisa (contra `promociones.fecha_fin`, no una fecha propia del cupón)
+  justo al intentar canjear, y ahí se marca `vencido` si ya pasó.
+- **Admin**: `/admin/cupones`, historial separado del de Recompensas
+  (mismo patrón de vista). Cancelar un cupón es **exclusivo de
+  Administrador** (`requerirRol(1)`, no `(1, 2)` como el resto de
+  Lealtad) — no devuelve nada (no hay cafés que devolver). Borrar una
+  promoción con cupones ya reclamados se bloquea, igual que Temporadas
+  con sus productos asociados.
+- **Probado** el ciclo completo por HTTP con una promoción de prueba:
+  clic en el home (enlace a `/cuenta`) → reclamar → código de 8
+  caracteres sin 0/O/1/I/L → reclamar de nuevo lo rechaza (sigue habiendo
+  un solo cupón) → el Cajero lo encuentra escribiéndolo en minúsculas (se
+  reconoce como cupón, no como recompensa) → lo canjea → un segundo
+  intento lo rechaza → aparece en `/admin/cupones` con el nombre de quien
+  lo canjeó → el Cajero recibe 403 al intentar cancelar. Aparte: un
+  cupón cancelado por el administrador no se puede canjear; un cupón
+  disponible cuya promoción ya venció se marca `vencido` al intentar
+  canjearlo y también se rechaza; una promoción con un cupón reclamado no
+  se puede eliminar. Mientras tanto, el propio usuario real ya había
+  reclamado un cupón de la promoción real "2 ma 1" desde su cuenta —
+  quedó intacto, sin tocar.
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)
@@ -961,7 +1025,7 @@ configuracion_sistema   (clave/valor: redes, whatsapp, mapa, textos, umbral de l
 horarios_atencion       (horario semanal)
 ```
 
-### 5.1 Tablas (15 — se agregó `recompensas` al rediseñar lealtad)
+### 5.1 Tablas (16 — se agregó `cupones_promocion` en §4.20)
 
 - **roles** — id, nombre (seed inicial: `Administrador`, `Cajero`; ver
   permisos por rol en §3.2)
@@ -1001,6 +1065,12 @@ horarios_atencion       (horario semanal)
   (nullable hasta el canje), usuario_canjeo_id, fecha_canjeada,
   movimiento_canje_id, usuario_cancelacion_id, fecha_cancelacion,
   motivo_cancelacion, movimiento_cancelacion_id
+- **cupones_promocion** — id, codigo (único, 8 caracteres, mismo formato
+  que `recompensas.codigo` pero tabla aparte, §4.20), cliente_id,
+  promocion_id, estado (disponible / canjeado / cancelado / vencido),
+  fecha_reclamo, usuario_canjeo_id, fecha_canje, usuario_cancelacion_id,
+  fecha_cancelacion, motivo_cancelacion — `UNIQUE (cliente_id,
+  promocion_id)`: un cupón por cliente y por promoción
 - **configuracion_sistema** — clave, valor, descripcion, actualizado_en
 - **horarios_atencion** — id, dia_semana, hora_apertura, hora_cierre,
   cerrado

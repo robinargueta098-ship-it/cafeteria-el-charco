@@ -21,3 +21,4 @@ $router->get('/cuenta/login', [CuentaController::class, 'mostrarLogin']);
 $router->post('/cuenta/login', [CuentaController::class, 'iniciarSesion']);
 $router->post('/cuenta/logout', [CuentaController::class, 'cerrarSesion']);
 $router->get('/cuenta', [CuentaController::class, 'panel']);
+$router->post('/cuenta/promociones/{id}/reclamar', [CuentaController::class, 'reclamarCupon']);

@@ -8,9 +8,11 @@ use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Flash;
 use App\Models\Cliente;
+use App\Models\CuponPromocion;
 use App\Models\LealtadMovimiento;
 use App\Models\Producto;
 use App\Models\Recompensa;
+use App\Services\CuponPromocionService;
 use App\Services\LealtadService;
 
 class LealtadController extends Controller
@@ -140,28 +142,33 @@ class LealtadController extends Controller
             return;
         }
 
-        // Un mismo escáner/campo sirve para los dos códigos: el QR personal del cliente
-        // (suma un café) y el de una recompensa (canjea el café gratis). Antes se
-        // distinguían por su forma ("CL-" + 10 caracteres vs 8); ahora los dos son de 8
+        // Un mismo escáner/campo sirve para TRES tipos de código: el QR personal del
+        // cliente (suma un café), el de una recompensa de café gratis (canjea) y,
+        // desde §4.20, el de un cupón de promoción (canjea). Los tres son de 8
         // caracteres del mismo alfabeto (docs/arquitectura.md §4.15), así que no hay
         // forma de saber cuál es sin buscar: se prueba primero como código personal —
-        // es el uso del día a día, mucho más frecuente que canjear — y si no existe,
-        // como recompensa.
+        // es el uso del día a día, mucho más frecuente que canjear cualquiera de los
+        // otros dos — luego como recompensa y, si tampoco, como cupón de promoción.
         $cliente = (new Cliente())->buscarPorCodigoQr($codigo);
         if ($cliente !== null) {
             $this->mostrarClienteEscaneado($cliente, $codigo, $telefono);
             return;
         }
 
-        [, $recompensa, $error] = $this->resolverCanje($codigo, $telefono);
-
-        if ($recompensa === null && $error !== null) {
-            // Ni cliente ni recompensa: no hay forma de saber cuál de los dos
-            // esperaba el cajero, así que el mensaje no asume ninguno de los dos.
-            $error = 'No se encontró nada con ese código. Revisa que esté bien escrito.';
+        [$recompensa, $errorRecompensa] = $this->buscarRecompensaConTelefono($codigo, $telefono);
+        if ($recompensa !== null || $errorRecompensa !== null) {
+            $this->vistaCanjear($codigo, $telefono, $recompensa, $errorRecompensa);
+            return;
         }
 
-        $this->vistaCanjear($codigo, $telefono, $recompensa, $error);
+        [$cupon, $errorCupon] = $this->buscarCuponConTelefono($codigo, $telefono);
+        if ($cupon !== null || $errorCupon !== null) {
+            $this->vistaCanjear($codigo, $telefono, null, $errorCupon, null, $cupon);
+            return;
+        }
+
+        // Ninguno de los tres: no hay forma de saber cuál esperaba el cajero.
+        $this->vistaCanjear($codigo, $telefono, null, 'No se encontró nada con ese código. Revisa que esté bien escrito.');
     }
 
     /**
@@ -237,41 +244,89 @@ class LealtadController extends Controller
             return;
         }
 
-        [, $recompensa] = $this->resolverCanje($codigo, '');
+        [$recompensa, ] = $this->buscarRecompensaConTelefono($codigo, '');
 
         $this->vistaCanjear($codigo, '', $recompensa, $resultado['error']);
     }
 
     /**
-     * Busca la recompensa por código y devuelve, junto con su dueño, el
-     * detalle que se le muestra al cajero. Si se dio un teléfono, exige
-     * que sea el del dueño del código.
-     *
-     * @return array{0:array<string,mixed>|null,1:array<string,mixed>|null,2:string|null} [cliente, recompensa, error]
+     * Paso 2, para un cupón de promoción (§4.20): a diferencia de una
+     * recompensa, no hace falta elegir producto — el "premio" ya lo define
+     * la promoción (descuento, 2x1…); el cajero lo aplica en la caja.
      */
-    private function resolverCanje(string $codigo, string $telefono): array
+    public function confirmarCanjeCupon(): void
     {
-        if ($codigo === '') {
-            return [null, null, 'Escanea el QR o escribe el código de la recompensa.'];
+        $this->requerirRol(1, 2);
+
+        $codigo = Recompensa::normalizarCodigo((string) ($_POST['codigo'] ?? ''));
+        $usuario = Auth::usuario();
+
+        $resultado = CuponPromocionService::validarYCanjearCupon($codigo, $usuario['id']);
+
+        if ($resultado['ok']) {
+            Flash::exito("Cupón canjeado: {$resultado['promocion_nombre']} para {$resultado['cliente_nombre']}.");
+            $this->redirigir('/admin/lealtad/canjear');
+            return;
         }
 
+        [$cupon, ] = $this->buscarCuponConTelefono($codigo, '');
+
+        $this->vistaCanjear($codigo, '', null, $resultado['error'], null, $cupon);
+    }
+
+    /**
+     * Busca la recompensa por código. Si se dio un teléfono, exige que sea
+     * el del dueño del código — si no coincide, el segundo valor trae el
+     * error (aunque el código sí exista, no se revela nada más de él).
+     *
+     * @return array{0:array<string,mixed>|null,1:string|null}
+     */
+    private function buscarRecompensaConTelefono(string $codigo, string $telefono): array
+    {
         $recompensa = (new Recompensa())->buscarPorCodigo($codigo);
         if ($recompensa === null) {
-            return [null, null, 'No se encontró ninguna recompensa con ese código. Revisa que esté bien escrito.'];
+            return [null, null];
         }
 
         if ($telefono !== '' && $telefono !== Cliente::normalizarTelefono((string) $recompensa['cliente_telefono'])) {
-            return [null, null, 'Ese código no pertenece al cliente con ese teléfono.'];
+            return [null, 'Ese código no pertenece al cliente con ese teléfono.'];
         }
 
-        $cliente = (new Cliente())->buscarPorId((int) $recompensa['cliente_id']);
-
-        return [$cliente, $recompensa, null];
+        return [$recompensa, null];
     }
 
-    /** @param array<string,mixed>|null $clienteEscaneado cliente identificado por su QR personal */
-    private function vistaCanjear(string $codigo, string $telefono, ?array $recompensa, ?string $error, ?array $clienteEscaneado = null): void
+    /**
+     * Igual que buscarRecompensaConTelefono() pero para un cupón de
+     * promoción — ver ahí el porqué de la forma del valor de retorno.
+     *
+     * @return array{0:array<string,mixed>|null,1:string|null}
+     */
+    private function buscarCuponConTelefono(string $codigo, string $telefono): array
     {
+        $cupon = (new CuponPromocion())->buscarPorCodigo($codigo);
+        if ($cupon === null) {
+            return [null, null];
+        }
+
+        if ($telefono !== '' && $telefono !== Cliente::normalizarTelefono((string) $cupon['cliente_telefono'])) {
+            return [null, 'Ese código no pertenece al cliente con ese teléfono.'];
+        }
+
+        return [$cupon, null];
+    }
+
+    /**
+     * @param array<string,mixed>|null $clienteEscaneado cliente identificado por su QR personal
+     * @param array<string,mixed>|null $cupon cupón de promoción identificado por su código
+     */
+    private function vistaCanjear(
+        string $codigo,
+        string $telefono,
+        ?array $recompensa,
+        ?string $error,
+        ?array $clienteEscaneado = null,
+        ?array $cupon = null
+    ): void {
         $disponibles = [];
         if ($clienteEscaneado !== null) {
             $disponibles = array_values(array_filter(
@@ -285,6 +340,7 @@ class LealtadController extends Controller
             'telefono'         => $telefono,
             'codigo'           => $codigo,
             'recompensa'       => $recompensa,
+            'cupon'            => $cupon,
             'error'            => $error,
             'productos'        => (new Producto())->listarActivos(),
             'clienteEscaneado' => $clienteEscaneado,
