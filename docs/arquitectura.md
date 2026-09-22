@@ -1164,6 +1164,46 @@ tocado nada, y los campos de texto de WhatsApp (§4.21, §4.24) que
   confirmó que aparecían en la página principal; se revirtió a vacío
   después.
 
+### 4.26 El sitio no cargaba en PHP 8.0.30: "Composer detected issues in your platform"
+
+En una máquina con PHP 8.0.30 el sitio mostraba: *"Your Composer
+dependencies require a PHP version >= 8.1.0. You are running 8.0.30."*
+(`vendor/composer/platform_check.php`, generado por Composer).
+
+- **Causa raíz**: `composer.json` solo pedía `chillerlan/php-qrcode: ^5.0`
+  (RF-06/RF-02, QR de recompensas y cupones, §4.9). Esa librería en sí
+  acepta PHP `^7.4 || ^8.0`, pero depende de
+  `chillerlan/php-settings-container` con el rango
+  `^2.1.6 || ^3.2.1`; al no fijar una versión propia, Composer resolvió
+  la más nueva dentro de ese rango, `3.3.0`, que exige PHP `^8.1` — ni el
+  código del proyecto ni el de `php-qrcode` usan nada de 8.1, era
+  puramente esta dependencia transitiva.
+- **No había sintaxis de PHP 8.1 en el código propio**: se revisó
+  `app/` completo buscando `readonly`, `enum`, tipo de retorno `never`,
+  `array_is_list()` y los enums nativos (`BackedEnum`/`UnitEnum`) — cero
+  coincidencias. El proyecto nunca necesitó 8.1.
+- **Arreglo**: se fijó `chillerlan/php-settings-container` a la rama
+  `^2.1.6` (la otra mitad del rango que acepta `php-qrcode`; la rama
+  `3.2.x` se probó primero pero su último tag, pese a ser un parche
+  "3.2.1", también quedó con `php: ^8.1` en el repositorio real —
+  aunque el índice resumido de Packagist no lo reflejaba, así que no
+  bastaba con mirar ese resumen). Se agregó además `"php": "^7.4 || ^8.0"`
+  explícito en `composer.json`, para que el propio proyecto declare su
+  piso mínimo real en vez de heredarlo en silencio de lo que Composer
+  resuelva. Con `composer update`, `platform_check.php` quedó pidiendo
+  `PHP_VERSION_ID >= 70400` (7.4.0), no 80100.
+- **Sin pérdida de funcionalidad**: se generó un QR de prueba
+  (`CodigoQr::dataUri()`) con la librería ya downgradeada — SVG válido,
+  20 590 caracteres en base64, igual que antes.
+- **Piso de PHP del proyecto: 7.4 / 8.0+** (no exclusivamente 8.0 — el
+  rango declarado, `^7.4 || ^8.0`, es el mismo que ya traía
+  `chillerlan/php-qrcode` por su cuenta). Compatible con XAMPP local
+  (PHP 8.2.12 en esta máquina de desarrollo) y con la máquina de PHP
+  8.0.30 que reportó el error. **Pendiente de confirmar con el
+  administrador la versión de PHP en Hostinger (producción)** — no hay
+  forma de saberlo desde este entorno; si ahí corre 8.1+ igual funciona
+  sin cambios (el rango solo pone un piso, no un techo).
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)

@@ -11,24 +11,27 @@ declare(strict_types=1);
 
 namespace chillerlan\Settings;
 
-use JsonSerializable, Serializable;
+use JsonSerializable;
 
 /**
  * a generic container with magic getter and setter
  */
-interface SettingsContainerInterface extends JsonSerializable, Serializable{
+interface SettingsContainerInterface extends JsonSerializable{
 
 	/**
 	 * Retrieve the value of $property
 	 *
 	 * @return mixed|null
 	 */
-	public function __get(string $property):mixed;
+	public function __get(string $property);
 
 	/**
 	 * Set $property to $value while avoiding private and non-existing properties
+	 *
+	 * @param string $property
+	 * @param mixed  $value
 	 */
-	public function __set(string $property, mixed $value):void;
+	public function __set(string $property, $value):void;
 
 	/**
 	 * Checks if $property is set (aka. not null), excluding private properties
@@ -59,9 +62,9 @@ interface SettingsContainerInterface extends JsonSerializable, Serializable{
 	 *
 	 * The values will be run through the magic __set(), which may also call custom setters.
 	 *
-	 * @param iterable<string, mixed> $properties
+	 *  @phpstan-param array<string, mixed> $properties
 	 */
-	public function fromIterable(iterable $properties):static;
+	public function fromIterable(iterable $properties):SettingsContainerInterface;
 
 	/**
 	 * Returns a JSON representation of the settings object
@@ -71,7 +74,7 @@ interface SettingsContainerInterface extends JsonSerializable, Serializable{
 	 *
 	 * @throws \JsonException
 	 */
-	public function toJSON(int|null $jsonOptions = null):string;
+	public function toJSON(?int $jsonOptions = null):string;
 
 	/**
 	 * Sets properties from a given JSON string
@@ -81,6 +84,6 @@ interface SettingsContainerInterface extends JsonSerializable, Serializable{
 	 * @throws \Exception
 	 * @throws \JsonException
 	 */
-	public function fromJSON(string $json):static;
+	public function fromJSON(string $json):SettingsContainerInterface;
 
 }
