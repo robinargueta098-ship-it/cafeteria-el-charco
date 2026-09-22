@@ -170,6 +170,16 @@ img {
   }
 }
 
+/* ".sitio-nav-enlaces a" (arriba) pone padding: 4px 0 (10px 0 en móvil) a
+   TODOS los enlaces del menú, ícono y texto quedaban pegados al borde del
+   botón sin aire a los lados: ".sitio-nav-enlaces .btn-whatsapp" tiene más
+   especificidad (dos clases) que ".sitio-nav-enlaces a" (una clase + una
+   etiqueta) y gana en ambos anchos, así el botón recupera relleno horizontal
+   consistente y el ícono/texto quedan centrados dentro de él. */
+.sitio-nav-enlaces .btn-whatsapp {
+  padding: 8px 16px;
+}
+
 /* Entre 1024px y 1200px la barra va justa (siete enlaces + botón): el botón
    de WhatsApp se queda solo con el ícono para no forzar el salto de línea.
    El texto sigue en el DOM (lectores de pantalla y el aria-label lo cubren
