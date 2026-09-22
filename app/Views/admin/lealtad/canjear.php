@@ -21,10 +21,10 @@ require APP_PATH . '/Views/layouts/panel_header.php';
     o escribe el código a mano; con el escáner o a mano funciona igual:
 </p>
 <ul>
-    <li><strong>QR personal</strong> (<code>CL-…</code>): identifica al cliente y <strong>suma cafés</strong>.</li>
-    <li><strong>QR de recompensa</strong> (8 caracteres, ej. <code>G5S3WYHX</code>): <strong>canjea</strong> el café gratis.</li>
+    <li><strong>QR personal</strong> del cliente: identifica al cliente y <strong>suma cafés</strong>.</li>
+    <li><strong>QR de recompensa</strong>: <strong>canjea</strong> el café gratis.</li>
 </ul>
-<p class="campo-ayuda">En los dos casos se muestra a quién pertenece antes de aplicar nada.</p>
+<p class="campo-ayuda">Los dos son de 8 caracteres (ej. <code>G5S3WYHX</code>); no hace falta saber cuál es — se prueban los dos y se muestra a quién pertenece antes de aplicar nada.</p>
 
 <?php if ($error !== null): ?>
     <div class="alerta alerta-error"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
@@ -48,7 +48,7 @@ require APP_PATH . '/Views/layouts/panel_header.php';
             <div class="campo">
                 <label for="codigo">Código (QR personal o de recompensa)</label>
                 <input type="text" id="codigo" name="codigo" maxlength="20" required autofocus
-                       autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CL-… o G5S3WYHX"
+                       autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="G5S3WYHX"
                        class="campo-codigo"
                        value="<?= htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8') ?>">
             </div>

@@ -133,35 +133,43 @@ class LealtadController extends Controller
 
         $entrada = (string) ($_POST['codigo'] ?? '');
         $telefono = Cliente::normalizarTelefono((string) ($_POST['telefono'] ?? ''));
+        $codigo = Cliente::normalizarCodigoQr($entrada); // limpieza genérica: mayúsculas y solo A-Z0-9
 
-        // Un mismo escáner/campo sirve para los dos códigos: el QR personal del
-        // cliente ("CL-…", suma un café) y el de una recompensa (8 caracteres, la canjea).
-        $codigoQr = Cliente::normalizarCodigoQr($entrada);
-        if ($codigoQr !== '') {
-            $this->consultarClientePorQr($codigoQr, $telefono);
+        if ($codigo === '') {
+            $this->vistaCanjear('', $telefono, null, 'Escanea el QR o escribe el código.');
             return;
         }
 
-        $codigo = Recompensa::normalizarCodigo($entrada);
+        // Un mismo escáner/campo sirve para los dos códigos: el QR personal del cliente
+        // (suma un café) y el de una recompensa (canjea el café gratis). Antes se
+        // distinguían por su forma ("CL-" + 10 caracteres vs 8); ahora los dos son de 8
+        // caracteres del mismo alfabeto (docs/arquitectura.md §4.15), así que no hay
+        // forma de saber cuál es sin buscar: se prueba primero como código personal —
+        // es el uso del día a día, mucho más frecuente que canjear — y si no existe,
+        // como recompensa.
+        $cliente = (new Cliente())->buscarPorCodigoQr($codigo);
+        if ($cliente !== null) {
+            $this->mostrarClienteEscaneado($cliente, $codigo, $telefono);
+            return;
+        }
 
         [, $recompensa, $error] = $this->resolverCanje($codigo, $telefono);
+
+        if ($recompensa === null && $error !== null) {
+            // Ni cliente ni recompensa: no hay forma de saber cuál de los dos
+            // esperaba el cajero, así que el mensaje no asume ninguno de los dos.
+            $error = 'No se encontró nada con ese código. Revisa que esté bien escrito.';
+        }
 
         $this->vistaCanjear($codigo, $telefono, $recompensa, $error);
     }
 
     /**
-     * QR personal escaneado: se muestra a quién pertenece (y si tiene
+     * QR personal ya encontrado: se muestra a quién pertenece (y si tiene
      * recompensas por canjear) para que el cajero confirme cuántos cafés sumar.
      */
-    private function consultarClientePorQr(string $codigoQr, string $telefono): void
+    private function mostrarClienteEscaneado(array $cliente, string $codigoQr, string $telefono): void
     {
-        $cliente = (new Cliente())->buscarPorCodigoQr($codigoQr);
-
-        if ($cliente === null) {
-            $this->vistaCanjear($codigoQr, $telefono, null, 'No se encontró ningún cliente con ese código. Revisa que esté bien escrito.');
-            return;
-        }
-
         if ($telefono !== '' && $telefono !== Cliente::normalizarTelefono((string) $cliente['telefono'])) {
             $this->vistaCanjear($codigoQr, $telefono, null, 'Ese código no pertenece al cliente con ese teléfono.');
             return;

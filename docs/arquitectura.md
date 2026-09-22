@@ -593,12 +593,14 @@ UNIQUE, 8 caracteres aleatorios, se genera solo al llegar a 10 cafés; ver
 ### 4.10 QR personal para sumar cafés (misma lógica que el canje)
 
 Sumar un café también se hace escaneando, con el mismo escáner y el mismo
-campo manual de §4.9. Hay dos códigos, que se distinguen por su forma:
+campo manual de §4.9. Hay dos códigos (formato acortado después, en
+§4.14 y §4.15 — ahí queda cómo se distingue uno del otro al leerlos,
+ya que dejaron de tener formas distintas):
 
 | Código | Forma | Vive en | Al leerlo |
 |---|---|---|---|
-| QR personal del cliente | `CL-` + 10 caracteres | `clientes.codigo_qr` (UNIQUE) | muestra al cliente y **suma cafés** |
-| QR de recompensa | `XXXX-XXXX` | `recompensas.codigo` (UNIQUE) | muestra al dueño y **canjea** |
+| QR personal del cliente | 8 caracteres | `clientes.codigo_qr` (UNIQUE) | muestra al cliente y **suma cafés** |
+| QR de recompensa | 8 caracteres | `recompensas.codigo` (UNIQUE) | muestra al dueño y **canjea** |
 
 - El QR personal es **permanente** y se muestra siempre en `/cuenta`. Es
   aleatorio (`random_int`), no se deriva del teléfono ni del id, y se asigna la
@@ -715,9 +717,9 @@ códigos (sigue siendo 31⁸ ≈ 8,5×10¹¹).
   mayúsculas y quita lo que no sea A-Z0-9.
 - El QR sigue siendo el mismo mecanismo (`CodigoQr::dataUri()`); lo
   único que cambia es el texto que codifica.
-- No se tocó el QR personal del cliente (`CL-` + 10 caracteres, para
-  sumar cafés) — es un código distinto, con su propia validación
-  (`Cliente::normalizarCodigoQr()`), y no fue parte de este pedido.
+- El QR personal del cliente (para sumar cafés) tenía otro formato
+  distinto en este momento (`CL-` + 10 caracteres) — se acortó aparte,
+  después, en §4.15.
 - Nota de diseño: `codigoExiste()` (la comprobación previa al generar)
   también ignora guiones, así que un código nuevo nunca se propone si sus
   8 caracteres coinciden con los de uno viejo. La garantía dura, el
@@ -728,6 +730,43 @@ códigos (sigue siendo 31⁸ ≈ 8,5×10¹¹).
   los pocos cientos ya usados en la vida del negocio — sobre 8,5×10¹¹
   combinaciones, no se justificó una columna generada aparte solo para
   blindar ese caso.
+
+### 4.15 QR personal del cliente: también acortado a 8 caracteres
+
+Mismo espíritu que §4.14, aplicado al otro código del sistema: el QR
+personal del cliente (el que suma cafés al escanearlo, siempre el mismo,
+permanente). Antes `CL-` + 10 caracteres (13 en total); ahora 8
+caracteres sin guion ni prefijo, mismo alfabeto sin ambigüedades
+(`Cliente::obtenerCodigoQr()` / `nuevoCodigoQrAleatorio()`).
+
+- **Diferencia importante con §4.14**: ahí los códigos viejos se
+  conservan tal cual para siempre (hay muchos por cliente, es un
+  historial). Aquí el cliente solo tiene **un** código vigente a la vez,
+  así que "acortar el código actual" significa **reemplazarlo**: el
+  código viejo dejó de servir en el momento en que se generó el nuevo. No
+  hay concepto de "código personal cancelado" como sí lo hay con las
+  recompensas.
+- `Cliente::regenerarCodigoQr($id)`: a diferencia de `obtenerCodigoQr()`
+  (que conserva el código si ya existía), este siempre asigna uno nuevo,
+  aunque ya hubiera uno. Se usó una sola vez, por script, para el cliente
+  real de pruebas (id 10): su código pasó de `CL-G5S3WYAHXQ` a
+  `SBZ94KRR`. No hay botón en el panel para esto todavía — si en el
+  futuro hace falta (ej. el cliente comparte su QR sin querer), se agrega
+  una acción en Clientes que llame a este mismo método.
+- **Los dos códigos (personal y de recompensa) ahora tienen la misma
+  forma** (8 caracteres, mismo alfabeto) — antes el prefijo `CL-` y la
+  distinta longitud bastaban para saber cuál era cuál con solo mirarlo.
+  La pantalla de escaneo (`LealtadController::consultarCodigo()`) ya no
+  puede decidir por la forma del código: ahora prueba primero
+  `Cliente::buscarPorCodigoQr()` (sumar, el caso más frecuente del día a
+  día) y, si no hay ningún cliente con ese código, `Recompensa::buscarPorCodigo()`
+  (canjear). Si ninguno de los dos lo tiene, el mensaje es genérico
+  ("No se encontró nada con ese código") porque no hay forma de saber
+  cuál de los dos esperaba el cajero.
+- `buscarPorCodigoQr()` también compara ignorando guiones
+  (`REPLACE(codigo_qr, '-', '')`), así que un cliente que se haya quedado
+  con el formato viejo (`CL-XXXXXXXXXX`) se sigue encontrando igual,
+  escrito con guion o sin él.
 
 ---
 

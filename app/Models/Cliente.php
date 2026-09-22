@@ -58,20 +58,21 @@ class Cliente
     }
 
     /**
-     * Deja el código personal como se guarda: mayúsculas y "CL-" + 10
-     * caracteres. Acepta "cl abcdefghjk", "CL-ABCDEFGHJK", etc. Devuelve ''
-     * si no tiene esa forma (los códigos de recompensa tienen 8, no 10).
+     * Deja el código personal como se compara al buscarlo: solo mayúsculas
+     * y caracteres alfanuméricos. Acepta el formato nuevo, 8 caracteres sin
+     * guion (ej. "G5S3WYHX"), y el viejo, "CL-" + 10 caracteres, de antes
+     * de acortarlo (docs/arquitectura.md §4.15) — no hace falta distinguirlos
+     * aquí: buscarPorCodigoQr() ignora guiones al comparar.
      */
     public static function normalizarCodigoQr(string $entrada): string
     {
-        $limpio = (string) preg_replace('/[^A-Z0-9]/', '', strtoupper($entrada));
-
-        return preg_match('/^CL[A-Z0-9]{10}$/', $limpio) === 1 ? 'CL-' . substr($limpio, 2) : '';
+        return (string) preg_replace('/[^A-Z0-9]/', '', strtoupper($entrada));
     }
 
+    /** Compara ignorando guiones — ver normalizarCodigoQr() para el porqué. */
     public function buscarPorCodigoQr(string $codigoQr): ?array
     {
-        $stmt = Database::conexion()->prepare('SELECT * FROM clientes WHERE codigo_qr = :codigo_qr');
+        $stmt = Database::conexion()->prepare("SELECT * FROM clientes WHERE REPLACE(codigo_qr, '-', '') = :codigo_qr");
         $stmt->execute(['codigo_qr' => $codigoQr]);
 
         return $stmt->fetch() ?: null;
@@ -83,11 +84,14 @@ class Cliente
      * Es aleatorio (random_int) y NO se deriva del teléfono ni del id, así
      * nadie puede adivinar el de otra persona. La garantía de que no se
      * repite es el UNIQUE de la columna: ante una colisión se genera otro.
+     *
+     * 8 caracteres, sin guion ni prefijo, mismo alfabeto sin ambigüedades
+     * que Recompensa::nuevoCodigoAleatorio() (sin 0/O/1/I/L) — acortado en
+     * docs/arquitectura.md §4.15; antes era "CL-" + 10 caracteres.
      */
     public function obtenerCodigoQr(int $id): string
     {
         $pdo = Database::conexion();
-        $alfabeto = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
         for ($intento = 1; $intento <= 5; $intento++) {
             $stmt = $pdo->prepare('SELECT codigo_qr FROM clientes WHERE id = :id');
@@ -98,10 +102,7 @@ class Cliente
                 return $actual;
             }
 
-            $codigo = 'CL-';
-            for ($i = 0; $i < 10; $i++) {
-                $codigo .= $alfabeto[random_int(0, strlen($alfabeto) - 1)];
-            }
+            $codigo = self::nuevoCodigoQrAleatorio();
 
             try {
                 // "AND codigo_qr IS NULL": si otra petición lo asignó primero, no se pisa.
@@ -116,6 +117,55 @@ class Cliente
         }
 
         throw new \RuntimeException("No se pudo asignar un código QR al cliente {$id}.");
+    }
+
+    /**
+     * Reemplaza el código personal del cliente por uno nuevo, aunque ya
+     * tuviera uno — a diferencia de obtenerCodigoQr(), que conserva el que
+     * ya existía. El código anterior deja de servir de inmediato (esta es
+     * la única forma en que un código personal "deja de funcionar": no hay
+     * historial de códigos viejos como con las recompensas, porque el
+     * cliente solo tiene uno vigente a la vez). Pensado para cuando el
+     * cliente lo comparte por error o pide uno más corto.
+     */
+    public function regenerarCodigoQr(int $id): string
+    {
+        $pdo = Database::conexion();
+
+        for ($intento = 1; $intento <= 5; $intento++) {
+            $codigo = self::nuevoCodigoQrAleatorio();
+
+            try {
+                $stmt = $pdo->prepare('UPDATE clientes SET codigo_qr = :codigo_qr WHERE id = :id');
+                $stmt->execute(['codigo_qr' => $codigo, 'id' => $id]);
+
+                if ($stmt->rowCount() === 1) {
+                    return $codigo;
+                }
+
+                throw new \RuntimeException("Cliente {$id} no encontrado.");
+            } catch (\PDOException $e) {
+                if ((int) ($e->errorInfo[1] ?? 0) !== 1062) {
+                    throw $e;
+                }
+                // Colisión con el código de otro cliente: se reintenta con uno nuevo.
+            }
+        }
+
+        throw new \RuntimeException("No se pudo regenerar el código QR del cliente {$id}.");
+    }
+
+    private static function nuevoCodigoQrAleatorio(): string
+    {
+        $alfabeto = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+        $maximo = strlen($alfabeto) - 1;
+
+        $codigo = '';
+        for ($i = 0; $i < 8; $i++) {
+            $codigo .= $alfabeto[random_int(0, $maximo)];
+        }
+
+        return $codigo;
     }
 
     public function buscarPorTelefono(string $telefono): ?array

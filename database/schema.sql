@@ -205,9 +205,11 @@ CREATE TABLE clientes (
   cafes_acumulados    SMALLINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Caché del saldo SIN convertir en recompensa; la fuente de verdad es lealtad_movimientos',
   notas               VARCHAR(255) NULL,
 
-  -- Código personal (QR) para sumar cafés: "CL-" + 10 caracteres aleatorios,
-  -- permanente. UNIQUE = dos clientes nunca comparten código. Se asigna la
-  -- primera vez que el cliente abre su cuenta (ver Cliente::obtenerCodigoQr).
+  -- Código personal (QR) para sumar cafés: 8 caracteres aleatorios, sin
+  -- guion (docs/arquitectura.md §4.15; antes era "CL-" + 10, con guion —
+  -- por eso VARCHAR(16) alcanza para los dos formatos), permanente.
+  -- UNIQUE = dos clientes nunca comparten código. Se asigna la primera vez
+  -- que el cliente abre su cuenta (ver Cliente::obtenerCodigoQr).
   codigo_qr           VARCHAR(16) NULL UNIQUE,
 
   -- Cuenta simple del cliente (teléfono + PIN de 4 dígitos, sin correo)
