@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Middleware;
 
 use App\Core\Auth;
+use App\Core\ClienteAuth;
 use App\Core\Csrf;
 use App\Core\Flash;
 
@@ -42,8 +43,9 @@ class CsrfMiddleware
      * vencida por inactividad, o una pantalla vieja que quedó abierta en
      * otra pestaña después de cerrar sesión. Mostrar un "403" sin salida
      * dejaba al usuario atrapado (F5 reenvía el mismo POST y vuelve a
-     * fallar). En el panel se redirige con un aviso a una pantalla GET,
-     * que sí carga con un token nuevo; el POST rechazado no se ejecuta.
+     * fallar). En el panel y en la cuenta del cliente se redirige con un
+     * aviso a una pantalla GET, que sí carga con un token nuevo; el POST
+     * rechazado no se ejecuta.
      */
     private static function tokenInvalido(): void
     {
@@ -56,6 +58,17 @@ class CsrfMiddleware
             } else {
                 Flash::error('Tu sesión expiró. Inicia sesión de nuevo.');
                 header('Location: /admin/login');
+            }
+            exit;
+        }
+
+        if ($ruta === '/cuenta' || str_starts_with($ruta, '/cuenta/')) {
+            if (ClienteAuth::verificado()) {
+                Flash::error('La página estaba desactualizada y no se guardó nada. Vuelve a intentarlo.');
+                header('Location: /cuenta');
+            } else {
+                Flash::error('Tu sesión expiró. Inicia sesión de nuevo.');
+                header('Location: /cuenta/login');
             }
             exit;
         }

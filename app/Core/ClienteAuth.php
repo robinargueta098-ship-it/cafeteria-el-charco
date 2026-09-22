@@ -59,6 +59,9 @@ class ClienteAuth
         }
 
         Session::regenerar();
+        // Token CSRF nuevo para la sesión ya autenticada: el del formulario de
+        // login (anónimo) no debe seguir valiendo dentro de la cuenta.
+        unset($_SESSION['csrf_token']);
         $_SESSION['cliente_id']     = (int) $registro['id'];
         $_SESSION['cliente_nombre'] = $registro['nombre'];
 

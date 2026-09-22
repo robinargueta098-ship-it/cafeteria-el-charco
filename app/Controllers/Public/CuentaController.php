@@ -6,6 +6,7 @@ namespace App\Controllers\Public;
 
 use App\Core\ClienteAuth;
 use App\Core\Controller;
+use App\Core\Flash;
 use App\Core\Logger;
 use App\Core\Session;
 use App\Core\Validator;
@@ -87,6 +88,9 @@ class CuentaController extends Controller
         }
 
         Session::regenerar();
+        // Token CSRF nuevo para la sesión ya autenticada: el del formulario de
+        // registro (anónimo) no debe seguir valiendo dentro de la cuenta.
+        unset($_SESSION['csrf_token']);
         $_SESSION['cliente_id'] = $clienteId;
         $_SESSION['cliente_nombre'] = $nombreCliente;
         $modelo->registrarAccesoClienteExitoso($clienteId);
@@ -100,7 +104,8 @@ class CuentaController extends Controller
             $this->redirigir('/cuenta');
         }
 
-        $this->vistaCuenta('public/cuenta/login', ['error' => null]);
+        // Aviso de una sola lectura (ej. "Tu sesión expiró"), puesto por CsrfMiddleware.
+        $this->vistaCuenta('public/cuenta/login', ['error' => Flash::tomar()['mensaje'] ?? null]);
     }
 
     public function iniciarSesion(): void
@@ -149,6 +154,9 @@ class CuentaController extends Controller
             'codigoQr'    => $codigoQr,
             'umbral'      => $umbral,
             'recompensas' => (new Recompensa())->listarPorCliente($clienteId),
+            // Aviso de una sola lectura (ej. tras un "Cerrar sesión" con una pantalla
+            // vieja), puesto por CsrfMiddleware.
+            'flash'       => Flash::tomar(),
         ]);
     }
 

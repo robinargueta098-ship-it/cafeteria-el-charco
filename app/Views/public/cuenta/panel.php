@@ -5,6 +5,7 @@
  * @var array<int,array<string,mixed>> $recompensas
  * @var array<string,string> $config
  * @var array<int,array<string,mixed>> $horarios
+ * @var array{tipo:string,mensaje:string}|null $flash
  */
 use App\Core\Csrf;
 use App\Core\CodigoQr;
@@ -31,6 +32,12 @@ $etiquetasEstado = [
                 <button type="submit" class="btn-enlace">Cerrar sesión</button>
             </form>
         </div>
+
+        <?php if ($flash !== null): ?>
+            <div class="alerta alerta-<?= htmlspecialchars($flash['tipo'], ENT_QUOTES, 'UTF-8') ?>">
+                <?= htmlspecialchars($flash['mensaje'], ENT_QUOTES, 'UTF-8') ?>
+            </div>
+        <?php endif; ?>
 
         <?php if ($disponibles !== []): ?>
             <?php /* Arriba del contador, y no debajo: es la explicación de por qué el

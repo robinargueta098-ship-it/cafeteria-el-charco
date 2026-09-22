@@ -768,6 +768,33 @@ caracteres sin guion ni prefijo, mismo alfabeto sin ambigüedades
   con el formato viejo (`CL-XXXXXXXXXX`) se sigue encontrando igual,
   escrito con guion o sin él.
 
+### 4.16 El mismo bug del §4.8, pero en la cuenta del cliente
+
+§4.8 corrigió el callejón sin salida del 403 (token CSRF vencido) para el
+panel administrativo. `CsrfMiddleware` solo miraba rutas que empezaran con
+`/admin`; la cuenta pública del cliente (`/cuenta`, `/cuenta/login`,
+`/cuenta/registro`, `/cuenta/logout`) tiene el mismo patrón de formulario
++ token y se quedó con el bug original — un cliente que entraba o salía
+con la sesión vencida, o con la pantalla de login abierta en otra
+pestaña desde antes, veía un "403 — Acceso denegado" sin ningún enlace
+de vuelta a `/cuenta`, y F5 no ayudaba porque reenviaba el mismo POST.
+
+Mismo arreglo, aplicado a `/cuenta/*`:
+- `CsrfMiddleware::tokenInvalido()` redirige con un aviso — a `/cuenta`
+  ("La página estaba desactualizada…") si `ClienteAuth::verificado()`, a
+  `/cuenta/login` ("Tu sesión expiró…") si no — en vez de mostrar el 403.
+- `ClienteAuth::intentar()` y `CuentaController::registrar()` rotan el
+  token CSRF al iniciar sesión (el del formulario anónimo no debe seguir
+  valiendo ya autenticado), igual que ya hacía `Auth::intentar()`.
+- El aviso se muestra en `cuenta/login.php` (reutiliza el `$error` que ya
+  tenía) y en `cuenta/panel.php` (nuevo bloque `$flash`, mismo patrón que
+  `panel_header.php` del panel administrativo).
+- Probado el caso exacto reportado: entrar con un token vencido → aviso
+  y login limpio; entrar de verdad y luego pulsar "Cerrar sesión" con un
+  token vencido (pantalla vieja) → sigue con la sesión abierta, con el
+  aviso, en vez de un 403; cerrar sesión con un token válido → funciona
+  igual que siempre.
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)
