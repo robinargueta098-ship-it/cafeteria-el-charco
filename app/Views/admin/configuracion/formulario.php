@@ -36,15 +36,14 @@ $totalPortada = count($portada);
         «Guardar configuración» de más abajo.
     </p>
 
-    <?php /* Nota técnica para quien desarrolla, no para el administrador del negocio en su uso diario:
-             solo se muestra con APP_DEBUG (local), nunca en producción (config/config.php). */ ?>
-    <?php if (!$optimiza && APP_DEBUG): ?>
-        <div class="alerta alerta-error" style="background:#fdf1cf;color:#7a5b00;border-color:#d9b84a;">
-            [Solo desarrollo] Este servidor no tiene la extensión GD de PHP, así que las imágenes se guardan tal
-            cual, sin las versiones reducidas que aceleran el sitio en el celular. Funciona igual, solo que más
-            pesado. (En Hostinger normalmente está activa.)
-        </div>
-    <?php endif; ?>
+    <?php
+        // Nota para quien desarrolla, no para el administrador del negocio:
+        // $optimiza en false significa que este servidor no tiene la
+        // extensión GD de PHP, así que las imágenes de portada se guardan
+        // tal cual, sin las versiones reducidas que aceleran el sitio en el
+        // celular (funciona igual, solo más pesado; en Hostinger normalmente
+        // está activa). No se imprime nada en pantalla a propósito.
+    ?>
 
     <p style="margin-bottom:8px;">
         <strong><?= $totalPortada ?> de <?= (int) $portadaMax ?></strong> imágenes
