@@ -45,8 +45,11 @@ class ConfiguracionController extends Controller
      *
      * @param array<string,string> $config
      * @param array<int,string> $errores
+     * @param array<int,array<string,mixed>>|null $horarios si viene null se lee de la
+     *        base (pantalla normal); si el formulario tuvo un error se pasa lo que el
+     *        administrador acababa de escribir, para no hacerlo repetir el horario.
      */
-    private function vistaFormulario(array $config, array $errores): void
+    private function vistaFormulario(array $config, array $errores, ?array $horarios = null): void
     {
         $portada = new PortadaImagen();
         $cupo = PortadaController::MAX_IMAGENES - $portada->contar();
@@ -54,7 +57,7 @@ class ConfiguracionController extends Controller
         $this->vista('admin/configuracion/formulario', [
             'seccionActiva'   => 'configuracion',
             'config'          => $config,
-            'horarios'        => (new HorarioAtencion())->listarTodos(),
+            'horarios'        => $horarios ?? (new HorarioAtencion())->listarTodos(),
             'errores'         => $errores,
             'portada'         => $portada->listar(),
             'portadaMax'      => PortadaController::MAX_IMAGENES,
@@ -79,10 +82,17 @@ class ConfiguracionController extends Controller
             $datos[$clave] = trim((string) ($_POST[$clave] ?? ''));
         }
 
+        $horarioPost = $this->leerHorarioDesdePost();
+
         $errores = $this->validar($datos);
+        $errores = array_merge($errores, $this->validarHorario($horarioPost));
 
         if ($errores !== []) {
-            $this->vistaFormulario($datos + array_intersect_key($configActual, array_flip(self::CLAVES_ARCHIVO)), $errores);
+            $this->vistaFormulario(
+                $datos + array_intersect_key($configActual, array_flip(self::CLAVES_ARCHIVO)),
+                $errores,
+                $this->horarioPostComoFilas($horarioPost)
+            );
             return;
         }
 
@@ -100,12 +110,12 @@ class ConfiguracionController extends Controller
         }
 
         if ($errores !== []) {
-            $this->vistaFormulario($configActual, $errores);
+            $this->vistaFormulario($configActual, $errores, $this->horarioPostComoFilas($horarioPost));
             return;
         }
 
         $configModelo->actualizarMultiples($datos);
-        $this->guardarHorarios();
+        $this->guardarHorario($horarioPost);
 
         AuditoriaService::registrar('configuracion_sistema', 0, 'editar', $configActual, $datos);
 
@@ -135,17 +145,121 @@ class ConfiguracionController extends Controller
         return ['ok' => true, 'valor' => $subida['nombre'], 'reemplazado' => true];
     }
 
-    private function guardarHorarios(): void
+    /**
+     * Lee el horario de los 7 días desde $_POST, sin validar todavía.
+     * Horario partido: "turno 1" (apertura/cierre) y un "turno 2" opcional
+     * (apertura2/cierre2) para el día que tiene pausa (ej. 9:00-14:00 y
+     * luego 16:00-21:00). Nombres de campo: horario[{dia}][apertura|cierre|apertura2|cierre2|abierto].
+     *
+     * @return array<int,array{cerrado:bool,apertura:?string,cierre:?string,apertura2:?string,cierre2:?string}>
+     */
+    private function leerHorarioDesdePost(): array
+    {
+        $dias = [];
+
+        for ($dia = 0; $dia <= 6; $dia++) {
+            $campo = fn (string $nombre): ?string => (trim((string) ($_POST['horario'][$dia][$nombre] ?? '')) ?: null);
+
+            $dias[$dia] = [
+                'cerrado'   => !isset($_POST['horario'][$dia]['abierto']),
+                'apertura'  => $campo('apertura'),
+                'cierre'    => $campo('cierre'),
+                'apertura2' => $campo('apertura2'),
+                'cierre2'   => $campo('cierre2'),
+            ];
+        }
+
+        return $dias;
+    }
+
+    /**
+     * Valida el horario de los 7 días. Un día "Cerrado" no se revisa (sus
+     * horas, si quedaron escritas, simplemente se descartan al guardar).
+     * Un día abierto necesita el turno 1 completo; el turno 2 es opcional
+     * pero, si se usa, va completo — nunca una sola hora suelta.
+     *
+     * @param array<int,array{cerrado:bool,apertura:?string,cierre:?string,apertura2:?string,cierre2:?string}> $dias
+     * @return array<int,string>
+     */
+    private function validarHorario(array $dias): array
+    {
+        $nombresDias = [0 => 'domingo', 1 => 'lunes', 2 => 'martes', 3 => 'miércoles', 4 => 'jueves', 5 => 'viernes', 6 => 'sábado'];
+        $formatoValido = fn (?string $hora): bool => $hora === null || preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $hora) === 1;
+        $errores = [];
+
+        foreach ($dias as $dia => $d) {
+            if ($d['cerrado']) {
+                continue;
+            }
+
+            $nombre = $nombresDias[$dia];
+
+            if (!$formatoValido($d['apertura']) || !$formatoValido($d['cierre']) || !$formatoValido($d['apertura2']) || !$formatoValido($d['cierre2'])) {
+                $errores[] = "El horario del $nombre tiene una hora con un formato inválido.";
+                continue;
+            }
+
+            if ($d['apertura'] === null || $d['cierre'] === null) {
+                $errores[] = "Falta la hora de apertura o de cierre del $nombre (o márcalo como Cerrado).";
+                continue;
+            }
+
+            if ($d['apertura'] >= $d['cierre']) {
+                $errores[] = "En el $nombre la hora de apertura debe ser antes que la de cierre.";
+            }
+
+            // Turno 2: completo (las dos horas) o vacío del todo — nunca una sola.
+            if (($d['apertura2'] === null) !== ($d['cierre2'] === null)) {
+                $errores[] = "En el $nombre falta completar el segundo turno (o bórralo por completo).";
+                continue;
+            }
+
+            if ($d['apertura2'] !== null && $d['cierre2'] !== null) {
+                if ($d['apertura2'] >= $d['cierre2']) {
+                    $errores[] = "En el $nombre, en el segundo turno la apertura debe ser antes que el cierre.";
+                }
+                if ($d['apertura2'] < $d['cierre']) {
+                    $errores[] = "En el $nombre el segundo turno no puede empezar antes de que termine el primero.";
+                }
+            }
+        }
+
+        return $errores;
+    }
+
+    private function guardarHorario(array $dias): void
     {
         $modelo = new HorarioAtencion();
 
-        for ($dia = 0; $dia <= 6; $dia++) {
-            $cerrado = !isset($_POST['horario'][$dia]['abierto']);
-            $apertura = trim((string) ($_POST['horario'][$dia]['apertura'] ?? '')) ?: null;
-            $cierre = trim((string) ($_POST['horario'][$dia]['cierre'] ?? '')) ?: null;
-
-            $modelo->actualizarDia($dia, $apertura, $cierre, $cerrado);
+        foreach ($dias as $dia => $d) {
+            $modelo->actualizarDia($dia, $d['apertura'], $d['cierre'], $d['apertura2'], $d['cierre2'], $d['cerrado']);
         }
+    }
+
+    /**
+     * Convierte lo leído de $_POST a la misma forma de fila que devuelve
+     * HorarioAtencion::listarTodos(), para poder reusar la vista tal cual
+     * cuando hay que volver a mostrar el formulario con un error.
+     *
+     * @param array<int,array{cerrado:bool,apertura:?string,cierre:?string,apertura2:?string,cierre2:?string}> $dias
+     * @return array<int,array<string,mixed>>
+     */
+    private function horarioPostComoFilas(array $dias): array
+    {
+        $filas = [];
+
+        foreach ($dias as $dia => $d) {
+            $filas[] = [
+                'dia_semana'      => $dia,
+                'hora_apertura'   => $d['apertura'],
+                'hora_cierre'     => $d['cierre'],
+                'hora_apertura_2' => $d['apertura2'],
+                'hora_cierre_2'   => $d['cierre2'],
+                'cerrado'         => $d['cerrado'] ? 1 : 0,
+            ];
+        }
+
+        return $filas;
     }
 
     /** @return array<int,string> */

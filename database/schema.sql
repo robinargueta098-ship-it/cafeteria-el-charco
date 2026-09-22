@@ -322,12 +322,20 @@ CREATE TABLE configuracion_sistema (
 -- ---------------------------------------------------------------------
 -- 14. horarios_atencion — horario semanal del negocio
 -- ---------------------------------------------------------------------
+-- Horario partido: un segundo turno opcional (ej. 9:00-14:00 y 16:00-21:00).
+-- hora_apertura/hora_cierre son siempre el turno 1; hora_apertura_2/
+-- hora_cierre_2 quedan NULL cuando el día no tiene pausa (docs/arquitectura.md §4.13).
 CREATE TABLE horarios_atencion (
   id              TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   dia_semana      TINYINT UNSIGNED NOT NULL UNIQUE COMMENT '0=domingo .. 6=sábado',
   hora_apertura   TIME NULL,
   hora_cierre     TIME NULL,
-  cerrado         TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1 = cerrado o aún sin configurar por el negocio'
+  hora_apertura_2 TIME NULL COMMENT 'Segundo turno (horario partido), opcional',
+  hora_cierre_2   TIME NULL,
+  cerrado         TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1 = cerrado o aún sin configurar por el negocio',
+
+  -- El turno 2 es "todo o nada": no puede quedar una hora puesta y la otra vacía.
+  CONSTRAINT chk_horario_turno2_completo CHECK ((hora_apertura_2 IS NULL) = (hora_cierre_2 IS NULL))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

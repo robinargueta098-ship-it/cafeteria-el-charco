@@ -58,6 +58,11 @@ foreach ($horarios as $h) {
 
         <p><?= $direccion !== '' ? htmlspecialchars($direccion, ENT_QUOTES, 'UTF-8') : Vista::pendiente('dirección exacta') ?></p>
 
+        <?php
+        // Horario partido: "9:00 a 14:00" o, si el día tiene segundo turno, "9:00 a 14:00 y 16:00 a
+        // 21:00". Un día sin segundo turno (hora_apertura_2 NULL) solo muestra el primer rango.
+        $rango = fn (string $apertura, string $cierre): string => substr($apertura, 0, 5) . ' a ' . substr($cierre, 0, 5);
+        ?>
         <?php if ($hayHorario): ?>
             <table class="horario-tabla">
                 <?php foreach ($horarios as $h): ?>
@@ -67,9 +72,13 @@ foreach ($horarios as $h) {
                             <?php if ((int) $h['cerrado'] === 1): ?>
                                 Cerrado
                             <?php else: ?>
-                                <?= htmlspecialchars(substr((string) $h['hora_apertura'], 0, 5), ENT_QUOTES, 'UTF-8') ?>
-                                a
-                                <?= htmlspecialchars(substr((string) $h['hora_cierre'], 0, 5), ENT_QUOTES, 'UTF-8') ?>
+                                <?php
+                                    $texto = $rango((string) $h['hora_apertura'], (string) $h['hora_cierre']);
+                                    if (!empty($h['hora_apertura_2']) && !empty($h['hora_cierre_2'])) {
+                                        $texto .= ' y ' . $rango((string) $h['hora_apertura_2'], (string) $h['hora_cierre_2']);
+                                    }
+                                ?>
+                                <?= htmlspecialchars($texto, ENT_QUOTES, 'UTF-8') ?>
                             <?php endif; ?>
                         </td>
                     </tr>

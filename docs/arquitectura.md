@@ -663,6 +663,37 @@ beige claro sobre fondo blanco, casi ilegible, porque tenía la misma
 especificidad que `.redes-lista a` y venía después en el archivo. Se
 corrigió con un selector más específico (`.sitio-footer .redes-lista a`).
 
+### 4.13 Horario partido (segundo turno opcional)
+
+El negocio tiene pausa entre semana (ej. 9:00-14:00 y 16:00-21:00): un solo
+rango por día ya no alcanzaba. `horarios_atencion` gana `hora_apertura_2` /
+`hora_cierre_2` (`database/migrations/002_horarios_segundo_turno.sql`),
+NULL cuando el día no tiene segundo turno. El turno 2 es "todo o nada": un
+CHECK en la BD (`chk_horario_turno2_completo`) y la validación del
+controlador impiden guardar una sola hora del turno 2 suelta.
+
+- **Panel** (`admin/configuracion/formulario.php`): cada día muestra su fila
+  de siempre (casilla "abierto" = lo contrario de "Cerrado", turno 1) y,
+  debajo, una segunda fila "+ turno 2" con las mismas clases/estilos
+  (`.horario-fila`, `.horario-hora`) — mismo diseño, nada nuevo que
+  aprender. Vacía si el día no tiene pausa.
+- **Validación nueva** en `ConfiguracionController` (antes no había
+  ninguna sobre el horario): formato de hora, apertura antes que cierre,
+  turno 2 completo o vacío, turno 2 no empieza antes de que cierre el
+  turno 1. Un día "Cerrado" no se valida — sus horas, si quedaron
+  escritas, se descartan. Si hay error, el formulario vuelve a mostrar
+  exactamente lo que el administrador había escrito (antes, un error en
+  la configuración general hacía perder lo tecleado en el horario).
+- **Sitio público** (`footer_publico.php`): "9:00 a 14:00 y 16:00 a 21:00"
+  cuando hay dos turnos; un solo rango si no. "Cerrado" sin cambios.
+- Se cargó el horario real del negocio (dado por el dueño): lunes a
+  viernes con los dos turnos, sábado un solo turno (17:00-21:00), domingo
+  con los dos turnos. Probado por HTTP contra el formulario real:
+  guardado correcto, y cinco variantes inválidas (turno 2 a medias, turno 2
+  cruzado con el 1, apertura después del cierre, día abierto sin horas,
+  formato inválido) rechazadas sin tocar la base, cada una con su
+  mensaje específico.
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)
