@@ -43,6 +43,25 @@ foreach ($portada as $imagenPortada) {
     $diapositivasHero[] = ImagenOptimizada::atributos(UPLOADS_PATH . '/portada', UPLOADS_URL . '/portada', $imagenPortada['imagen']);
 }
 
+$mesesEs = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+/** "2026-12-20" -> "20 de diciembre de 2026" (o sin el año si es el año en curso). */
+$fechaLarga = function (string $fechaIso) use ($mesesEs): string {
+    [$anio, $mes, $dia] = explode('-', $fechaIso);
+    $texto = ((int) $dia) . ' de ' . $mesesEs[(int) $mes];
+    return $anio === date('Y') ? $texto : $texto . ' de ' . $anio;
+};
+/** Texto corto del beneficio: "20% de descuento", "Q10 de descuento", "2x1", "Producto gratis". */
+$etiquetaPromo = function (array $promo): string {
+    $valor = $promo['valor'] !== null ? rtrim(rtrim(number_format((float) $promo['valor'], 2), '0'), '.') : null;
+    return match ($promo['tipo']) {
+        'descuento_porcentaje' => $valor . '% de descuento',
+        'descuento_monto'      => 'Q' . $valor . ' de descuento',
+        'dos_por_uno'          => '2x1',
+        'producto_gratis'      => 'Producto gratis',
+        default                => '',
+    };
+};
+
 /**
  * Tarjeta de producto reutilizada en Más vendidos / Destacados /
  * Temporada / Menú, para no repetir el mismo bloque de HTML cuatro
@@ -166,21 +185,39 @@ $tarjetaProducto = function (array $p) {
 <?php endif; ?>
 
 <!-- ===================== PROMOCIONES VIGENTES ===================== -->
+<?php /*
+    Solo promociones activas y dentro de su rango de fechas (y, si aplican,
+    día de la semana / horario) — Promocion::listarVigentesAhora() ya lo
+    calcula todo en el servidor (docs/arquitectura.md §4.18). Sin ninguna
+    vigente ahora mismo, la sección entera no se imprime: nada de espacio
+    vacío ni mensaje de "no hay promociones".
+*/ ?>
 <?php if ($promociones !== []): ?>
-<section class="sitio-seccion sitio-seccion-alt">
+<section class="sitio-seccion sitio-seccion-alt" id="promociones">
     <div class="sitio-contenedor">
-        <h2>Promociones de hoy</h2>
+        <h2>Promociones</h2>
+        <p class="sitio-seccion-intro">Vigentes en este momento.</p>
         <div class="tarjetas-grid">
             <?php foreach ($promociones as $promo): ?>
                 <article class="tarjeta-producto">
+                    <?php if (!empty($promo['imagen'])): ?>
+                        <img src="<?= UPLOADS_URL ?>/promociones/<?= htmlspecialchars($promo['imagen'], ENT_QUOTES, 'UTF-8') ?>" alt=""
+                             loading="lazy" decoding="async">
+                    <?php endif; ?>
                     <div class="tarjeta-producto-cuerpo">
                         <p class="tarjeta-producto-nombre"><?= htmlspecialchars($promo['nombre'], ENT_QUOTES, 'UTF-8') ?></p>
+                        <?php if (($etiqueta = $etiquetaPromo($promo)) !== ''): ?>
+                            <div class="etiquetas-producto">
+                                <span class="etiqueta etiqueta-promocion"><?= htmlspecialchars($etiqueta, ENT_QUOTES, 'UTF-8') ?></span>
+                            </div>
+                        <?php endif; ?>
                         <?php if (!empty($promo['descripcion'])): ?>
                             <p class="tarjeta-producto-descripcion"><?= htmlspecialchars($promo['descripcion'], ENT_QUOTES, 'UTF-8') ?></p>
                         <?php endif; ?>
                         <p class="tarjeta-producto-descripcion">
                             <?= htmlspecialchars($promo['producto_nombre'] ?? $promo['categoria_nombre'] ?? 'Todo el menú', ENT_QUOTES, 'UTF-8') ?>
                         </p>
+                        <p class="tarjeta-producto-descripcion">Válido hasta <?= htmlspecialchars($fechaLarga($promo['fecha_fin']), ENT_QUOTES, 'UTF-8') ?></p>
                     </div>
                 </article>
             <?php endforeach; ?>

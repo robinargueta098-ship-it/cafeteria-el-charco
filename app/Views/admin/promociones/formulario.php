@@ -37,7 +37,7 @@ $nombresDias = [0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 
         </div>
     <?php endif; ?>
 
-    <form method="post" action="<?= htmlspecialchars($accion, ENT_QUOTES, 'UTF-8') ?>">
+    <form method="post" action="<?= htmlspecialchars($accion, ENT_QUOTES, 'UTF-8') ?>" enctype="multipart/form-data">
         <?= Csrf::campo() ?>
 
         <div class="campo">
@@ -50,6 +50,17 @@ $nombresDias = [0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 
             <label for="descripcion">Descripción</label>
             <input type="text" id="descripcion" name="descripcion" maxlength="255"
                    value="<?= htmlspecialchars((string) ($promocion['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+        </div>
+
+        <div class="campo">
+            <label for="imagen">Foto (opcional)</label>
+            <?php if (!empty($promocion['imagen'])): ?>
+                <div style="margin-bottom:8px;">
+                    <img class="miniatura" src="<?= UPLOADS_URL ?>/promociones/<?= htmlspecialchars($promocion['imagen'], ENT_QUOTES, 'UTF-8') ?>" alt="">
+                </div>
+            <?php endif; ?>
+            <input type="file" id="imagen" name="imagen" accept=".jpg,.jpeg,.png,.webp">
+            <span class="campo-ayuda">JPG, PNG o WEBP, máximo 5 MB. Se muestra en la sección "Promociones" del sitio; sin foto, la tarjeta se ve igual pero sin imagen. Deja vacío para conservar la foto actual.</span>
         </div>
 
         <div class="campo">

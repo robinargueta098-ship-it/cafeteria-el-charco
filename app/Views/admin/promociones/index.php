@@ -21,7 +21,7 @@ $hoy = date('Y-m-d');
         <p class="tabla-vacio">Todavía no hay promociones registradas.</p>
     <?php else: ?>
         <table class="tabla">
-            <thead><tr><th>Nombre</th><th>Tipo</th><th>Alcance</th><th>Vigencia</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th></th><th>Nombre</th><th>Tipo</th><th>Alcance</th><th>Vigencia</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
                 <?php foreach ($promociones as $p): ?>
                     <?php
@@ -30,6 +30,13 @@ $hoy = date('Y-m-d');
                         $alcance = $p['producto_nombre'] ?? $p['categoria_nombre'] ?? 'Todo el menú';
                     ?>
                     <tr>
+                        <td>
+                            <?php if (!empty($p['imagen'])): ?>
+                                <img class="miniatura" src="<?= UPLOADS_URL ?>/promociones/<?= htmlspecialchars($p['imagen'], ENT_QUOTES, 'UTF-8') ?>" alt="">
+                            <?php else: ?>
+                                <span class="miniatura" aria-hidden="true"></span>
+                            <?php endif; ?>
+                        </td>
                         <td><?= htmlspecialchars($p['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td>
                             <?= htmlspecialchars($etiquetasTipo[$p['tipo']] ?? $p['tipo'], ENT_QUOTES, 'UTF-8') ?>

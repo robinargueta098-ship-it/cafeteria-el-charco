@@ -6,6 +6,7 @@ namespace App\Controllers\Admin;
 
 use App\Core\Controller;
 use App\Core\Flash;
+use App\Core\SubidaArchivo;
 use App\Core\Validator;
 use App\Models\Categoria;
 use App\Models\Producto;
@@ -40,10 +41,23 @@ class PromocionController extends Controller
         $datos = $this->datosDelFormulario();
         $errores = $this->validar($datos);
 
+        if ($errores === [] && ($_FILES['imagen']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            $subida = SubidaArchivo::guardarImagen($_FILES['imagen'], UPLOADS_PATH . '/promociones');
+            if (!$subida['ok']) {
+                $errores[] = $subida['error'];
+            } else {
+                $datos['imagen'] = $subida['nombre'];
+            }
+        }
+
         if ($errores !== []) {
-            $this->formulario($datos, $errores);
+            $this->formulario(array_merge($datos, ['id' => null]), $errores);
             return;
         }
+
+        // Sin foto subida, la clave no existe todavía: el INSERT la necesita
+        // (con PDO nativo un parámetro sin valor es "Invalid parameter number" → 500).
+        $datos['imagen'] ??= null;
 
         $id = (new Promocion())->crear($datos);
         AuditoriaService::registrar('promociones', $id, 'crear', null, $datos);
@@ -77,13 +91,31 @@ class PromocionController extends Controller
         $datos = $this->datosDelFormulario();
         $errores = $this->validar($datos);
 
+        $imagenNueva = null;
+        if ($errores === [] && ($_FILES['imagen']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            $subida = SubidaArchivo::guardarImagen($_FILES['imagen'], UPLOADS_PATH . '/promociones');
+            if (!$subida['ok']) {
+                $errores[] = $subida['error'];
+            } else {
+                $imagenNueva = $subida['nombre'];
+            }
+        }
+
         if ($errores !== []) {
             $datos['id'] = $id;
             $this->formulario($datos, $errores);
             return;
         }
 
+        // Conserva la imagen anterior si no se subió una nueva.
+        $datos['imagen'] = $imagenNueva ?? $existente['imagen'];
+
         $modelo->actualizar((int) $id, $datos);
+
+        if ($imagenNueva !== null && $existente['imagen'] !== null) {
+            SubidaArchivo::eliminar(UPLOADS_PATH . '/promociones', $existente['imagen']);
+        }
+
         AuditoriaService::registrar('promociones', (int) $id, 'editar', $existente, $datos);
 
         Flash::exito('Promoción actualizada correctamente.');
@@ -101,6 +133,11 @@ class PromocionController extends Controller
         }
 
         $modelo->eliminar((int) $id);
+
+        if ($promocion['imagen'] !== null) {
+            SubidaArchivo::eliminar(UPLOADS_PATH . '/promociones', $promocion['imagen']);
+        }
+
         AuditoriaService::registrar('promociones', (int) $id, 'eliminar', $promocion, null);
 
         Flash::exito('Promoción eliminada correctamente.');

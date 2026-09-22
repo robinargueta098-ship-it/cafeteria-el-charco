@@ -820,6 +820,63 @@ al completar (con el texto de "completaste") → 3/10 real al sumar 3 más
 con la recompensa aún disponible → sigue en 3/10, con el texto normal,
 después de canjearla.
 
+### 4.18 Sección "Promociones" en el sitio público
+
+**Diagnóstico (antes de tocar nada)**: el código público ya existía y ya
+estaba conectado — no era un caso de "nunca se conectó". `HomeController`
+ya llamaba a `Promocion::listarVigentesAhora()` (ya filtraba por
+`activo`, por rango de fechas, por día de la semana/hora si aplican, y
+por que la categoría/producto al que apunta siga activo) y `home.php` ya
+tenía una sección "Promociones de hoy" con esa lista. El verdadero
+problema era que la tarjeta casi no mostraba nada — ni el descuento, ni
+el 2x1, ni hasta cuándo era válida, ni ninguna foto (la tabla no tenía
+columna para eso) — así que aunque una promoción sí apareciera, no se
+veía como una promoción real y era fácil no notarla o dudar si de verdad
+se estaba mostrando algo.
+
+**No hay dos mecanismos separados** para "promoción normal" y "promoción
+de temporada": las dos son filas de la misma tabla `promociones`: una
+"de temporada" es simplemente una con `fecha_inicio`/`fecha_fin` cortos
+(ej. una semana), y una "normal" tiene un rango más largo. El mismo
+`listarVigentesAhora()` ya cubre ambas por igual — no hacía falta
+duplicar nada. (Aparte, y sin relación: la tabla `temporadas` es para
+**productos** de temporada, una sección distinta que ya existía en el
+home — no confundir con esto.)
+
+**Lo que se agregó de verdad:**
+- **Foto opcional** en las promociones: columna `promociones.imagen`
+  (`database/migrations/003_promociones_imagen.sql`), mismo mecanismo de
+  subida que productos (`SubidaArchivo`, sin versiones WebP — no hacía
+  falta esa complejidad para esto), en `public/uploads/promociones/`.
+  Sin foto, la tarjeta se ve igual, solo sin imagen (nunca el marcador
+  "📷 Foto pendiente" de `Vista::fotoOMarcador()` — ese es para productos,
+  donde sí se espera una foto tarde o temprano; una promoción de texto,
+  como un 2x1, no necesita una).
+- **La tarjeta ahora sí comunica la promoción**: una insignia verde (el
+  único acento del sitio, clase `.etiqueta-promocion`) con el beneficio
+  en texto — "20% de descuento", "Q10 de descuento", "2x1", "Producto
+  gratis" — más "Válido hasta 20 de noviembre" (`fecha_fin` en español,
+  sin el año si es el año en curso).
+- **Ubicación**: en el home, sección `id="promociones"`, entre "Productos
+  de temporada" y "Menú" (ya estaba ahí; se mantuvo). Sin ninguna
+  promoción vigente en este momento, la sección entera no se imprime
+  (ya lo hacía el `if ($promociones !== [])`) — nada de espacio vacío
+  ni mensaje de "no hay promociones".
+- Reutiliza `.tarjetas-grid`/`.tarjeta-producto` (mismas tarjetas que
+  Menú/Destacados/Temporada): 1 columna en celular, 2 desde 480px, 3
+  desde 768px, 4 desde 1366px — responsive sin escribir CSS nuevo de
+  diseño, solo el color de la insignia.
+
+**Probado** con dos promociones de prueba reales (creadas por el
+formulario del panel, con foto subida) y una tercera fuera de rango:
+"Zz 15% en Frappés" (normal, del -10 al +60 días — categoría Frappés/
+Batidos) y "Zz 2x1 de temporada" (temporada corta, del -2 al +5 días —
+todo el menú) aparecieron las dos, con su foto, su insignia y su fecha;
+"Zz Futura" (empieza en 30 días) no apareció. Antes de crear ninguna, la
+sección no existía en la página. Revisado en escritorio y en celular
+(390 px): sin desbordes, una columna, tarjeta completa. Las tres
+promociones de prueba y sus fotos ya se borraron.
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)

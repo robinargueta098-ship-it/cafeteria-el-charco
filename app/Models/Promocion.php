@@ -32,11 +32,11 @@ class Promocion
     {
         Database::conexion()->prepare(
             'INSERT INTO promociones
-                (nombre, descripcion, tipo, valor, categoria_id, producto_id,
+                (nombre, descripcion, imagen, tipo, valor, categoria_id, producto_id,
                  fecha_inicio, fecha_fin, dias_semana, hora_inicio, hora_fin,
                  combinable_con_lealtad, prioridad, activo)
              VALUES
-                (:nombre, :descripcion, :tipo, :valor, :categoria_id, :producto_id,
+                (:nombre, :descripcion, :imagen, :tipo, :valor, :categoria_id, :producto_id,
                  :fecha_inicio, :fecha_fin, :dias_semana, :hora_inicio, :hora_fin,
                  :combinable_con_lealtad, :prioridad, :activo)'
         )->execute($datos);
@@ -48,7 +48,7 @@ class Promocion
     {
         Database::conexion()->prepare(
             'UPDATE promociones SET
-                nombre = :nombre, descripcion = :descripcion, tipo = :tipo, valor = :valor,
+                nombre = :nombre, descripcion = :descripcion, imagen = :imagen, tipo = :tipo, valor = :valor,
                 categoria_id = :categoria_id, producto_id = :producto_id,
                 fecha_inicio = :fecha_inicio, fecha_fin = :fecha_fin,
                 dias_semana = :dias_semana, hora_inicio = :hora_inicio, hora_fin = :hora_fin,

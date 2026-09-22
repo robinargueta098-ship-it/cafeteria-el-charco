@@ -176,6 +176,7 @@ CREATE TABLE promociones (
   id                      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   nombre                  VARCHAR(120) NOT NULL,
   descripcion             VARCHAR(255) NULL,
+  imagen                  VARCHAR(255) NULL COMMENT 'Nombre de archivo en public/uploads/promociones/; NULL = sin foto (§4.18)',
   tipo                    ENUM('descuento_porcentaje','descuento_monto','dos_por_uno','producto_gratis') NOT NULL,
   valor                   DECIMAL(6,2) NULL COMMENT 'Porcentaje o monto según el tipo; NULL para 2x1/producto_gratis',
   categoria_id            INT UNSIGNED NULL COMMENT 'Alcance: categoría completa (NULL = no aplica por categoría)',

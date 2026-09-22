@@ -400,6 +400,15 @@ img {
   color: var(--color-error);
 }
 
+/* Beneficio de una promoción (ej. "20% de descuento", "2x1"): el único acento
+   del sitio (verde), para que resalte igual en una promoción normal o de
+   temporada — no es un estado (como sí lo son destacado/más vendido). */
+.etiqueta-promocion {
+  background: var(--color-verde);
+  color: var(--color-blanco);
+  font-size: 0.8rem;
+}
+
 /* ---------- Menú por categorías ---------- */
 
 .menu-categoria {
