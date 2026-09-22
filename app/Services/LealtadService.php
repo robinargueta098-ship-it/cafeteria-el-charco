@@ -140,9 +140,14 @@ class LealtadService
     /**
      * Cancela una recompensa NO canjeada (ej. se generó por error) y le
      * devuelve al cliente los cafés que costó — nunca se pierden
-     * silenciosamente.
+     * silenciosamente. Si al devolverlos el saldo vuelve a alcanzar el
+     * umbral (lo normal: se le restituye exactamente lo que costó la
+     * recompensa cancelada), se genera de inmediato una recompensa nueva
+     * con generarRecompensasSiCorresponde() — la MISMA función que usa el
+     * registro de consumo/ajuste — para que el cliente nunca se quede con
+     * el progreso completo pero sin ningún código válido para reclamarlo.
      *
-     * @return array{ok:bool,error?:string}
+     * @return array{ok:bool,error?:string,codigos_generados?:array<int,string>}
      */
     public static function cancelarRecompensa(int $recompensaId, int $usuarioId, string $motivo): array
     {
@@ -187,10 +192,15 @@ class LealtadService
                 $recompensa['codigo']
             );
 
-            $pdo->prepare('UPDATE clientes SET cafes_acumulados = cafes_acumulados + :cantidad WHERE id = :id')
-                ->execute(['cantidad' => $cafesARestituir, 'id' => $recompensa['cliente_id']]);
-
             $recompensas->marcarCancelada($recompensaId, $usuarioId, $motivo, $movimientoId);
+
+            // La fila del cliente ya está bloqueada (FOR UPDATE arriba): se
+            // reutiliza la misma función que registrarConsumo()/registrarAjuste()
+            // para sumar los cafés devueltos y, si con eso vuelve a alcanzar el
+            // umbral, generar de inmediato una recompensa nueva — nunca queda el
+            // cliente con el progreso completo y sin ningún código para canjearlo.
+            $nuevoSaldo = (int) $cliente['cafes_acumulados'] + $cafesARestituir;
+            $generado = self::generarRecompensasSiCorresponde((int) $recompensa['cliente_id'], $nuevoSaldo, $usuarioId);
 
             $pdo->commit();
         } catch (Throwable $e) {
@@ -201,7 +211,14 @@ class LealtadService
 
         AuditoriaService::registrar('recompensas', $recompensaId, 'editar', ['estado' => 'disponible'], ['estado' => 'cancelada', 'motivo' => $motivo]);
 
-        return ['ok' => true];
+        if ($generado['codigos_generados'] !== []) {
+            AuditoriaService::registrar('lealtad_movimientos', (int) $recompensa['cliente_id'], 'ajuste', null, [
+                'motivo' => 'Recompensa regenerada automáticamente tras cancelar ' . $recompensa['codigo'],
+                'codigos_generados' => $generado['codigos_generados'],
+            ]);
+        }
+
+        return ['ok' => true, 'codigos_generados' => $generado['codigos_generados']];
     }
 
     /**

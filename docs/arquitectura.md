@@ -615,6 +615,35 @@ campo manual de §4.9. Hay dos códigos, que se distinguen por su forma:
   hacer que le sumen cafés a otro. El cajero ve siempre el nombre del cliente
   antes de sumar, y cada suma queda auditada.
 
+### 4.11 "Mi cuenta" explica el 0/10, y cancelar una recompensa regenera el código
+
+Dos ajustes sobre lo anterior:
+
+- **Contador sin explicación**: al llegar al umbral, el contador vuelve a 0 —
+  correcto, pero la pantalla no decía por qué. Ahora, cuando el cliente tiene
+  una recompensa disponible, arriba del contador aparece una tarjeta
+  destacada "🎉 ¡Tienes un café gratis listo para reclamar!" con su QR y
+  código, y el contador explica "Ya canjeaste tu café gratis (arriba)…" en
+  vez de solo mostrar "0 / 10" (`app/Views/public/cuenta/panel.php`).
+- **BUG corregido — cancelar dejaba al cliente sin código**:
+  `LealtadService::cancelarRecompensa()` devolvía los cafés al saldo pero
+  nunca comprobaba si ese saldo volvía a alcanzar el umbral. Ahora, dentro de
+  la misma transacción (la fila del cliente ya está bloqueada con
+  `FOR UPDATE`), llama a `generarRecompensasSiCorresponde()` — la misma
+  función que ya usan `registrarConsumo()` y `registrarAjuste()`, no una
+  copia — así que si el saldo devuelto vuelve a completar el umbral se
+  genera de inmediato un código nuevo, único (mismo UNIQUE + reintento de
+  siempre) y distinto del cancelado. El aviso en Recompensas lo menciona
+  ("se generó automáticamente un nuevo código: …").
+- Probado el ciclo completo por HTTP: cliente llega a 10 → código A
+  (`disponible`) → el administrador cancela A con un motivo → A queda
+  `cancelada` para siempre (ni `consultar` ni `confirmar` lo aceptan ya) →
+  el saldo vuelve a 10 → se generó solo el código B → el Cajero lo encuentra
+  escribiéndolo en mayúsculas o minúsculas y sin guion (como leería un
+  escáner) y lo canjea → un segundo intento con B lo rechaza por ya usado.
+  Repetido una vez más (C → cancelar → D) para confirmar que no es un caso
+  aislado.
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)

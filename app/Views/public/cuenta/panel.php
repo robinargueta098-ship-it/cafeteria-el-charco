@@ -32,12 +32,41 @@ $etiquetasEstado = [
             </form>
         </div>
 
+        <?php if ($disponibles !== []): ?>
+            <?php /* Arriba del contador, y no debajo: es la explicación de por qué el
+                     contador está en 0 — no se ve como que el cliente perdió su progreso,
+                     se ve como que ya lo cambió por un café gratis. */ ?>
+            <div class="tarjeta lealtad-recompensa-lista" style="text-align:center;margin-bottom:16px;border-color:var(--color-verde);border-width:2px;">
+                <h2 style="margin-top:0;">🎉 ¡Tienes <?= count($disponibles) === 1 ? 'un café gratis listo' : (count($disponibles) . ' cafés gratis listos') ?> para reclamar!</h2>
+                <p class="sitio-seccion-intro">Muestra este código QR en el mostrador, o díctale el código al cajero.</p>
+                <?php foreach ($disponibles as $r): ?>
+                    <?php $qr = CodigoQr::dataUri($r['codigo']); ?>
+                    <div style="margin-bottom:16px;">
+                        <?php if ($qr !== null): ?>
+                            <img class="qr-recompensa" src="<?= htmlspecialchars($qr, ENT_QUOTES, 'UTF-8') ?>" width="240" height="240"
+                                 alt="Código QR de tu recompensa <?= htmlspecialchars($r['codigo'], ENT_QUOTES, 'UTF-8') ?>">
+                        <?php endif; ?>
+                        <div class="codigo-recompensa-texto" style="font-size:1.8rem;font-weight:700;letter-spacing:2px;color:var(--color-verde);">
+                            <?= htmlspecialchars($r['codigo'], ENT_QUOTES, 'UTF-8') ?>
+                        </div>
+                        <?php if ($r['fecha_vencimiento'] !== null): ?>
+                            <p class="campo-ayuda">Válido hasta <?= htmlspecialchars(substr($r['fecha_vencimiento'], 0, 10), ENT_QUOTES, 'UTF-8') ?></p>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
         <div class="lealtad-tarjeta" style="margin-bottom:24px;">
             <div class="lealtad-numero"><?= $saldo ?> / <?= $umbral ?></div>
             <div class="progreso-lealtad">
                 <div class="progreso-lealtad-barra" style="width:<?= $porcentaje ?>%;"></div>
             </div>
-            <p>Cafés acumulados hacia tu próximo café gratis.</p>
+            <?php if ($disponibles !== []): ?>
+                <p>Ya canjeaste tu café gratis (arriba). Este contador empezó de nuevo para el siguiente.</p>
+            <?php else: ?>
+                <p>Cafés acumulados hacia tu próximo café gratis.</p>
+            <?php endif; ?>
         </div>
 
         <?php if (!empty($codigoQr)): ?>
@@ -55,25 +84,7 @@ $etiquetasEstado = [
             </div>
         <?php endif; ?>
 
-        <?php if ($disponibles !== []): ?>
-            <h2>🎉 Tienes <?= count($disponibles) ?> recompensa(s) disponible(s)</h2>
-            <p class="sitio-seccion-intro">Muestra este código QR en el mostrador para canjearlo, o díctale el código al cajero.</p>
-            <?php foreach ($disponibles as $r): ?>
-                <?php $qr = CodigoQr::dataUri($r['codigo']); ?>
-                <div class="tarjeta" style="text-align:center;margin-bottom:16px;">
-                    <?php if ($qr !== null): ?>
-                        <img class="qr-recompensa" src="<?= htmlspecialchars($qr, ENT_QUOTES, 'UTF-8') ?>" width="240" height="240"
-                             alt="Código QR de tu recompensa <?= htmlspecialchars($r['codigo'], ENT_QUOTES, 'UTF-8') ?>">
-                    <?php endif; ?>
-                    <div class="codigo-recompensa-texto" style="font-size:1.8rem;font-weight:700;letter-spacing:2px;color:var(--color-verde);">
-                        <?= htmlspecialchars($r['codigo'], ENT_QUOTES, 'UTF-8') ?>
-                    </div>
-                    <?php if ($r['fecha_vencimiento'] !== null): ?>
-                        <p class="campo-ayuda">Válido hasta <?= htmlspecialchars(substr($r['fecha_vencimiento'], 0, 10), ENT_QUOTES, 'UTF-8') ?></p>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
-        <?php else: ?>
+        <?php if ($disponibles === []): ?>
             <div class="tarjeta" style="text-align:center;margin-bottom:24px;">
                 <p style="margin:0;">
                     Todavía no tienes una recompensa disponible. Cuando completes

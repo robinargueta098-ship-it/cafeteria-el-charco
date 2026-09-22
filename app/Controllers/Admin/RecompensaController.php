@@ -43,7 +43,14 @@ class RecompensaController extends Controller
         $resultado = LealtadService::cancelarRecompensa((int) $id, $usuario['id'], $motivo);
 
         if ($resultado['ok']) {
-            Flash::exito('Recompensa cancelada; los cafés se devolvieron al saldo del cliente.');
+            $mensaje = 'Recompensa cancelada; los cafés se devolvieron al saldo del cliente.';
+            if ($resultado['codigos_generados'] !== []) {
+                // El saldo devuelto volvió a alcanzar el umbral: se generó de inmediato
+                // un código nuevo (nunca queda el cliente sin ninguno para canjear).
+                $mensaje .= ' Como el saldo volvió a completar el umbral, se generó automáticamente un nuevo código: '
+                    . implode(', ', $resultado['codigos_generados']) . '.';
+            }
+            Flash::exito($mensaje);
         } else {
             Flash::error($resultado['error']);
         }
