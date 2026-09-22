@@ -10,6 +10,12 @@ html {
   scroll-behavior: smooth;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body.sitio-body {
   background: var(--color-beige-claro);
 }
@@ -164,6 +170,28 @@ img {
   }
 }
 
+/* Entre 1024px y 1200px la barra va justa (siete enlaces + botón): el botón
+   de WhatsApp se queda solo con el ícono para no forzar el salto de línea.
+   El texto sigue en el DOM (lectores de pantalla y el aria-label lo cubren
+   igual), solo se oculta visualmente. */
+@media (min-width: 1024px) and (max-width: 1200px) {
+  .texto-boton-whatsapp {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .sitio-nav-enlaces .btn-whatsapp {
+    padding: 10px;
+  }
+}
+
 /* ---------- Hero ---------- */
 
 .hero {
@@ -269,6 +297,44 @@ img {
   .hero-botones .btn {
     flex: 0 1 auto;
   }
+}
+
+/* "Ver menú": mismo tamaño/radio que el botón de WhatsApp de al lado, pero
+   con relleno claro y borde, para que ambos se vean como un par de botones
+   pensados juntos y no como uno "oficial" y otro genérico. */
+.btn-ver-menu {
+  background: var(--color-blanco);
+  color: var(--color-cafe-oscuro);
+  border: 2px solid var(--color-blanco);
+  font-weight: 600;
+}
+
+.btn-ver-menu:hover {
+  background: transparent;
+  color: var(--color-blanco);
+  border-color: var(--color-blanco);
+}
+
+/* ---------- Botones de WhatsApp (portada y barra de navegación) ---------- */
+/* Verde oficial de la marca (#25D366), no el verde institucional del sitio
+   (--color-verde): así se reconoce como WhatsApp de un vistazo. */
+.btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #25d366;
+  font-weight: 600;
+}
+
+.btn-whatsapp:hover {
+  background: #1ebe57;
+}
+
+.icono-boton {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 /* ---------- Secciones genéricas ---------- */
@@ -687,6 +753,14 @@ img {
   border-radius: var(--radio-borde);
 }
 
+.btn-como-llegar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  background: var(--color-cafe);
+}
+
 .calificacion-google {
   display: inline-flex;
   align-items: center;
@@ -802,4 +876,69 @@ img {
   text-decoration: none;
   font-size: 1.6rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* ---------- Transiciones de hover ---------- */
+/* Solo en elementos realmente clicables (botones, enlaces de tarjeta,
+   píldoras de redes): las tarjetas de producto que NO enlazan a nada
+   (.tarjeta-producto sin .tarjeta-producto-enlace) no llevan esta
+   transición para no insinuar que se pueden pulsar. */
+.sitio-body .btn,
+.sitio-body .redes-lista a,
+.sitio-body .calificacion-google,
+.sitio-body .tarjeta-producto-enlace,
+.sitio-body .whatsapp-flotante {
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sitio-body .redes-lista a:hover,
+.sitio-body .calificacion-google:hover,
+.sitio-body .whatsapp-flotante:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 36, 21, 0.15);
+}
+
+.sitio-body .tarjeta-producto-enlace:hover {
+  transform: translateY(-3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sitio-body .btn,
+  .sitio-body .redes-lista a,
+  .sitio-body .calificacion-google,
+  .sitio-body .tarjeta-producto-enlace,
+  .sitio-body .whatsapp-flotante {
+    transition: none;
+  }
+
+  .sitio-body .redes-lista a:hover,
+  .sitio-body .calificacion-google:hover,
+  .sitio-body .whatsapp-flotante:hover,
+  .sitio-body .tarjeta-producto-enlace:hover {
+    transform: none;
+  }
+}
+
+/* ---------- Revelado al hacer scroll ---------- */
+/* Las clases las añade sitio.js (inicializarRevelado()) por elemento, no
+   por sección completa aquí en CSS: así, si JavaScript no llega a correr,
+   ningún contenido queda oculto (mejora progresiva, igual que la clase
+   "js" del panel administrativo). */
+.por-revelar {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.por-revelar.revelado {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .por-revelar {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

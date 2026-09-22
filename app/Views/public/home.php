@@ -119,10 +119,14 @@ $tarjetaProducto = function (array $p) {
             <p><?= Vista::pendiente('descripción breve de la cafetería') ?></p>
         <?php endif; ?>
         <div class="hero-botones">
-            <a href="#menu" class="btn">Ver menú</a>
+            <a href="#menu" class="btn btn-ver-menu">Ver menú</a>
             <?php if ($whatsappNumero !== ''): ?>
+                <?php $textoBotonWhatsapp = $config['boton_whatsapp_texto'] ?? ''; ?>
                 <a href="<?= htmlspecialchars(WhatsApp::enlace($whatsappNumero, "Hola, quisiera hacer un pedido en {$nombreSitio}."), ENT_QUOTES, 'UTF-8') ?>"
-                   class="btn btn-verde" target="_blank" rel="noopener">Escribir por WhatsApp</a>
+                   class="btn btn-whatsapp" target="_blank" rel="noopener">
+                    <?= Vista::iconoWhatsapp() ?>
+                    <span><?= htmlspecialchars($textoBotonWhatsapp !== '' ? $textoBotonWhatsapp : 'Ordena ahora', ENT_QUOTES, 'UTF-8') ?></span>
+                </a>
             <?php endif; ?>
         </div>
     </div>
@@ -332,23 +336,37 @@ $tarjetaProducto = function (array $p) {
         <h2>Ubicación</h2>
         <div class="ubicacion-grid">
             <div>
-                <?php if (!empty($config['google_maps_embed'])): ?>
+                <?php $direccionTexto = $config['direccion_texto'] ?? ''; ?>
+                <?php if ($direccionTexto !== ''): ?>
+                    <?php
+                    // El mapa ya no depende de que el Administrador pegue un código
+                    // embed (propenso a errores: un link corto de compartir ahí no
+                    // sirve, como pasó antes). Se genera solo a partir de la
+                    // dirección de texto, con el formato de Google Maps sin API key.
+                    $urlMapa = 'https://www.google.com/maps?q=' . rawurlencode($direccionTexto) . '&output=embed';
+                    ?>
                     <div class="ubicacion-mapa-marcador">
-                        <?php
-                        // Este campo es el único del sitio que se imprime sin
-                        // htmlspecialchars(): es código embed de Google Maps
-                        // (un <iframe>) que solo un Administrador autenticado
-                        // puede escribir desde el panel — no es contenido
-                        // enviado por un visitante del sitio.
-                        echo $config['google_maps_embed'];
-                        ?>
+                        <iframe src="<?= htmlspecialchars($urlMapa, ENT_QUOTES, 'UTF-8') ?>"
+                                loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                                title="Mapa de ubicación de <?= htmlspecialchars($nombreSitio, ENT_QUOTES, 'UTF-8') ?>"></iframe>
                     </div>
                 <?php else: ?>
                     <div class="ubicacion-mapa-marcador"><?= Vista::pendiente('mapa de Google Maps') ?></div>
                 <?php endif; ?>
                 <p style="margin-top:12px;">
-                    <?= !empty($config['direccion_texto']) ? htmlspecialchars($config['direccion_texto'], ENT_QUOTES, 'UTF-8') : Vista::pendiente('dirección exacta') ?>
+                    <?= $direccionTexto !== '' ? htmlspecialchars($direccionTexto, ENT_QUOTES, 'UTF-8') : Vista::pendiente('dirección exacta') ?>
                 </p>
+                <?php
+                // Este campo (google_maps_embed) ahora guarda el enlace de
+                // compartir de Google Maps (https://maps.app.goo.gl/...), no
+                // código embed: se usa para que el cliente trace su propia ruta.
+                $enlaceComoLlegar = $config['google_maps_embed'] ?? '';
+                ?>
+                <?php if ($enlaceComoLlegar !== ''): ?>
+                    <a class="btn btn-como-llegar" href="<?= htmlspecialchars($enlaceComoLlegar, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">
+                        📍 Cómo llegar
+                    </a>
+                <?php endif; ?>
             </div>
             <div>
                 <h3>Calificación en Google</h3>

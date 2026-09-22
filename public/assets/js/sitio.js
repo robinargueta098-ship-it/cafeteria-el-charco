@@ -7,8 +7,49 @@
 document.addEventListener('DOMContentLoaded', function () {
   inicializarMenuMovil();
   inicializarHeroFondo();
+  inicializarRevelado();
   document.querySelectorAll('[data-carrusel]').forEach(inicializarCarrusel);
 });
+
+/**
+ * Aparición suave de las secciones al llegar al scroll (fade-in + pequeño
+ * desplazamiento hacia arriba, ver ".por-revelar" en sitio.css). Las clases
+ * las agrega ESTE código, nunca el HTML: así, si JavaScript no corre, nada
+ * queda oculto (mejora progresiva). Usa IntersectionObserver nativo (sin
+ * escuchar el evento "scroll" ni medir posiciones a mano) para no afectar
+ * el rendimiento de la página.
+ */
+function inicializarRevelado() {
+  if (!('IntersectionObserver' in window)) {
+    return; // navegador muy viejo: el contenido ya es visible por defecto
+  }
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return; // se deja todo visible tal cual, sin animar
+  }
+
+  var secciones = ['#menu', '#nosotros', '#galeria', '#promociones', '#ubicacion', '#contacto']
+    .map(function (selector) { return document.querySelector(selector); })
+    .filter(Boolean);
+
+  if (secciones.length === 0) {
+    return;
+  }
+
+  var observador = new IntersectionObserver(function (entradas, obs) {
+    entradas.forEach(function (entrada) {
+      if (entrada.isIntersecting) {
+        entrada.target.classList.add('revelado');
+        obs.unobserve(entrada.target); // ya apareció una vez: no hay que seguir observándola
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+  secciones.forEach(function (seccion) {
+    seccion.classList.add('por-revelar');
+    observador.observe(seccion);
+  });
+}
 
 /**
  * Fondo automático del hero (sin controles): funde una foto con la

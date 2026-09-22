@@ -49,7 +49,9 @@ $anclaInicio = $rutaPagina === '' ? '' : '/';
             <a href="<?= $anclaInicio ?>#lealtad">Lealtad</a>
             <a href="<?= $anclaInicio ?>#contacto">Contacto</a>
             <a href="/cuenta">Mi cuenta</a>
-            <a href="<?= htmlspecialchars($enlaceWhatsappNav, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-verde" target="_blank" rel="noopener">WhatsApp</a>
+            <a href="<?= htmlspecialchars($enlaceWhatsappNav, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-whatsapp" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp">
+                <?= Vista::iconoWhatsapp() ?><span class="texto-boton-whatsapp">WhatsApp</span>
+            </a>
         </div>
     </div>
 </nav>

@@ -1002,6 +1002,77 @@ no hay que elegir ningún producto.
   reclamado un cupón de la promoción real "2 ma 1" desde su cuenta —
   quedó intacto, sin tocar.
 
+### 4.21 El sitio público deja de verse plano: animaciones, WhatsApp real, TikTok y mapa automático
+
+El sitio público no tenía ninguna transición ni animación (todo aparecía
+de golpe), los botones de WhatsApp usaban el verde institucional del
+sitio (no el de la marca) con un emoji en vez de su logo, no existía
+forma de enlazar TikTok pese a que el negocio sí tiene cuenta, y el
+campo de "Google Maps" tenía guardado el enlace corto de compartir
+(`https://maps.app.goo.gl/...`) — que como código embed no es válido, así
+que el mapa no cargaba nada.
+
+- **Revelado al hacer scroll** (`inicializarRevelado()`,
+  `public/assets/js/sitio.js`): `IntersectionObserver` nativo, sin
+  librería — el mismo patrón que ya usaba `inicializarHeroFondo()` para
+  pausar el fondo del hero fuera de pantalla. Las seis secciones (Menú,
+  Nosotros, Galería, Promociones, Ubicación, Contacto) se localizan por
+  su `id` ya existente; la clase `.por-revelar` la agrega el propio
+  JavaScript, nunca el HTML, así que si JavaScript no llega a correr
+  ningún contenido queda oculto (mejora progresiva). Cada sección se deja
+  de observar (`unobserve`) en cuanto aparece una vez. Respeta
+  `prefers-reduced-motion` (no se anima nada) y anima solo `opacity` y
+  `transform` — sin reflow, sin pedir datos de red nuevos, así que no
+  añade peso ni bloquea la carga.
+- **Botones de WhatsApp** (`Vista::iconoWhatsapp()`, reutilizado en
+  nav, portada y footer): verde oficial de la marca `#25D366` (hover
+  `#1EBE57`), ya no el `--color-verde` institucional, con el logo real en
+  SVG en línea (trazo de Simple Icons, mismo origen que los íconos de
+  redes del §4.12 — sin depender de internet). El botón de la portada
+  cambia su texto de "Escribir por WhatsApp" a un mensaje editable desde
+  Configuración (`boton_whatsapp_texto`, por defecto "Ordena ahora" si se
+  deja vacío); el de la barra de navegación se queda solo con el ícono
+  entre 1024px y 1200px, donde los siete enlaces ya van justos. "Ver
+  menú" se restyled para hacer pareja visual con el de WhatsApp (mismo
+  padding/radio, fondo claro con borde en vez de un botón sin énfasis).
+- **TikTok en Contacto**: el campo `instagram_usuario` del panel decía
+  "Instagram / TikTok" pero no había ningún enlace de TikTok en ningún
+  lado — se separa en dos campos reales: `instagram_usuario` (como
+  estaba, ahora bien rotulado) y `tiktok_usuario` nuevo, con el mismo
+  logo-en-SVG-en-línea que el resto de redes (`footer_publico.php`). El
+  campo acepta usuario (`@algo`) o enlace completo, igual de flexible que
+  Facebook.
+- **Mapa de Ubicación, sin código embed que pegar**: el campo
+  `google_maps_embed` cambia de sentido — ya no se imprime como HTML sin
+  escapar (era el único campo del sitio con esa excepción); ahora guarda
+  el enlace de **compartir** de Google Maps y se usa, siempre escapado,
+  en un botón "Cómo llegar" (`target="_blank"`) para que el cliente trace
+  su propia ruta. El mapa visual se genera solo, a partir de
+  `direccion_texto` ya existente, con el formato sin API key
+  `https://www.google.com/maps?q=DIRECCIÓN_CODIFICADA&output=embed`
+  dentro de un `<iframe>` — nada que el administrador tenga que copiar o
+  pegar a mano.
+- **Nuevas claves de `configuracion_sistema`** (`boton_whatsapp_texto`,
+  `tiktok_usuario`): como `actualizarMultiples()` solo hace `UPDATE` (no
+  `INSERT ... ON DUPLICATE KEY`), no basta con agregarlas a
+  `ConfiguracionController::CLAVES_EDITABLES` — hace falta la fila
+  seed. Se agregaron al `INSERT` de `database/schema.sql` (para una
+  instalación nueva) y, en la base de datos de desarrollo ya existente,
+  con un `INSERT` directo de la misma fila: sin esto, guardar el
+  formulario con esos campos vacíos habría parecido funcionar sin guardar
+  nada.
+- **Probado**: recorrido visual completo en escritorio y en 375px
+  (menú hamburguesa incluido) — los dos botones de WhatsApp con logo y
+  verde de marca, "Ver menú" a juego, el mapa cargando la zona real de
+  Santa Cruz del Quiché desde `direccion_texto`, "Cómo llegar" apuntando
+  al enlace real guardado, y el ícono de TikTok junto a WhatsApp/
+  Instagram/Facebook (con un valor de prueba, revertido a vacío después
+  de verificarlo — el administrador real aún no ha cargado su usuario de
+  TikTok). Sin errores en consola. Pendiente de probar por HTTP el
+  guardado del formulario de Configuración con los dos campos nuevos: no
+  se pudo iniciar sesión de administrador en esta sesión de trabajo por no
+  contar con la contraseña.
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)

@@ -167,9 +167,22 @@ $totalPortada = count($portada);
                    value="<?= htmlspecialchars($config['whatsapp_numero'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
         </div>
         <div class="campo">
-            <label for="instagram_usuario">Instagram / TikTok (con @)</label>
+            <label for="boton_whatsapp_texto">Texto del botón de WhatsApp de la portada</label>
+            <input type="text" id="boton_whatsapp_texto" name="boton_whatsapp_texto" maxlength="30"
+                   placeholder="Ordena ahora"
+                   value="<?= htmlspecialchars($config['boton_whatsapp_texto'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+            <span class="campo-ayuda">Si se deja vacío se muestra "Ordena ahora".</span>
+        </div>
+        <div class="campo">
+            <label for="instagram_usuario">Instagram (con @)</label>
             <input type="text" id="instagram_usuario" name="instagram_usuario" maxlength="100"
                    value="<?= htmlspecialchars($config['instagram_usuario'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+        </div>
+        <div class="campo">
+            <label for="tiktok_usuario">TikTok (usuario o enlace)</label>
+            <input type="text" id="tiktok_usuario" name="tiktok_usuario" maxlength="100"
+                   placeholder="@elcharco o https://www.tiktok.com/@elcharco"
+                   value="<?= htmlspecialchars($config['tiktok_usuario'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
         </div>
         <div class="campo">
             <label for="facebook_nombre">Nombre de la página de Facebook</label>
@@ -184,8 +197,15 @@ $totalPortada = count($portada);
 
         <h2>Ubicación y calificación de Google</h2>
         <div class="campo">
-            <label for="google_maps_embed">Código embed de Google Maps</label>
-            <textarea id="google_maps_embed" name="google_maps_embed" rows="3"><?= htmlspecialchars($config['google_maps_embed'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+            <label for="google_maps_embed">Enlace para compartir de Google Maps</label>
+            <input type="url" id="google_maps_embed" name="google_maps_embed" maxlength="255"
+                   placeholder="https://maps.app.goo.gl/..."
+                   value="<?= htmlspecialchars($config['google_maps_embed'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+            <span class="campo-ayuda">
+                Es el enlace que da el botón "Compartir" de Google Maps (no un código embed). Se usa para el
+                botón "Cómo llegar" del sitio. El mapa visual ya no necesita configurarse aquí: se genera solo
+                a partir de la dirección de arriba.
+            </span>
         </div>
         <div class="campo">
             <label for="google_calificacion">Calificación de Google (ej. 4.8)</label>

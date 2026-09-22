@@ -19,7 +19,8 @@ class ConfiguracionController extends Controller
     /** Claves editables desde este formulario (evita que alguien inyecte una clave nueva arbitraria). */
     private const CLAVES_EDITABLES = [
         'nombre_sitio', 'logo', 'direccion_texto', 'frase_hero', 'descripcion_corta',
-        'whatsapp_numero', 'instagram_usuario', 'facebook_nombre', 'facebook_url',
+        'whatsapp_numero', 'boton_whatsapp_texto', 'instagram_usuario', 'tiktok_usuario',
+        'facebook_nombre', 'facebook_url',
         'umbral_lealtad', 'google_maps_embed', 'google_calificacion',
         'google_calificacion_url', 'sobre_nosotros_texto',
     ];
@@ -269,7 +270,9 @@ class ConfiguracionController extends Controller
         $validador
             ->longitudMaxima('nombre_sitio', 'Nombre del sitio', 100)
             ->longitudMaxima('whatsapp_numero', 'WhatsApp', 20)
+            ->longitudMaxima('boton_whatsapp_texto', 'Texto del botón de WhatsApp', 30)
             ->longitudMaxima('instagram_usuario', 'Instagram', 100)
+            ->longitudMaxima('tiktok_usuario', 'TikTok', 100)
             ->longitudMaxima('facebook_nombre', 'Facebook', 100)
             ->longitudMaxima('frase_hero', 'Frase de bienvenida', 200)
             ->longitudMaxima('descripcion_corta', 'Descripción breve', 300)
