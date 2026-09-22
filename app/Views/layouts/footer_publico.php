@@ -14,6 +14,14 @@ $facebookUrl = $config['facebook_url'] ?? '';
 $tiktok = $config['tiktok_usuario'] ?? '';
 $direccion = $config['direccion_texto'] ?? '';
 
+// Frase de la burbuja del botón flotante: editable desde Configuración,
+// con una frase por defecto pensada para dar ganas de darle clic si el
+// administrador todavía no ha escrito la suya.
+$textoBurbujaFlotante = $config['whatsapp_flotante_texto'] ?? '';
+if ($textoBurbujaFlotante === '') {
+    $textoBurbujaFlotante = '¿Tienes alguna duda? ¡Escríbenos! 👋';
+}
+
 $nombresDias = [0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado'];
 $hayHorario = false;
 foreach ($horarios as $h) {
@@ -106,9 +114,15 @@ foreach ($horarios as $h) {
 </footer>
 
 <?php if ($whatsappNumero !== ''): ?>
-    <a class="whatsapp-flotante"
-       href="<?= htmlspecialchars(WhatsApp::enlace($whatsappNumero, "Hola, escribo desde el sitio web de {$nombreSitio}."), ENT_QUOTES, 'UTF-8') ?>"
-       target="_blank" rel="noopener" aria-label="Escribir por WhatsApp">💬</a>
+    <?php $enlaceFlotante = htmlspecialchars(WhatsApp::enlace($whatsappNumero, "Hola, escribo desde el sitio web de {$nombreSitio}."), ENT_QUOTES, 'UTF-8'); ?>
+    <div class="whatsapp-flotante-envoltorio">
+        <a class="whatsapp-burbuja" href="<?= $enlaceFlotante ?>" target="_blank" rel="noopener">
+            <?= htmlspecialchars($textoBurbujaFlotante, ENT_QUOTES, 'UTF-8') ?>
+        </a>
+        <a class="whatsapp-flotante" href="<?= $enlaceFlotante ?>" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp">
+            <?= Vista::iconoWhatsapp() ?>
+        </a>
+    </div>
 <?php endif; ?>
 
 <script src="<?= htmlspecialchars(Vista::asset('/assets/js/sitio.js'), ENT_QUOTES, 'UTF-8') ?>"></script>

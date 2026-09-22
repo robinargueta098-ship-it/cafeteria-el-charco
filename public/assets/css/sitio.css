@@ -868,13 +868,20 @@ img {
   color: var(--color-beige-claro);
 }
 
-/* ---------- Botón flotante de WhatsApp ---------- */
+/* ---------- Botón flotante de WhatsApp + burbuja ---------- */
 
-.whatsapp-flotante {
+.whatsapp-flotante-envoltorio {
   position: fixed;
   bottom: 20px;
   right: 20px;
   z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.whatsapp-flotante {
+  flex-shrink: 0;
   background: #25d366;
   color: var(--color-blanco);
   width: 56px;
@@ -884,8 +891,55 @@ img {
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  font-size: 1.6rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.whatsapp-flotante .icono-boton {
+  width: 28px;
+  height: 28px;
+}
+
+/* Burbuja con una frase corta pensada para dar ganas de escribir (editable
+   desde Configuración: whatsapp_flotante_texto). Es un enlace, no solo un
+   globo decorativo — toda la burbuja se puede pulsar, no solo el botón
+   redondo, para que sea más fácil darle clic. */
+.whatsapp-burbuja {
+  background: var(--color-blanco);
+  color: var(--color-texto);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  padding: 10px 14px;
+  border-radius: 999px 999px 4px 999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  max-width: min(220px, 60vw);
+  animation: whatsapp-burbuja-aparecer 0.5s ease 1s both;
+}
+
+@keyframes whatsapp-burbuja-aparecer {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-burbuja {
+    animation: none;
+  }
+}
+
+/* Pantallas muy angostas: la burbuja completa (botón + texto) no cabe
+   junto al margen de 20px del botón redondo sin desbordar la pantalla. */
+@media (max-width: 360px) {
+  .whatsapp-burbuja {
+    display: none;
+  }
 }
 
 /* ---------- Transiciones de hover ---------- */
@@ -897,13 +951,15 @@ img {
 .sitio-body .redes-lista a,
 .sitio-body .calificacion-google,
 .sitio-body .tarjeta-producto-enlace,
-.sitio-body .whatsapp-flotante {
+.sitio-body .whatsapp-flotante,
+.sitio-body .whatsapp-burbuja {
   transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .sitio-body .redes-lista a:hover,
 .sitio-body .calificacion-google:hover,
-.sitio-body .whatsapp-flotante:hover {
+.sitio-body .whatsapp-flotante:hover,
+.sitio-body .whatsapp-burbuja:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(59, 36, 21, 0.15);
 }
@@ -917,13 +973,15 @@ img {
   .sitio-body .redes-lista a,
   .sitio-body .calificacion-google,
   .sitio-body .tarjeta-producto-enlace,
-  .sitio-body .whatsapp-flotante {
+  .sitio-body .whatsapp-flotante,
+  .sitio-body .whatsapp-burbuja {
     transition: none;
   }
 
   .sitio-body .redes-lista a:hover,
   .sitio-body .calificacion-google:hover,
   .sitio-body .whatsapp-flotante:hover,
+  .sitio-body .whatsapp-burbuja:hover,
   .sitio-body .tarjeta-producto-enlace:hover {
     transform: none;
   }

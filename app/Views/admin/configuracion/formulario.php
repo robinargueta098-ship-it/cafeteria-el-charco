@@ -174,6 +174,17 @@ $totalPortada = count($portada);
             <span class="campo-ayuda">Si se deja vacío se muestra "Ordena ahora".</span>
         </div>
         <div class="campo">
+            <label for="whatsapp_flotante_texto">Texto de la burbuja del botón flotante de WhatsApp</label>
+            <input type="text" id="whatsapp_flotante_texto" name="whatsapp_flotante_texto" maxlength="60"
+                   placeholder="¿Tienes alguna duda? ¡Escríbenos! 👋"
+                   value="<?= htmlspecialchars($config['whatsapp_flotante_texto'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+            <span class="campo-ayuda">
+                Aparece junto al botón redondo de WhatsApp que sigue al visitante por toda la página. Usa una
+                frase corta que dé ganas de escribir; si se deja vacío se muestra "¿Tienes alguna duda?
+                ¡Escríbenos! 👋".
+            </span>
+        </div>
+        <div class="campo">
             <label for="instagram_usuario">Instagram (con @)</label>
             <input type="text" id="instagram_usuario" name="instagram_usuario" maxlength="100"
                    value="<?= htmlspecialchars($config['instagram_usuario'] ?? '', ENT_QUOTES, 'UTF-8') ?>">

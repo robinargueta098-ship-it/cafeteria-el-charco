@@ -1073,6 +1073,58 @@ que el mapa no cargaba nada.
   se pudo iniciar sesión de administrador en esta sesión de trabajo por no
   contar con la contraseña.
 
+### 4.22 Corrige la sección de Menú invisible (§4.21)
+
+`inicializarRevelado()` usaba `threshold: 0.15`, que exige que se vea el
+15% de la **altura propia** de la sección observada antes de agregar la
+clase `.revelado`. `#menu` mide unos 8800px (todo el catálogo, varias
+pantallas de alto): ese 15% nunca llegaba a cumplirse con un scroll
+normal, así que la sección se quedaba con `opacity: 0` para siempre — el
+usuario reportó "no se ve el menú". Las demás secciones, más cortas, sí
+funcionaban. Se bajó el umbral a `threshold: 0.01` (basta con que asome
+el borde de la sección, sin importar cuánto mida); probado haciendo
+scroll completo por las seis secciones sin que ninguna quede oculta.
+
+### 4.23 Corrige el padding del botón de WhatsApp de la barra de navegación (§4.21)
+
+`.sitio-nav-enlaces a` (da estilo a todos los enlaces del menú) trae
+`padding: 4px 0` en escritorio y `10px 0` en móvil, y por tener más
+especificidad que `.btn-whatsapp` ganaba, dejando el botón con 0px de
+relleno horizontal — el ícono y el texto quedaban pegados al borde,
+aunque el espaciado entre ellos y el centrado vertical ya estaban bien.
+`.sitio-nav-enlaces .btn-whatsapp { padding: 8px 16px; }` (dos clases)
+le gana esa pelea de especificidad; la regla del estado "solo ícono"
+(1024–1200px, §4.21) sigue después en el archivo y sigue ganando ahí por
+orden de aparición, así que ese caso no cambia. Probado en 375px, 1100px
+(solo ícono) y 1400px (botón completo).
+
+### 4.24 Botón flotante con el logo real y una burbuja que invita a escribir
+
+El botón flotante de WhatsApp (el que sigue al visitante por toda la
+página) seguía usando el emoji 💬 — quedó fuera del alcance de §4.21 por
+error, ya que ahí solo se pidió cambiar los dos botones con texto (nav y
+portada). Además no había nada que llamara la atención hacia él.
+
+- **Logo real**: mismo `Vista::iconoWhatsapp()` que los otros dos
+  botones (nav/portada), a 28px dentro del círculo de 56px.
+- **Burbuja**: un enlace (no un globo decorativo — toda la burbuja abre
+  WhatsApp, no solo el botón redondo) con una frase corta pensada para
+  invitar a escribir, editable desde Configuración
+  (`whatsapp_flotante_texto`, nueva clave); vacío usa el valor por
+  defecto "¿Tienes alguna duda? ¡Escríbenos! 👋". Aparece con una
+  animación de entrada (`@keyframes`, un segundo después de cargar la
+  página, para no competir con el resto del contenido) que respeta
+  `prefers-reduced-motion`; se oculta bajo 360px de ancho, donde botón +
+  burbuja ya no caben junto al margen de 20px.
+- **Nueva clave de `configuracion_sistema`**: mismo caso que
+  `boton_whatsapp_texto`/`tiktok_usuario` en §4.21 —
+  `actualizarMultiples()` solo hace `UPDATE`, así que se sembró la fila
+  en `database/schema.sql` y en la base de datos de desarrollo.
+- **Probado**: escritorio y 375px, con un valor de prueba en la base de
+  datos (revertido a vacío después) para confirmar que el campo se
+  refleja en el sitio y enlaza al número de WhatsApp correcto. Sin
+  errores de consola.
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)

@@ -19,7 +19,8 @@ class ConfiguracionController extends Controller
     /** Claves editables desde este formulario (evita que alguien inyecte una clave nueva arbitraria). */
     private const CLAVES_EDITABLES = [
         'nombre_sitio', 'logo', 'direccion_texto', 'frase_hero', 'descripcion_corta',
-        'whatsapp_numero', 'boton_whatsapp_texto', 'instagram_usuario', 'tiktok_usuario',
+        'whatsapp_numero', 'boton_whatsapp_texto', 'whatsapp_flotante_texto',
+        'instagram_usuario', 'tiktok_usuario',
         'facebook_nombre', 'facebook_url',
         'umbral_lealtad', 'google_maps_embed', 'google_calificacion',
         'google_calificacion_url', 'sobre_nosotros_texto',
@@ -271,6 +272,7 @@ class ConfiguracionController extends Controller
             ->longitudMaxima('nombre_sitio', 'Nombre del sitio', 100)
             ->longitudMaxima('whatsapp_numero', 'WhatsApp', 20)
             ->longitudMaxima('boton_whatsapp_texto', 'Texto del botón de WhatsApp', 30)
+            ->longitudMaxima('whatsapp_flotante_texto', 'Texto de la burbuja flotante de WhatsApp', 60)
             ->longitudMaxima('instagram_usuario', 'Instagram', 100)
             ->longitudMaxima('tiktok_usuario', 'TikTok', 100)
             ->longitudMaxima('facebook_nombre', 'Facebook', 100)

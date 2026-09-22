@@ -508,6 +508,7 @@ INSERT INTO configuracion_sistema (clave, valor, descripcion) VALUES
   ('direccion_texto', '', 'Dirección en texto plano — pendiente de proporcionar'),
   ('whatsapp_numero', '+50233577968', 'Número de WhatsApp para el botón de contacto'),
   ('boton_whatsapp_texto', '', 'Texto del botón de WhatsApp de la portada — vacío usa "Ordena ahora" por defecto'),
+  ('whatsapp_flotante_texto', '', 'Texto de la burbuja del botón flotante de WhatsApp — vacío usa una frase por defecto'),
   ('instagram_usuario', '@el_charco_cafeteria', 'Usuario de Instagram'),
   ('tiktok_usuario', '', 'Usuario o enlace de TikTok — pendiente de proporcionar'),
   ('facebook_nombre', 'Cafetería El Charco', 'Nombre de la página de Facebook'),
