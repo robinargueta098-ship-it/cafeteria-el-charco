@@ -36,11 +36,13 @@ $totalPortada = count($portada);
         «Guardar configuración» de más abajo.
     </p>
 
-    <?php if (!$optimiza): ?>
+    <?php /* Nota técnica para quien desarrolla, no para el administrador del negocio en su uso diario:
+             solo se muestra con APP_DEBUG (local), nunca en producción (config/config.php). */ ?>
+    <?php if (!$optimiza && APP_DEBUG): ?>
         <div class="alerta alerta-error" style="background:#fdf1cf;color:#7a5b00;border-color:#d9b84a;">
-            Este servidor no tiene la extensión GD de PHP, así que las imágenes se guardan tal cual, sin las
-            versiones reducidas que aceleran el sitio en el celular. Funciona igual, solo que más pesado.
-            (En Hostinger normalmente está activa.)
+            [Solo desarrollo] Este servidor no tiene la extensión GD de PHP, así que las imágenes se guardan tal
+            cual, sin las versiones reducidas que aceleran el sitio en el celular. Funciona igual, solo que más
+            pesado. (En Hostinger normalmente está activa.)
         </div>
     <?php endif; ?>
 
@@ -241,6 +243,15 @@ $totalPortada = count($portada);
             El segundo turno es para un día con horario partido (ej. abre 9:00-14:00, cierra a
             almorzar, y vuelve a abrir 16:00-21:00). Se deja vacío en los días que no lo tienen.
         </p>
+        <?php
+            // La base de datos guarda TIME con segundos ("09:00:00"); un <input
+            // type="time"> sin segundos al que se le da ese valor completo los
+            // conserva y los vuelve a enviar tal cual al guardar ("09:00:00"),
+            // lo que no pasaba la validación del servidor (que solo acepta
+            // "HH:MM") y bloqueaba el guardado de TODO el formulario, no solo
+            // del horario. Se recorta a 5 caracteres al imprimir el value.
+            $hora5 = fn (?string $v): string => substr((string) ($v ?? ''), 0, 5);
+        ?>
         <?php foreach ($nombresDias as $numero => $nombreDia): ?>
             <?php
                 $horario = null;
@@ -254,17 +265,17 @@ $totalPortada = count($portada);
                 <label for="abierto_<?= $numero ?>" class="horario-dia" style="margin:0;width:90px;"><?= $nombreDia ?></label>
                 <?php /* En escritorio este contenedor no afecta el diseño (display: contents); en celular agrupa las dos horas en su propia línea. */ ?>
                 <span class="horario-horas">
-                    <input type="time" class="horario-hora" aria-label="<?= $nombreDia ?>: hora de apertura (turno 1)" name="horario[<?= $numero ?>][apertura]" value="<?= htmlspecialchars((string) ($horario['hora_apertura'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" style="width:auto;">
+                    <input type="time" class="horario-hora" aria-label="<?= $nombreDia ?>: hora de apertura (turno 1)" name="horario[<?= $numero ?>][apertura]" value="<?= htmlspecialchars($hora5($horario['hora_apertura'] ?? null), ENT_QUOTES, 'UTF-8') ?>" style="width:auto;">
                     a
-                    <input type="time" class="horario-hora" aria-label="<?= $nombreDia ?>: hora de cierre (turno 1)" name="horario[<?= $numero ?>][cierre]" value="<?= htmlspecialchars((string) ($horario['hora_cierre'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" style="width:auto;">
+                    <input type="time" class="horario-hora" aria-label="<?= $nombreDia ?>: hora de cierre (turno 1)" name="horario[<?= $numero ?>][cierre]" value="<?= htmlspecialchars($hora5($horario['hora_cierre'] ?? null), ENT_QUOTES, 'UTF-8') ?>" style="width:auto;">
                 </span>
             </div>
             <div class="campo-checkbox horario-fila" style="margin-bottom:8px;">
                 <span class="horario-dia" style="width:90px;font-weight:400;font-size:0.85rem;color:#6b5a4d;">+ turno 2</span>
                 <span class="horario-horas">
-                    <input type="time" class="horario-hora" aria-label="<?= $nombreDia ?>: hora de apertura del turno 2 (opcional)" name="horario[<?= $numero ?>][apertura2]" value="<?= htmlspecialchars((string) ($horario['hora_apertura_2'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" style="width:auto;">
+                    <input type="time" class="horario-hora" aria-label="<?= $nombreDia ?>: hora de apertura del turno 2 (opcional)" name="horario[<?= $numero ?>][apertura2]" value="<?= htmlspecialchars($hora5($horario['hora_apertura_2'] ?? null), ENT_QUOTES, 'UTF-8') ?>" style="width:auto;">
                     a
-                    <input type="time" class="horario-hora" aria-label="<?= $nombreDia ?>: hora de cierre del turno 2 (opcional)" name="horario[<?= $numero ?>][cierre2]" value="<?= htmlspecialchars((string) ($horario['hora_cierre_2'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" style="width:auto;">
+                    <input type="time" class="horario-hora" aria-label="<?= $nombreDia ?>: hora de cierre del turno 2 (opcional)" name="horario[<?= $numero ?>][cierre2]" value="<?= htmlspecialchars($hora5($horario['hora_cierre_2'] ?? null), ENT_QUOTES, 'UTF-8') ?>" style="width:auto;">
                 </span>
             </div>
         <?php endforeach; ?>

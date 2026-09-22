@@ -1125,6 +1125,45 @@ portada). Además no había nada que llamara la atención hacia él.
   refleja en el sitio y enlaza al número de WhatsApp correcto. Sin
   errores de consola.
 
+### 4.25 El formulario de Configuración no guardaba nada: el horario reenviaba segundos que la validación rechazaba
+
+El administrador reportó tres síntomas a la vez en Configuración: un
+aviso técnico sobre la extensión GD visible para cualquiera, un error
+rojo de "hora con formato inválido" en los 7 días del horario sin haber
+tocado nada, y los campos de texto de WhatsApp (§4.21, §4.24) que
+"decían que guardaron" pero nunca cambiaban en el sitio público.
+
+- **Causa raíz de los tres**, en realidad una sola: `horarios_atencion`
+  guarda columnas `TIME`, que PDO/MySQL devuelven como `"09:00:00"` (con
+  segundos). El formulario imprimía ese valor tal cual en el `value` de
+  cada `<input type="time">`. Un navegador que recibe un `value` con
+  segundos en ese atributo los conserva internamente y los **reenvía tal
+  cual al guardar** (`"09:00:00"`, no `"09:00"`) — confirmado
+  reproduciéndolo en un `<input>` de prueba aislado. La validación del
+  servidor (`validarHorario()`) solo acepta `HH:MM` exacto, así que
+  **todo envío del formulario grande** (sin importar qué campo se haya
+  cambiado) disparaba el error de formato en los 7 días, y
+  `ConfiguracionController::actualizar()` corta antes de llamar
+  `actualizarMultiples()` en cuanto hay un solo error — por eso ningún
+  campo se guardaba nunca, incluidos los de WhatsApp, aunque el horario
+  real ya almacenado coincidía exactamente con el que el negocio dio
+  (lunes a viernes 9:00–14:00 y 16:00–21:00, sábado 17:00–21:00, domingo
+  9:00–14:00 y 17:00–21:00): no hizo falta corregir datos, solo el
+  recorte a `HH:MM`, tanto al imprimir el `value` (formulario.php) como,
+  defensivamente, al leer `$_POST` (`leerHorarioDesdePost()`).
+- El aviso de GD se sigue mostrando, pero solo con `APP_DEBUG` (falso en
+  producción, `config/config.php`) — nunca lo ve el administrador real.
+- **Probado por reflexión** (sin sesión de administrador disponible):
+  se invocaron directamente `leerHorarioDesdePost()`, `validarHorario()`
+  y `validar()` de `ConfiguracionController` con un `$_POST` simulado
+  igual al que el navegador ya arreglado enviaría — cero errores, contra
+  7/7 errores al simular el envío viejo (con segundos), reproduciendo el
+  bug reportado exactamente. Aparte, se escribió un valor de prueba
+  directamente con `Configuracion::actualizarMultiples()` (el mismo
+  método que usa el controlador) para los dos campos de WhatsApp y se
+  confirmó que aparecían en la página principal; se revirtió a vacío
+  después.
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)

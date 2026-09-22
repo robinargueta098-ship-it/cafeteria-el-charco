@@ -160,7 +160,13 @@ class ConfiguracionController extends Controller
         $dias = [];
 
         for ($dia = 0; $dia <= 6; $dia++) {
-            $campo = fn (string $nombre): ?string => (trim((string) ($_POST['horario'][$dia][$nombre] ?? '')) ?: null);
+            // substr(...,0,5): defensa en el servidor, además del recorte ya
+            // hecho al imprimir el value= del <input type="time"> (formulario.php)
+            // — un navegador que reciba un value con segundos (como venían los
+            // horarios ya guardados) los reenvía tal cual al guardar, y eso
+            // no pasaba la validación de formato "HH:MM" más abajo, bloqueando
+            // el guardado de TODO el formulario, no solo del horario.
+            $campo = fn (string $nombre): ?string => (substr(trim((string) ($_POST['horario'][$dia][$nombre] ?? '')), 0, 5) ?: null);
 
             $dias[$dia] = [
                 'cerrado'   => !isset($_POST['horario'][$dia]['abierto']),
