@@ -13,9 +13,16 @@ use App\Core\CodigoQr;
 require APP_PATH . '/Views/layouts/header_publico.php';
 
 $saldo = (int) $cliente['cafes_acumulados'];
-$porcentaje = min(100, (int) round(($saldo / max(1, $umbral)) * 100));
 $disponibles = array_filter($recompensas, fn ($r) => $r['estado'] === 'disponible');
 $historicas = array_filter($recompensas, fn ($r) => $r['estado'] !== 'disponible');
+
+// Justo al completar el umbral, el saldo ya volvió a 0 (empieza la siguiente tarjeta) aunque
+// la recompensa todavía no se canjeó — sin esto el contador mostraba "0 / 10" en el mismo
+// instante en que el cliente completó sus 10 cafés, como si no hubiera pasado nada. Se
+// muestra la tarjeta llena (100%) hasta que el cliente empiece a acumular la siguiente de verdad.
+$tarjetaRecienCompletada = $disponibles !== [] && $saldo === 0;
+$numeroMostrado = $tarjetaRecienCompletada ? $umbral : $saldo;
+$porcentaje = min(100, (int) round(($numeroMostrado / max(1, $umbral)) * 100));
 
 $etiquetasEstado = [
     'disponible' => 'Disponible', 'canjeada' => 'Canjeada',
@@ -65,12 +72,14 @@ $etiquetasEstado = [
         <?php endif; ?>
 
         <div class="lealtad-tarjeta" style="margin-bottom:24px;">
-            <div class="lealtad-numero"><?= $saldo ?> / <?= $umbral ?></div>
+            <div class="lealtad-numero"><?= $numeroMostrado ?> / <?= $umbral ?></div>
             <div class="progreso-lealtad">
                 <div class="progreso-lealtad-barra" style="width:<?= $porcentaje ?>%;"></div>
             </div>
-            <?php if ($disponibles !== []): ?>
-                <p>Ya canjeaste tu café gratis (arriba). Este contador empezó de nuevo para el siguiente.</p>
+            <?php if ($tarjetaRecienCompletada): ?>
+                <p>¡Completaste tus <?= $umbral ?> cafés! Tu café gratis está arriba, listo para reclamar.</p>
+            <?php elseif ($disponibles !== []): ?>
+                <p>Ya tienes un café gratis por reclamar (arriba). Esto es lo que llevas para el siguiente.</p>
             <?php else: ?>
                 <p>Cafés acumulados hacia tu próximo café gratis.</p>
             <?php endif; ?>

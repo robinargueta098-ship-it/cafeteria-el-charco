@@ -795,6 +795,31 @@ Mismo arreglo, aplicado a `/cuenta/*`:
   aviso, en vez de un 403; cerrar sesión con un token válido → funciona
   igual que siempre.
 
+### 4.17 "Mi cuenta": el contador ya no muestra 0/10 justo al completar la tarjeta
+
+Bug real, no solo de texto: al llegar al umbral, `cafes_acumulados` vuelve
+a 0 de inmediato (es correcto — así funciona sumar 25 de una vez y que
+genere 2 recompensas dejando 5 acumulados, §4.1). El problema era la
+pantalla: en el instante exacto en que el cliente completaba sus 10
+cafés, veía "0 / 10" al lado de su QR nuevo, como si no hubiera pasado
+nada — y encima el texto decía **"Ya canjeaste tu café gratis"**, en
+pasado, cuando en realidad la recompensa seguía sin canjear (estado
+`disponible`, no `canjeada`): dos señales contradictorias a la vez.
+
+`app/Views/public/cuenta/panel.php`: cuando hay una recompensa
+`disponible` Y el saldo real es 0 (o sea, todavía no empezó a acumular
+para la siguiente), el contador muestra la tarjeta **llena**
+(`$umbral / $umbral`, barra al 100 %) con "¡Completaste tus 10 cafés!
+Tu café gratis está arriba, listo para reclamar." Apenas el cliente
+vuelve a comprar y el saldo deja de ser 0 (aunque la recompensa anterior
+siga sin canjear), el contador muestra el progreso real hacia la
+siguiente, con un texto que ya no dice "canjeaste".
+
+Probado con un cliente de prueba: 0/10 antes de empezar → 10/10 exacto
+al completar (con el texto de "completaste") → 3/10 real al sumar 3 más
+con la recompensa aún disponible → sigue en 3/10, con el texto normal,
+después de canjearla.
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)
