@@ -60,4 +60,44 @@ class Vista
 
         return '<div class="foto-pendiente" aria-hidden="true"><span>📷 Foto pendiente</span></div>';
     }
+
+    private const MESES_ES = [
+        1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+        'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+    ];
+
+    /**
+     * "2026-12-20" -> "20 de diciembre" (o "20 de diciembre de 2027" si no
+     * es el año en curso). Usado donde se muestra una fecha de vigencia —
+     * promociones, temporadas — al cliente del sitio público.
+     */
+    public static function fechaLarga(string $fechaIso): string
+    {
+        [$anio, $mes, $dia] = explode('-', $fechaIso);
+        $texto = ((int) $dia) . ' de ' . self::MESES_ES[(int) $mes];
+
+        return $anio === date('Y') ? $texto : $texto . ' de ' . $anio;
+    }
+
+    /**
+     * Texto corto del beneficio de una promoción (tabla `promociones`, no
+     * confundir con las recompensas de lealtad): "20% de descuento",
+     * "Q10 de descuento", "2x1", "Producto gratis".
+     *
+     * @param array{tipo:string,valor:mixed} $promocion
+     */
+    public static function etiquetaPromocion(array $promocion): string
+    {
+        $valor = $promocion['valor'] !== null
+            ? rtrim(rtrim(number_format((float) $promocion['valor'], 2), '0'), '.')
+            : null;
+
+        return match ($promocion['tipo']) {
+            'descuento_porcentaje' => $valor . '% de descuento',
+            'descuento_monto'      => 'Q' . $valor . ' de descuento',
+            'dos_por_uno'          => '2x1',
+            'producto_gratis'      => 'Producto gratis',
+            default                => '',
+        };
+    }
 }

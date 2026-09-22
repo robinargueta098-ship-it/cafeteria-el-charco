@@ -43,24 +43,9 @@ foreach ($portada as $imagenPortada) {
     $diapositivasHero[] = ImagenOptimizada::atributos(UPLOADS_PATH . '/portada', UPLOADS_URL . '/portada', $imagenPortada['imagen']);
 }
 
-$mesesEs = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-/** "2026-12-20" -> "20 de diciembre de 2026" (o sin el año si es el año en curso). */
-$fechaLarga = function (string $fechaIso) use ($mesesEs): string {
-    [$anio, $mes, $dia] = explode('-', $fechaIso);
-    $texto = ((int) $dia) . ' de ' . $mesesEs[(int) $mes];
-    return $anio === date('Y') ? $texto : $texto . ' de ' . $anio;
-};
-/** Texto corto del beneficio: "20% de descuento", "Q10 de descuento", "2x1", "Producto gratis". */
-$etiquetaPromo = function (array $promo): string {
-    $valor = $promo['valor'] !== null ? rtrim(rtrim(number_format((float) $promo['valor'], 2), '0'), '.') : null;
-    return match ($promo['tipo']) {
-        'descuento_porcentaje' => $valor . '% de descuento',
-        'descuento_monto'      => 'Q' . $valor . ' de descuento',
-        'dos_por_uno'          => '2x1',
-        'producto_gratis'      => 'Producto gratis',
-        default                => '',
-    };
-};
+// Formato de fecha ("20 de diciembre") y del beneficio de una promoción
+// ("20% de descuento", "2x1"...): Vista::fechaLarga() / Vista::etiquetaPromocion(),
+// compartidos con app/Views/public/cuenta/panel.php (aviso de lealtad, §4.19).
 
 /**
  * Tarjeta de producto reutilizada en Más vendidos / Destacados /
@@ -170,16 +155,38 @@ $tarjetaProducto = function (array $p) {
 <?php endif; ?>
 
 <!-- ===================== TEMPORADA ===================== -->
-<?php if ($productosTemporada !== []): ?>
-<section class="sitio-seccion">
+<?php /*
+    Antes esta sección dependía de $productosTemporada: una temporada vigente
+    sin ningún producto todavía etiquetado (Productos → pestaña Temporadas) no
+    mostraba nada — ni su nombre, ni su foto — como si no existiera
+    (docs/arquitectura.md §4.19). Ahora se basa en $temporadas (las vigentes
+    en sí, siempre que existan) y los productos, si los hay, van debajo.
+*/ ?>
+<?php if ($temporadas !== []): ?>
+<section class="sitio-seccion" id="temporada">
     <div class="sitio-contenedor">
         <h2>De temporada</h2>
-        <p class="sitio-seccion-intro">
-            <?= htmlspecialchars(implode(', ', array_column($temporadas, 'nombre')), ENT_QUOTES, 'UTF-8') ?>
-        </p>
-        <div class="tarjetas-grid">
-            <?php foreach ($productosTemporada as $p): $tarjetaProducto($p); endforeach; ?>
-        </div>
+        <?php foreach ($temporadas as $t): ?>
+            <article class="tarjeta-producto tarjeta-temporada">
+                <?php if (!empty($t['imagen'])): ?>
+                    <img src="<?= UPLOADS_URL ?>/temporadas/<?= htmlspecialchars($t['imagen'], ENT_QUOTES, 'UTF-8') ?>" alt=""
+                         loading="lazy" decoding="async">
+                <?php endif; ?>
+                <div class="tarjeta-producto-cuerpo">
+                    <p class="tarjeta-producto-nombre"><?= htmlspecialchars($t['nombre'], ENT_QUOTES, 'UTF-8') ?></p>
+                    <?php if (!empty($t['descripcion'])): ?>
+                        <p class="tarjeta-producto-descripcion"><?= htmlspecialchars($t['descripcion'], ENT_QUOTES, 'UTF-8') ?></p>
+                    <?php endif; ?>
+                    <p class="tarjeta-producto-descripcion">Válido hasta <?= htmlspecialchars(Vista::fechaLarga($t['fecha_fin']), ENT_QUOTES, 'UTF-8') ?></p>
+                </div>
+            </article>
+        <?php endforeach; ?>
+
+        <?php if ($productosTemporada !== []): ?>
+            <div class="tarjetas-grid" style="margin-top:20px;">
+                <?php foreach ($productosTemporada as $p): $tarjetaProducto($p); endforeach; ?>
+            </div>
+        <?php endif; ?>
     </div>
 </section>
 <?php endif; ?>
@@ -206,7 +213,7 @@ $tarjetaProducto = function (array $p) {
                     <?php endif; ?>
                     <div class="tarjeta-producto-cuerpo">
                         <p class="tarjeta-producto-nombre"><?= htmlspecialchars($promo['nombre'], ENT_QUOTES, 'UTF-8') ?></p>
-                        <?php if (($etiqueta = $etiquetaPromo($promo)) !== ''): ?>
+                        <?php if (($etiqueta = Vista::etiquetaPromocion($promo)) !== ''): ?>
                             <div class="etiquetas-producto">
                                 <span class="etiqueta etiqueta-promocion"><?= htmlspecialchars($etiqueta, ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
@@ -217,7 +224,7 @@ $tarjetaProducto = function (array $p) {
                         <p class="tarjeta-producto-descripcion">
                             <?= htmlspecialchars($promo['producto_nombre'] ?? $promo['categoria_nombre'] ?? 'Todo el menú', ENT_QUOTES, 'UTF-8') ?>
                         </p>
-                        <p class="tarjeta-producto-descripcion">Válido hasta <?= htmlspecialchars($fechaLarga($promo['fecha_fin']), ENT_QUOTES, 'UTF-8') ?></p>
+                        <p class="tarjeta-producto-descripcion">Válido hasta <?= htmlspecialchars(Vista::fechaLarga($promo['fecha_fin']), ENT_QUOTES, 'UTF-8') ?></p>
                     </div>
                 </article>
             <?php endforeach; ?>

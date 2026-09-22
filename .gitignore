@@ -10,11 +10,13 @@
 /public/uploads/sitio/*
 /public/uploads/portada/*
 /public/uploads/promociones/*
+/public/uploads/temporadas/*
 !/public/uploads/productos/.gitkeep
 !/public/uploads/galeria/.gitkeep
 !/public/uploads/sitio/.gitkeep
 !/public/uploads/portada/.gitkeep
 !/public/uploads/promociones/.gitkeep
+!/public/uploads/temporadas/.gitkeep
 
 # Sistema operativo / editor
 .DS_Store

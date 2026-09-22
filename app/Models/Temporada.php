@@ -37,8 +37,8 @@ class Temporada
     public function crear(array $datos): int
     {
         Database::conexion()->prepare(
-            'INSERT INTO temporadas (nombre, descripcion, fecha_inicio, fecha_fin, activo)
-             VALUES (:nombre, :descripcion, :fecha_inicio, :fecha_fin, :activo)'
+            'INSERT INTO temporadas (nombre, descripcion, imagen, fecha_inicio, fecha_fin, activo)
+             VALUES (:nombre, :descripcion, :imagen, :fecha_inicio, :fecha_fin, :activo)'
         )->execute($datos);
 
         return (int) Database::conexion()->lastInsertId();
@@ -48,7 +48,7 @@ class Temporada
     {
         Database::conexion()->prepare(
             'UPDATE temporadas
-             SET nombre = :nombre, descripcion = :descripcion,
+             SET nombre = :nombre, descripcion = :descripcion, imagen = :imagen,
                  fecha_inicio = :fecha_inicio, fecha_fin = :fecha_fin, activo = :activo
              WHERE id = :id'
         )->execute($datos + ['id' => $id]);

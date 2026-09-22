@@ -15,7 +15,7 @@ $hoy = date('Y-m-d');
     <?php else: ?>
         <table class="tabla">
             <thead>
-                <tr><th>Nombre</th><th>Vigencia</th><th>Estado</th><th>Acciones</th></tr>
+                <tr><th></th><th>Nombre</th><th>Vigencia</th><th>Estado</th><th>Acciones</th></tr>
             </thead>
             <tbody>
                 <?php foreach ($temporadas as $t): ?>
@@ -24,6 +24,13 @@ $hoy = date('Y-m-d');
                         $futura = $hoy < $t['fecha_inicio'];
                     ?>
                     <tr>
+                        <td>
+                            <?php if (!empty($t['imagen'])): ?>
+                                <img class="miniatura" src="<?= UPLOADS_URL ?>/temporadas/<?= htmlspecialchars($t['imagen'], ENT_QUOTES, 'UTF-8') ?>" alt="">
+                            <?php else: ?>
+                                <span class="miniatura" aria-hidden="true"></span>
+                            <?php endif; ?>
+                        </td>
                         <td><?= htmlspecialchars($t['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($t['fecha_inicio'], ENT_QUOTES, 'UTF-8') ?> al <?= htmlspecialchars($t['fecha_fin'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td>

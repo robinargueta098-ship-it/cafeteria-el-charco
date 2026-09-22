@@ -14,6 +14,7 @@ use App\Middleware\ClienteAuthMiddleware;
 use App\Models\Cliente;
 use App\Models\Configuracion;
 use App\Models\HorarioAtencion;
+use App\Models\Promocion;
 use App\Models\Recompensa;
 use App\Services\LealtadService;
 
@@ -157,6 +158,9 @@ class CuentaController extends Controller
             // Aviso de una sola lectura (ej. tras un "Cerrar sesión" con una pantalla
             // vieja), puesto por CsrfMiddleware.
             'flash'       => Flash::tomar(),
+            // Promociones vigentes marcadas "combinable con lealtad": puramente
+            // informativo, no cambia el saldo ni las reglas de canje (§4.19).
+            'promocionesLealtad' => (new Promocion())->listarVigentesCombinablesConLealtad(),
         ]);
     }
 

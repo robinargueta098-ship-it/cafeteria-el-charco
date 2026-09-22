@@ -107,6 +107,24 @@ class Promocion
         }));
     }
 
+    /**
+     * Promociones vigentes ahora mismo que además están marcadas "Se puede
+     * combinar con el programa de lealtad". Reutiliza listarVigentesAhora()
+     * (mismo cálculo de vigencia/día/hora, sin duplicarlo) y solo filtra por
+     * ese campo — para mostrarlas como aviso en la cuenta del cliente
+     * (docs/arquitectura.md §4.19). No cambia el conteo de cafés ni las
+     * reglas de canje: es puramente informativo.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function listarVigentesCombinablesConLealtad(): array
+    {
+        return array_values(array_filter(
+            $this->listarVigentesAhora(),
+            fn (array $promo): bool => (int) $promo['combinable_con_lealtad'] === 1
+        ));
+    }
+
     public function contarPorCategoria(int $categoriaId): int
     {
         $stmt = Database::conexion()->prepare('SELECT COUNT(*) FROM promociones WHERE categoria_id = :id');

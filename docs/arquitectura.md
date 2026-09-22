@@ -877,6 +877,67 @@ sección no existía en la página. Revisado en escritorio y en celular
 (390 px): sin desbordes, una columna, tarjeta completa. Las tres
 promociones de prueba y sus fotos ya se borraron.
 
+### 4.19 Temporadas visibles siempre; foto; aviso de lealtad en Mi cuenta
+
+Tres pedidos que resultaron ser sobre **dos módulos distintos** del panel
+que el negocio percibe como una sola cosa ("promociones"): `Promociones`
+(descuentos/2x1 con fecha — §4.18) y `Temporadas` (agrupar productos por
+campaña, ej. "Día de los santos"). Aclarado esto al confirmarlo con el
+propio panel en vivo, cada punto resultó ser real pero en el módulo que
+en verdad le correspondía:
+
+**1) Por qué las temporadas no se veían — causa raíz real, encontrada con
+datos ya existentes, no solo con una prueba armada:** la sección pública
+"De temporada" dependía por completo de `$productosTemporada` (los
+productos etiquetados con `Producto → pestaña Temporadas`). La temporada
+"Día de los santos" ya estaba creada, activa y vigente en este momento,
+pero **sin ningún producto etiquetado todavía** — `producto_temporadas`
+vacía para ella —, así que la sección entera no imprimía nada: ni su
+nombre, ni ninguna foto, como si la temporada no existiera. No era un
+error de consulta ni de fechas: la consulta de vigencia
+(`Temporada::listarVigentes()`) siempre estuvo bien: el diseño de la
+vista simplemente nunca contempló mostrar la temporada por sí sola.
+Arreglo: la sección ahora se basa en `$temporadas` (las vigentes en sí);
+cada una se muestra como una tarjeta con nombre, descripción, foto y
+"Válido hasta", y los productos (si ya hay alguno etiquetado) van debajo
+en su grilla de siempre. Confirmado con "Día de los santos" real: apareció
+sola, sin foto (no la tenía), apenas se desplegó este cambio.
+
+**2) Vínculo con Lealtad — qué se implementó:** la casilla "Se puede
+combinar con el programa de lealtad" (`promociones.combinable_con_lealtad`)
+**ya existía y ya se guardaba correctamente** — se verificó creando una
+promoción marcada (quedó en 1) y editándola sin la casilla (quedó en 0).
+El problema no era de guardado: es que ese campo nunca alimentaba nada en
+el resto del sistema (no había ni un solo `combinable_con_lealtad` fuera
+del propio formulario). No existía ninguna lógica previa más específica
+que seguir, así que se implementó lo más simple, tal como se pidió: cada
+promoción vigente marcada aparece como un aviso — "🎁 Promoción especial:
+[nombre] — [beneficio]. [descripción]. Válida hasta [fecha]." — debajo del
+contador de cafés en "Mi cuenta" (`Promocion::listarVigentesCombinablesConLealtad()`,
+que reutiliza `listarVigentesAhora()` y solo filtra por ese campo). No
+toca `cafes_acumulados`, no genera ni cancela recompensas, no cambia
+`LealtadService` — es puramente un aviso; el cajero sigue aplicando el
+descuento/2x1 manualmente en la caja, igual que cualquier otra promoción.
+
+**3) Foto en temporadas:** las temporadas nunca tuvieron columna `imagen`
+(las promociones sí, desde §4.18). Se agregó igual que en promociones y
+productos — misma clase `SubidaArchivo`, sin duplicar su validación —:
+columna nueva (`database/migrations/004_temporadas_imagen.sql`), subida
+en `TemporadaController`, campo en el formulario, miniatura en el listado,
+y la foto se muestra en el banner de "De temporada" del sitio público.
+
+**Probado** con una temporada de prueba (con foto, sin productos
+etiquetados — a propósito, para repetir el caso de "Día de los santos")
+y una promoción de prueba (con foto, marcada combinable con lealtad):
+las dos aparecieron en el sitio público con su foto; la promoción
+apareció también como aviso en "Mi cuenta" de un cliente de prueba, junto
+con una promoción **real** que el propio negocio ya tenía marcada
+combinable con lealtad ("2 ma 1") — confirma que el aviso ya funciona
+con datos reales, no solo con los de prueba. Revisado también en
+celular (390 px), sin desbordes. Los datos de prueba ya se borraron; los
+reales (la temporada "Día de los santos" y la promoción "2 ma 1") se
+dejaron intactos.
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)

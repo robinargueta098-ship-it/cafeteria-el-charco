@@ -409,6 +409,13 @@ img {
   font-size: 0.8rem;
 }
 
+/* Banner de una temporada vigente (nombre/foto/vigencia), fuera de la grilla de
+   productos — se centra y no se estira a todo el ancho de la sección. */
+.tarjeta-temporada {
+  max-width: 480px;
+  margin: 0 auto 20px;
+}
+
 /* ---------- Menú por categorías ---------- */
 
 .menu-categoria {

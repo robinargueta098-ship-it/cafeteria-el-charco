@@ -123,6 +123,7 @@ CREATE TABLE temporadas (
   id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   nombre        VARCHAR(100) NOT NULL,
   descripcion   VARCHAR(255) NULL,
+  imagen        VARCHAR(255) NULL COMMENT 'Nombre de archivo en public/uploads/temporadas/; NULL = sin foto (§4.19)',
   fecha_inicio  DATE NOT NULL,
   fecha_fin     DATE NOT NULL,
   activo        TINYINT(1) NOT NULL DEFAULT 1

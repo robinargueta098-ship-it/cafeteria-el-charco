@@ -22,7 +22,7 @@ $accion = $esEdicion ? '/admin/temporadas/' . (int) $temporada['id'] . '/editar'
         </div>
     <?php endif; ?>
 
-    <form method="post" action="<?= htmlspecialchars($accion, ENT_QUOTES, 'UTF-8') ?>">
+    <form method="post" action="<?= htmlspecialchars($accion, ENT_QUOTES, 'UTF-8') ?>" enctype="multipart/form-data">
         <?= Csrf::campo() ?>
 
         <div class="campo">
@@ -35,6 +35,20 @@ $accion = $esEdicion ? '/admin/temporadas/' . (int) $temporada['id'] . '/editar'
             <label for="descripcion">Descripción</label>
             <input type="text" id="descripcion" name="descripcion" maxlength="255"
                    value="<?= htmlspecialchars((string) ($temporada['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+        </div>
+
+        <div class="campo">
+            <label for="imagen">Foto (opcional)</label>
+            <?php if (!empty($temporada['imagen'])): ?>
+                <div style="margin-bottom:8px;">
+                    <img class="miniatura" src="<?= UPLOADS_URL ?>/temporadas/<?= htmlspecialchars($temporada['imagen'], ENT_QUOTES, 'UTF-8') ?>" alt="">
+                </div>
+            <?php endif; ?>
+            <input type="file" id="imagen" name="imagen" accept=".jpg,.jpeg,.png,.webp">
+            <span class="campo-ayuda">
+                JPG, PNG o WEBP, máximo 5 MB. Es el banner de la sección "De temporada" del sitio —
+                se muestra aunque todavía no le hayas asignado productos. Deja vacío para conservar la foto actual.
+            </span>
         </div>
 
         <div class="campo">

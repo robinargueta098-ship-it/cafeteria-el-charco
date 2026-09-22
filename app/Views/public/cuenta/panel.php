@@ -6,9 +6,11 @@
  * @var array<string,string> $config
  * @var array<int,array<string,mixed>> $horarios
  * @var array{tipo:string,mensaje:string}|null $flash
+ * @var array<int,array<string,mixed>> $promocionesLealtad
  */
 use App\Core\Csrf;
 use App\Core\CodigoQr;
+use App\Core\Vista;
 
 require APP_PATH . '/Views/layouts/header_publico.php';
 
@@ -84,6 +86,27 @@ $etiquetasEstado = [
                 <p>Cafés acumulados hacia tu próximo café gratis.</p>
             <?php endif; ?>
         </div>
+
+        <?php /*
+            Aviso puramente informativo (docs/arquitectura.md §4.19): no cambia el
+            saldo ni las reglas de canje de arriba, solo avisa que hay una
+            promoción vigente marcada "combinable con lealtad" en el panel.
+        */ ?>
+        <?php foreach ($promocionesLealtad as $promo): ?>
+            <div class="tarjeta" style="margin-bottom:24px;border-color:var(--color-verde);">
+                <p style="margin:0;">
+                    🎁 <strong>Promoción especial:</strong>
+                    <?= htmlspecialchars($promo['nombre'], ENT_QUOTES, 'UTF-8') ?>
+                    <?php if (($etiqueta = Vista::etiquetaPromocion($promo)) !== ''): ?>
+                        — <span style="color:var(--color-verde);font-weight:700;"><?= htmlspecialchars($etiqueta, ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php endif; ?>
+                    <?php if (!empty($promo['descripcion'])): ?>
+                        <br><?= htmlspecialchars($promo['descripcion'], ENT_QUOTES, 'UTF-8') ?>
+                    <?php endif; ?>
+                    <br><span class="campo-ayuda">Válida hasta <?= htmlspecialchars(Vista::fechaLarga($promo['fecha_fin']), ENT_QUOTES, 'UTF-8') ?>. Se aplica junto con tu programa de lealtad — pregúntale al cajero.</span>
+                </p>
+            </div>
+        <?php endforeach; ?>
 
         <?php if (!empty($codigoQr)): ?>
             <?php $qrPersonal = CodigoQr::dataUri($codigoQr); ?>
