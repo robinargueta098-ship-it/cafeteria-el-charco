@@ -22,7 +22,7 @@ require APP_PATH . '/Views/layouts/panel_header.php';
 </p>
 <ul>
     <li><strong>QR personal</strong> (<code>CL-…</code>): identifica al cliente y <strong>suma cafés</strong>.</li>
-    <li><strong>QR de recompensa</strong> (<code>XXXX-XXXX</code>): <strong>canjea</strong> el café gratis.</li>
+    <li><strong>QR de recompensa</strong> (8 caracteres, ej. <code>G5S3WYHX</code>): <strong>canjea</strong> el café gratis.</li>
 </ul>
 <p class="campo-ayuda">En los dos casos se muestra a quién pertenece antes de aplicar nada.</p>
 
@@ -48,7 +48,7 @@ require APP_PATH . '/Views/layouts/panel_header.php';
             <div class="campo">
                 <label for="codigo">Código (QR personal o de recompensa)</label>
                 <input type="text" id="codigo" name="codigo" maxlength="20" required autofocus
-                       autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CL-… o XXXX-XXXX"
+                       autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CL-… o G5S3WYHX"
                        class="campo-codigo"
                        value="<?= htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8') ?>">
             </div>

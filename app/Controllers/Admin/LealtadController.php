@@ -135,7 +135,7 @@ class LealtadController extends Controller
         $telefono = Cliente::normalizarTelefono((string) ($_POST['telefono'] ?? ''));
 
         // Un mismo escáner/campo sirve para los dos códigos: el QR personal del
-        // cliente ("CL-…", suma un café) y el de una recompensa ("XXXX-XXXX", la canjea).
+        // cliente ("CL-…", suma un café) y el de una recompensa (8 caracteres, la canjea).
         $codigoQr = Cliente::normalizarCodigoQr($entrada);
         if ($codigoQr !== '') {
             $this->consultarClientePorQr($codigoQr, $telefono);

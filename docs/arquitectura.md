@@ -278,9 +278,11 @@ su propio código.
 
 **Generación** (`Recompensa::nuevoCodigoAleatorio()`): 8 caracteres con
 `random_int()` (aleatorio criptográfico) de un alfabeto de 31 símbolos
-sin ambigüedades (sin 0/O/1/I/L), formato `XXXX-XXXX`: 31⁸ ≈ 8,5×10¹¹
-combinaciones, no consecutivos ni deducibles. En 20 000 códigos
-generados: todos válidos y todos distintos.
+sin ambigüedades (sin 0/O/1/I/L), sin guion ni prefijo (ej. `G5S3WYHX`):
+31⁸ ≈ 8,5×10¹¹ combinaciones, no consecutivos ni deducibles. En 20 000
+códigos generados: todos válidos y todos distintos. (Formato acortado en
+§4.14 — antes era `XXXX-XXXX`, con guion; los códigos viejos con guion
+se siguen aceptando igual.)
 
 **Unicidad, en tres capas:**
 1. `UNIQUE` en la columna (la garantía real). La colación
@@ -693,6 +695,39 @@ controlador impiden guardar una sola hora del turno 2 suelta.
   cruzado con el 1, apertura después del cierre, día abierto sin horas,
   formato inválido) rechazadas sin tocar la base, cada una con su
   mensaje específico.
+
+### 4.14 Código de canje más corto: 8 caracteres, sin guion ni prefijo
+
+El código de recompensa (el que canjea el café gratis) era `XXXX-XXXX`
+(8 caracteres + guion, 9 en total). Para que sea más fácil de escribir a
+mano cuando falla el escaneo, ahora se genera sin guion: `G5S3WYHX`. El
+alfabeto no cambió (`Recompensa::nuevoCodigoAleatorio()` ya excluía
+0/O/1/I/L y ya usaba solo mayúsculas), así que esto es un cambio de
+formato de presentación, no de aleatoriedad ni de tamaño del espacio de
+códigos (sigue siendo 31⁸ ≈ 8,5×10¹¹).
+
+- **Los códigos viejos (con guion) siguen funcionando igual**, sin
+  migrar nada: `buscarPorCodigo()`, `buscarPorCodigoConBloqueo()` y
+  `codigoExiste()` comparan con `REPLACE(codigo, '-', '')`, así que da
+  lo mismo si la fila en la base tiene el guion (código viejo) o no
+  (código nuevo) — y da lo mismo si quien lo escribe le pone un guion o
+  no. `normalizarCodigo()` ya no reconstruye el guion: solo pasa a
+  mayúsculas y quita lo que no sea A-Z0-9.
+- El QR sigue siendo el mismo mecanismo (`CodigoQr::dataUri()`); lo
+  único que cambia es el texto que codifica.
+- No se tocó el QR personal del cliente (`CL-` + 10 caracteres, para
+  sumar cafés) — es un código distinto, con su propia validación
+  (`Cliente::normalizarCodigoQr()`), y no fue parte de este pedido.
+- Nota de diseño: `codigoExiste()` (la comprobación previa al generar)
+  también ignora guiones, así que un código nuevo nunca se propone si sus
+  8 caracteres coinciden con los de uno viejo. La garantía dura, el
+  `UNIQUE` de la columna, sigue comparando literal (con guion si lo
+  tiene); no distingue formatos nuevo/viejo por sí sola, pero para que
+  eso importara haría falta que dos peticiones generaran el mismo
+  código en el mismo instante Y que ese código coincidiera con uno de
+  los pocos cientos ya usados en la vida del negocio — sobre 8,5×10¹¹
+  combinaciones, no se justificó una columna generada aparte solo para
+  blindar ese caso.
 
 ---
 

@@ -22,22 +22,30 @@ class Recompensa
         return $stmt->fetch() ?: null;
     }
 
-    /** Búsqueda exacta por código, sin bloqueo — para mostrar detalle antes de confirmar el canje. */
+    /**
+     * Búsqueda exacta por código, sin bloqueo — para mostrar detalle antes de
+     * confirmar el canje. Compara ignorando guiones: los códigos generados
+     * antes de acortar el formato (docs/arquitectura.md §4.14) se guardaron
+     * como "XXXX-XXXX", con el guion incluido en la columna; los nuevos son
+     * 8 caracteres sin guion. Así un código viejo se sigue encontrando
+     * igual, se escriba con guion o sin él.
+     */
     public function buscarPorCodigo(string $codigo): ?array
     {
         $stmt = Database::conexion()->prepare(
-            'SELECT r.*, c.nombre AS cliente_nombre, c.telefono AS cliente_telefono
+            "SELECT r.*, c.nombre AS cliente_nombre, c.telefono AS cliente_telefono
              FROM recompensas r JOIN clientes c ON c.id = r.cliente_id
-             WHERE r.codigo = :codigo'
+             WHERE REPLACE(r.codigo, '-', '') = :codigo"
         );
         $stmt->execute(['codigo' => $codigo]);
 
         return $stmt->fetch() ?: null;
     }
 
+    /** Mismo criterio "ignorando guiones" que buscarPorCodigo() — ver ahí el porqué. */
     public function codigoExiste(string $codigo): bool
     {
-        $stmt = Database::conexion()->prepare('SELECT COUNT(*) FROM recompensas WHERE codigo = :codigo');
+        $stmt = Database::conexion()->prepare("SELECT COUNT(*) FROM recompensas WHERE REPLACE(codigo, '-', '') = :codigo");
         $stmt->execute(['codigo' => $codigo]);
 
         return (int) $stmt->fetchColumn() > 0;
@@ -147,12 +155,13 @@ class Recompensa
     /**
      * Bloquea la fila (SELECT ... FOR UPDATE) dentro de una transacción
      * ya abierta por el llamador — para canjear/cancelar sin condición
-     * de carrera. Debe usarse siempre dentro de una transacción.
+     * de carrera. Debe usarse siempre dentro de una transacción. Mismo
+     * criterio "ignorando guiones" que buscarPorCodigo() — ver ahí el porqué.
      */
     public function buscarPorCodigoConBloqueo(string $codigo): ?array
     {
         $stmt = Database::conexion()->prepare(
-            'SELECT * FROM recompensas WHERE codigo = :codigo FOR UPDATE'
+            "SELECT * FROM recompensas WHERE REPLACE(codigo, '-', '') = :codigo FOR UPDATE"
         );
         $stmt->execute(['codigo' => $codigo]);
 
@@ -200,10 +209,14 @@ class Recompensa
     }
 
     /**
-     * 8 caracteres elegidos con random_int() (aleatorio criptográfico,
-     * no predecible ni consecutivo) de un alfabeto de 31 símbolos sin
-     * ambigüedades (sin 0/O, 1/I/L): 31^8 ≈ 8,5 × 10^11 combinaciones.
-     * Formato XXXX-XXXX (9 caracteres; el guion es solo presentación).
+     * 8 caracteres elegidos con random_int() (aleatorio criptográfico, no
+     * predecible ni consecutivo) de un alfabeto de 31 símbolos sin
+     * ambigüedades al escribirlos o leerlos a mano (sin 0/O, 1/I/L, todo en
+     * mayúscula): 31^8 ≈ 8,5 × 10^11 combinaciones. Sin guion ni prefijo —
+     * se acortó el formato para que sea más fácil de escribir cuando falla
+     * el escaneo con cámara (docs/arquitectura.md §4.14; antes era
+     * "XXXX-XXXX", con guion, y esos códigos viejos se siguen aceptando:
+     * ver buscarPorCodigo()).
      */
     public static function nuevoCodigoAleatorio(): string
     {
@@ -215,22 +228,19 @@ class Recompensa
             $codigo .= $alfabeto[random_int(0, $maximo)];
         }
 
-        return substr($codigo, 0, 4) . '-' . substr($codigo, 4);
+        return $codigo;
     }
 
     /**
-     * Deja el código tal como se guarda: mayúsculas y con guion.
-     * Acepta "abcd efgh", "abcd-efgh" o "ABCDEFGH" (lo que teclee el
-     * cajero o copie el cliente). Si no tiene 8 caracteres válidos
-     * devuelve lo que quede, que simplemente no coincidirá con nada.
+     * Deja el código tal como se compara al buscarlo: solo mayúsculas y
+     * caracteres alfanuméricos, sin guion. Acepta "abcd efgh", "abcd-efgh"
+     * (formato viejo) o "abcdefgh" (formato nuevo) — lo que teclee el
+     * cajero o copie el cliente. No hace falta reconstruir el guion: la
+     * búsqueda en la base ya lo ignora (ver buscarPorCodigo()).
      */
     public static function normalizarCodigo(string $entrada): string
     {
-        $limpio = (string) preg_replace('/[^A-Z0-9]/', '', strtoupper($entrada));
-
-        return strlen($limpio) === 8
-            ? substr($limpio, 0, 4) . '-' . substr($limpio, 4)
-            : $limpio;
+        return (string) preg_replace('/[^A-Z0-9]/', '', strtoupper($entrada));
     }
 
     /** ¿La excepción es una violación de UNIQUE (MySQL/MariaDB error 1062)? */
