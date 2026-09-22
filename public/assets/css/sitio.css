@@ -700,7 +700,8 @@ img {
   flex-wrap: wrap;
 }
 
-.redes-lista a {
+.redes-lista a,
+.redes-lista span {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -708,9 +709,25 @@ img {
   border-radius: 999px;
   padding: 10px 20px;
   text-decoration: none;
-  color: var(--color-cafe-oscuro);
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(59, 36, 21, 0.08);
+}
+
+/* Aparte y más específico que ".sitio-footer a" (más abajo en este mismo
+   archivo): con la misma especificidad que ".redes-lista a" ganaba por venir
+   después, dejando el texto beige claro casi invisible sobre la píldora
+   blanca. Aquí el fondo es blanco, así que el texto va oscuro sí o sí. */
+.sitio-footer .redes-lista a,
+.sitio-footer .redes-lista span {
+  color: var(--color-cafe-oscuro);
+}
+
+/* Logo oficial de la red (SVG en línea, ver footer_publico.php): tamaño fijo
+   para que no se deforme ni empuje el texto en pantallas chicas. */
+.icono-red {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .horario-tabla {

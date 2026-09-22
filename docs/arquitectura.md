@@ -644,6 +644,25 @@ Dos ajustes sobre lo anterior:
   Repetido una vez más (C → cancelar → D) para confirmar que no es un caso
   aislado.
 
+### 4.12 Íconos oficiales de redes en Contacto
+
+Los emojis (📱📷👍) de WhatsApp/Instagram/Facebook en Contacto
+(`app/Views/layouts/footer_publico.php`) se reemplazaron por los logos
+oficiales como SVG en línea (trazos de [Simple Icons](https://simpleicons.org),
+licencia CC0, copiados una sola vez al código — el sitio no depende de
+ningún servidor externo para mostrarlos, ni en producción ni sin
+conexión). Cada ícono es un `<svg>` con el color de marca (`#25D366`
+WhatsApp, `#E4405F` Instagram, `#1877F2` Facebook), `aria-hidden="true"`
+porque el nombre de la red sigue siendo el texto visible/accesible del
+enlace, tamaño fijo de 20px (`.icono-red`) para no deformarse en celular.
+
+De paso, verificando cómo se veían, apareció un bug de contraste **ya
+existente antes de este cambio** (con los emojis también pasaba, solo que
+menos notorio): `.sitio-footer a` pintaba el texto de las píldoras en
+beige claro sobre fondo blanco, casi ilegible, porque tenía la misma
+especificidad que `.redes-lista a` y venía después en el archivo. Se
+corrigió con un selector más específico (`.sitio-footer .redes-lista a`).
+
 ---
 
 ## 5. Modelo de datos (entidades y relaciones)
