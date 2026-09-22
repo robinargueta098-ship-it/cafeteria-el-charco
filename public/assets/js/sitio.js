@@ -36,6 +36,11 @@ function inicializarRevelado() {
     return;
   }
 
+  // threshold bajo (no 0.15): algunas secciones (ej. #menu, con todo el
+  // catálogo) miden varias veces la altura de la pantalla, así que pedir
+  // que se vea el 15% de la sección completa nunca se cumplía y esa
+  // sección se quedaba invisible para siempre. Con un umbral casi en 0
+  // basta con que asome el borde de la sección.
   var observador = new IntersectionObserver(function (entradas, obs) {
     entradas.forEach(function (entrada) {
       if (entrada.isIntersecting) {
@@ -43,7 +48,7 @@ function inicializarRevelado() {
         obs.unobserve(entrada.target); // ya apareció una vez: no hay que seguir observándola
       }
     });
-  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+  }, { threshold: 0.01, rootMargin: '0px 0px -40px 0px' });
 
   secciones.forEach(function (seccion) {
     seccion.classList.add('por-revelar');
