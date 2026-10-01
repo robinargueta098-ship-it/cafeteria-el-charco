@@ -367,7 +367,7 @@ $tarjetaProducto = function (array $p) {
                 ?>
                 <?php if ($enlaceComoLlegar !== ''): ?>
                     <a class="btn btn-como-llegar" href="<?= htmlspecialchars($enlaceComoLlegar, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">
-                        📍 Cómo llegar
+                        Cómo llegar
                     </a>
                 <?php endif; ?>
             </div>
