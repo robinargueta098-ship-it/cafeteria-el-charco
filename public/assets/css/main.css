@@ -135,8 +135,37 @@ a {
   color: var(--color-texto);
 }
 
+/* El hover base (.btn:hover) oscurece el fondo a café oscuro; sin esto el
+   texto oscuro de .btn-secundario se volvía ilegible al pasar el mouse. */
+.btn-secundario:hover,
+.btn-secundario:focus-visible,
+.btn-secundario:active {
+  background: #e6d9c3;
+  color: var(--color-texto);
+}
+
+.btn-verde:hover,
+.btn-verde:active {
+  background: #3b5530;
+  color: var(--color-blanco);
+}
+
 .btn-peligro {
   background: var(--color-error);
+}
+
+.btn-peligro:hover,
+.btn-peligro:active {
+  background: #832f20;
+  color: var(--color-blanco);
+}
+
+.btn:active {
+  color: var(--color-blanco);
+}
+
+.btn-secundario:active {
+  color: var(--color-texto);
 }
 
 .btn-pequeno {
