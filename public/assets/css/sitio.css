@@ -1577,6 +1577,74 @@ html.carrito-abierto {
   color: var(--color-cafe-oscuro);
 }
 
+.carrito-datos {
+  border: none;
+  margin: 14px 0 0;
+  padding: 0;
+}
+
+.carrito-datos legend,
+.carrito-pago legend {
+  font-weight: 700;
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.carrito-campo {
+  margin-bottom: 10px;
+}
+
+.carrito-campo label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.carrito-obligatorio {
+  color: var(--color-error);
+}
+
+.carrito-opcional {
+  font-weight: 400;
+  color: #6b5a4d;
+}
+
+.carrito-campo input,
+.carrito-campo textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #cdbfae;
+  border-radius: var(--radio-borde);
+  background: var(--color-blanco);
+  color: var(--color-texto);
+  font: inherit;
+  font-size: 1rem;      /* 16px: el iPhone no hace zoom al enfocar el campo */
+}
+
+.carrito-campo textarea {
+  resize: vertical;
+}
+
+.carrito-campo input:focus,
+.carrito-campo textarea:focus {
+  outline: 3px solid rgba(75, 107, 58, 0.35);
+  border-color: var(--color-verde);
+}
+
+.carrito-campo input[aria-invalid="true"] {
+  border-color: var(--color-error);
+  background: #fdf1ee;
+}
+
+.carrito-pago--falta {
+  outline: 2px solid var(--color-error);
+  outline-offset: 4px;
+  border-radius: var(--radio-borde);
+}
+
 .carrito-pago {
   border: none;
   margin: 12px 0 0;

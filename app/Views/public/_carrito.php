@@ -49,6 +49,25 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
         <footer class="carrito-pie" id="carrito-pie" hidden>
             <div class="carrito-total"><span>Total</span><strong id="carrito-total">Q0.00</strong></div>
 
+            <fieldset class="carrito-datos">
+                <legend>Tus datos</legend>
+                <div class="carrito-campo">
+                    <label for="carrito-nombre">Nombre <span class="carrito-obligatorio" aria-hidden="true">*</span></label>
+                    <input type="text" id="carrito-nombre" name="cliente_nombre" maxlength="60" autocomplete="name" required
+                           placeholder="¿A nombre de quién va el pedido?">
+                </div>
+                <div class="carrito-campo">
+                    <label for="carrito-direccion">Dirección <span class="carrito-obligatorio" aria-hidden="true">*</span></label>
+                    <input type="text" id="carrito-direccion" name="cliente_direccion" maxlength="200" autocomplete="street-address" required
+                           placeholder="Calle, número, zona y alguna referencia">
+                </div>
+                <div class="carrito-campo">
+                    <label for="carrito-detalles">Detalles extra <span class="carrito-opcional">(opcional)</span></label>
+                    <textarea id="carrito-detalles" name="cliente_detalles" rows="2" maxlength="300"
+                              placeholder="Ej. sin azúcar, leche deslactosada, timbre descompuesto…"></textarea>
+                </div>
+            </fieldset>
+
             <fieldset class="carrito-pago">
                 <legend>Forma de pago</legend>
                 <?php foreach (['Pago contra entrega', 'Transferencia', 'Tarjeta física'] as $i => $forma): ?>
@@ -60,7 +79,7 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
                 <p class="carrito-ayuda">Solo para que sepamos cómo vas a pagar; aquí no se cobra nada. La tarjeta física se paga en persona al recoger.</p>
             </fieldset>
 
-            <p class="carrito-error" id="carrito-error" role="alert" hidden>Elige una forma de pago para enviar tu pedido.</p>
+            <p class="carrito-error" id="carrito-error" role="alert" hidden></p>
 
             <?php if ($numeroCarrito !== ''): ?>
                 <a href="#" class="btn btn-whatsapp carrito-enviar" id="carrito-enviar" target="_blank" rel="noopener">

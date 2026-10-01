@@ -36,6 +36,9 @@
     total: document.getElementById('carrito-total'),
     error: document.getElementById('carrito-error'),
     enviar: document.getElementById('carrito-enviar'),
+    nombre: document.getElementById('carrito-nombre'),
+    direccion: document.getElementById('carrito-direccion'),
+    detalles: document.getElementById('carrito-detalles'),
     vaciar: document.getElementById('carrito-vaciar')
   };
 
@@ -52,6 +55,7 @@
   var items = {};     // clave -> cantidad
   var orden = [];     // claves en el orden en que se agregaron (así se ve y así sale en el mensaje)
   var pago = '';
+  var cliente = { nombre: '', direccion: '', detalles: '' };
 
   function leer() {
     try {
@@ -65,12 +69,16 @@
         }
       });
       pago = typeof guardado.pago === 'string' ? guardado.pago : '';
+      var c = guardado.cliente || {};
+      cliente.nombre = typeof c.nombre === 'string' ? c.nombre : '';
+      cliente.direccion = typeof c.direccion === 'string' ? c.direccion : '';
+      cliente.detalles = typeof c.detalles === 'string' ? c.detalles : '';
     } catch (e) { /* sin almacenamiento: el carrito vive solo en esta visita */ }
   }
 
   function guardar() {
     try {
-      window.localStorage.setItem(CLAVE_ALMACEN, JSON.stringify({ items: items, orden: orden, pago: pago }));
+      window.localStorage.setItem(CLAVE_ALMACEN, JSON.stringify({ items: items, orden: orden, pago: pago, cliente: cliente }));
     } catch (e) { /* ignorar */ }
   }
 
@@ -174,6 +182,12 @@
     lineas.push('');
     lineas.push('*Total: ' + dinero(totalPedido()) + '*');
     lineas.push('*Forma de pago: ' + limpiar(pago) + '*');
+    lineas.push('');
+    lineas.push('*Nombre:* ' + limpiar(cliente.nombre.trim()));
+    lineas.push('*Direccion:* ' + limpiar(cliente.direccion.trim()));
+    if (cliente.detalles.trim() !== '') {
+      lineas.push('*Detalles extra:* ' + limpiar(cliente.detalles.trim()).replace(/\s*\n\s*/g, ' '));
+    }
     if (!estadoHorario().abierto) {
       lineas.push('');
       lineas.push('_Pedido enviado fuera del horario de atencion._');
@@ -183,6 +197,28 @@
 
   function enlaceWhatsapp() {
     return 'https://wa.me/' + datos.whatsapp + '?text=' + encodeURIComponent(construirMensaje());
+  }
+
+  // ---- Datos obligatorios (nombre, dirección y forma de pago; los detalles son opcionales) ----
+  function datosFaltantes() {
+    var falta = [];
+    if (cliente.nombre.trim() === '') { falta.push('nombre'); }
+    if (cliente.direccion.trim() === '') { falta.push('direccion'); }
+    if (!pago) { falta.push('pago'); }
+    return falta;
+  }
+
+  function marcarInvalidos(falta) {
+    el.nombre.setAttribute('aria-invalid', falta.indexOf('nombre') !== -1 ? 'true' : 'false');
+    el.direccion.setAttribute('aria-invalid', falta.indexOf('direccion') !== -1 ? 'true' : 'false');
+    raiz.querySelector('.carrito-pago').classList.toggle('carrito-pago--falta', falta.indexOf('pago') !== -1);
+  }
+
+  function mensajeFaltante(falta) {
+    var nombres = { nombre: 'tu nombre', direccion: 'tu dirección', pago: 'la forma de pago' };
+    var lista = falta.map(function (f) { return nombres[f]; });
+    var texto = lista.length > 1 ? lista.slice(0, -1).join(', ') + ' y ' + lista[lista.length - 1] : lista[0];
+    return 'Para enviar tu pedido falta: ' + texto + '.';
   }
 
   // ---- Pintar ----
@@ -249,12 +285,18 @@
     Array.prototype.forEach.call(raiz.querySelectorAll('input[name="forma_pago"]'), function (radio) {
       radio.checked = radio.value === pago;
     });
-    if (pago) {
+    if (document.activeElement !== el.nombre) { el.nombre.value = cliente.nombre; }
+    if (document.activeElement !== el.direccion) { el.direccion.value = cliente.direccion; }
+    if (document.activeElement !== el.detalles) { el.detalles.value = cliente.detalles; }
+
+    var falta = datosFaltantes();
+    if (falta.length === 0) {
       el.error.hidden = true;
+      marcarInvalidos([]);
     }
     if (el.enviar) {
-      el.enviar.href = hayItems && pago ? enlaceWhatsapp() : '#';
-      el.enviar.setAttribute('aria-disabled', hayItems && pago ? 'false' : 'true');
+      el.enviar.href = hayItems && falta.length === 0 ? enlaceWhatsapp() : '#';
+      el.enviar.setAttribute('aria-disabled', hayItems && falta.length === 0 ? 'false' : 'true');
     }
     pintarAviso();
   }
@@ -343,9 +385,25 @@
     });
   });
 
+  [['nombre', el.nombre], ['direccion', el.direccion], ['detalles', el.detalles]].forEach(function (par) {
+    par[1].addEventListener('input', function () {
+      cliente[par[0]] = par[1].value;
+      guardar();
+      var falta = datosFaltantes();
+      var listo = totalArticulos() > 0 && falta.length === 0;
+      if (el.enviar) {
+        el.enviar.href = listo ? enlaceWhatsapp() : '#';
+        el.enviar.setAttribute('aria-disabled', listo ? 'false' : 'true');
+      }
+      if (falta.length === 0) { el.error.hidden = true; }
+      if (par[0] !== 'detalles' && par[1].value.trim() !== '') { par[1].setAttribute('aria-invalid', 'false'); }
+    });
+  });
+
   el.vaciar.addEventListener('click', function () {
     items = {};
     orden = [];
+    cliente.detalles = '';
     guardar();
     pintar();
   });
@@ -356,10 +414,15 @@
         evento.preventDefault();
         return;
       }
-      if (!pago) {
-        // Falta la forma de pago. Esto NO es el horario: el horario nunca bloquea el envío.
+      var falta = datosFaltantes();
+      if (falta.length > 0) {
+        // Faltan datos obligatorios. Esto NO es el horario: el horario nunca bloquea el envío.
         evento.preventDefault();
+        el.error.textContent = mensajeFaltante(falta);
         el.error.hidden = false;
+        marcarInvalidos(falta);
+        var primero = falta[0] === 'nombre' ? el.nombre : (falta[0] === 'direccion' ? el.direccion : null);
+        if (primero) { primero.focus(); }
         return;
       }
       el.enviar.href = enlaceWhatsapp();   // mensaje con la hora de este instante; el enlace sigue su curso
