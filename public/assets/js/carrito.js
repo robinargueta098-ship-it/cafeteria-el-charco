@@ -33,6 +33,7 @@
     vacio: document.getElementById('carrito-vacio'),
     lista: document.getElementById('carrito-lista'),
     pie: document.getElementById('carrito-pie'),
+    formulario: document.getElementById('carrito-formulario'),
     total: document.getElementById('carrito-total'),
     error: document.getElementById('carrito-error'),
     enviar: document.getElementById('carrito-enviar'),
@@ -280,6 +281,7 @@
     var hayItems = articulos > 0;
     el.vacio.hidden = hayItems;
     el.pie.hidden = !hayItems;
+    el.formulario.hidden = !hayItems;
     el.total.textContent = dinero(totalPedido());
 
     Array.prototype.forEach.call(raiz.querySelectorAll('input[name="forma_pago"]'), function (radio) {

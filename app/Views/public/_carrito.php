@@ -39,16 +39,12 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
             <button type="button" class="carrito-cerrar" id="carrito-cerrar" aria-label="Cerrar el carrito">&times;</button>
         </header>
 
-        <div class="carrito-aviso" id="carrito-aviso" role="status" hidden></div>
-
         <div class="carrito-cuerpo">
+            <div class="carrito-aviso" id="carrito-aviso" role="status" hidden></div>
             <p class="carrito-vacio" id="carrito-vacio">Tu carrito está vacío. Agrega productos del menú con el botón <strong>+ Agregar</strong>.</p>
             <ul class="carrito-lista" id="carrito-lista"></ul>
-        </div>
 
-        <footer class="carrito-pie" id="carrito-pie" hidden>
-            <div class="carrito-total"><span>Total</span><strong id="carrito-total">Q0.00</strong></div>
-
+            <div class="carrito-formulario" id="carrito-formulario" hidden>
             <fieldset class="carrito-datos">
                 <legend>Tus datos</legend>
                 <div class="carrito-campo">
@@ -78,6 +74,11 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
                 <?php endforeach; ?>
                 <p class="carrito-ayuda">Solo para que sepamos cómo vas a pagar; aquí no se cobra nada. La tarjeta física se paga en persona al recoger.</p>
             </fieldset>
+            </div>
+        </div>
+
+        <footer class="carrito-pie" id="carrito-pie" hidden>
+            <div class="carrito-total"><span>Total</span><strong id="carrito-total">Q0.00</strong></div>
 
             <p class="carrito-error" id="carrito-error" role="alert" hidden></p>
 

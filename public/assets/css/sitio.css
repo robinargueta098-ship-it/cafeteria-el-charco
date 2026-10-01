@@ -1381,32 +1381,40 @@ img {
   background: var(--color-beige-claro);
   color: var(--color-texto);
   box-shadow: -8px 0 30px rgba(59, 36, 21, 0.3);
-  /* Móvil: hoja que sube desde abajo. */
+  /* Móvil: hoja que sube desde abajo. Nunca más alta que la pantalla (dvh = descuenta la barra del
+     navegador del teléfono): lo que no cabe se desplaza DENTRO de .carrito-cuerpo, mientras el
+     encabezado y el total con el botón de enviar quedan siempre a la vista. */
   left: 0;
   right: 0;
   bottom: 0;
   max-height: 92vh;
-  overflow-y: auto;          /* móvil: todo el panel se desplaza, así siempre se alcanza el botón de enviar */
+  max-height: 92dvh;
   border-radius: 18px 18px 0 0;
+  overflow: hidden;
   animation: carrito-subir 0.28s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 @media (min-width: 768px) {
-  /* Escritorio: panel lateral a la derecha. */
+  /* Pantallas anchas: panel lateral a la derecha, de arriba a abajo de la ventana. */
   .carrito-panel {
     left: auto;
     top: 0;
     width: 440px;
+    max-width: 100vw;
     max-height: none;
-    overflow-y: visible;
+    height: 100vh;
+    height: 100dvh;
     border-radius: 0;
     animation-name: carrito-entrar;
   }
+}
 
-  /* Escritorio: la lista se desplaza y el total y el envío quedan siempre a la vista. */
-  .carrito-cuerpo {
-    flex: 1 1 auto;
-    overflow-y: auto;
+/* Teléfono de lado o ventana muy baja: el panel ocupa toda la altura disponible. */
+@media (max-height: 520px) {
+  .carrito-panel {
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
   }
 }
 
@@ -1420,7 +1428,8 @@ img {
   to   { transform: translateX(0); opacity: 1; }
 }
 
-html.carrito-abierto {
+html.carrito-abierto,
+html.carrito-abierto body {
   overflow: hidden;
 }
 
@@ -1450,7 +1459,6 @@ html.carrito-abierto {
 }
 
 .carrito-aviso {
-  margin: 12px 20px 0;
   padding: 12px 14px;
   border-radius: var(--radio-borde);
   background: #fff4d6;
@@ -1464,8 +1472,16 @@ html.carrito-abierto {
 }
 
 .carrito-cuerpo {
-  flex: none;
-  padding: 8px 20px;
+  flex: 1 1 auto;
+  min-height: 0;               /* imprescindible para que un hijo flex pueda desplazarse */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 20px 16px;
+}
+
+.carrito-aviso {
+  margin: 8px 0 4px;
 }
 
 .carrito-vacio {
@@ -1560,9 +1576,12 @@ html.carrito-abierto {
 }
 
 .carrito-pie {
-  padding: 14px 20px 20px;
+  flex: none;
+  padding: 12px 20px 14px;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--color-beige);
   background: var(--color-blanco);
+  box-shadow: 0 -6px 16px rgba(59, 36, 21, 0.08);
 }
 
 .carrito-total {
@@ -1700,7 +1719,7 @@ html.carrito-abierto {
   justify-content: center;
   gap: 10px;
   width: 100%;
-  margin-top: 12px;
+  margin-top: 10px;
   padding: 14px 18px;
   font-size: 1.05rem;
   font-weight: 700;
@@ -1713,7 +1732,7 @@ html.carrito-abierto {
 
 .carrito-vaciar {
   display: block;
-  margin: 12px auto 0;
+  margin: 6px auto 0;
   border: none;
   background: none;
   color: #6b5a4d;
@@ -1732,5 +1751,55 @@ html.carrito-abierto {
   .carrito-fab,
   .btn-agregar {
     transition: none;
+  }
+}
+
+/* Ventanas muy bajas (teléfono de lado): el pie se compacta en una sola fila para dejar espacio al pedido. */
+@media (max-height: 520px) {
+  .carrito-encabezado {
+    padding: 6px 16px;
+  }
+
+  .carrito-encabezado h2 {
+    font-size: 1.1rem;
+  }
+
+  .carrito-cerrar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .carrito-pie {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    padding: 8px 16px;
+  }
+
+  .carrito-total {
+    flex: 1 1 120px;
+    gap: 10px;
+  }
+
+  .carrito-total strong {
+    font-size: 1.2rem;
+  }
+
+  .carrito-enviar {
+    flex: 2 1 240px;
+    margin-top: 0;
+    padding: 10px 14px;
+  }
+
+  .carrito-pie .carrito-error {
+    flex: 1 1 100%;
+    margin: 0;
+  }
+
+  .carrito-vaciar {
+    flex: 1 1 100%;
+    margin: 0;
+    min-height: 24px;
   }
 }
