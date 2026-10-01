@@ -900,18 +900,18 @@ img {
   margin-top: 16px;
   padding: 12px 22px 12px 14px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #5d8348, var(--color-verde) 55%, #3b5530);
+  background: linear-gradient(135deg, #7d5a41, var(--color-cafe) 55%, #5a3d2b);
   color: var(--color-blanco);
-  box-shadow: 0 6px 16px rgba(75, 107, 58, 0.35);
+  box-shadow: 0 6px 16px rgba(59, 36, 21, 0.28);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .btn-como-llegar:hover,
 .btn-como-llegar:focus-visible {
-  background: linear-gradient(135deg, #6b9654, #4b6b3a 55%, #2f4526);
+  background: linear-gradient(135deg, #6f4e37, #5a3d2b 55%, var(--color-cafe-oscuro));
   color: var(--color-blanco);
   transform: translateY(-2px);
-  box-shadow: 0 10px 22px rgba(75, 107, 58, 0.45);
+  box-shadow: 0 10px 22px rgba(59, 36, 21, 0.38);
 }
 
 .btn-como-llegar:active {
@@ -924,7 +924,8 @@ img {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--color-beige);
+  color: var(--color-verde);
   display: grid;
   place-items: center;
 }
@@ -940,7 +941,7 @@ img {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.7);
+  border: 2px solid var(--color-beige);
   animation: como-llegar-pulso 2.2s ease-out infinite;
 }
 
