@@ -384,7 +384,14 @@ $tarjetaProducto = function (array $p) {
                 ?>
                 <?php if ($enlaceComoLlegar !== ''): ?>
                     <a class="btn btn-como-llegar" href="<?= htmlspecialchars($enlaceComoLlegar, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">
-                        Cómo llegar
+                        <span class="como-llegar-icono" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="currentColor" focusable="false"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
+                        </span>
+                        <span class="como-llegar-texto">
+                            <strong>Cómo llegar</strong>
+                            <small>Abrir en Google Maps</small>
+                        </span>
+                        <svg class="como-llegar-flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                     </a>
                 <?php endif; ?>
             </div>
