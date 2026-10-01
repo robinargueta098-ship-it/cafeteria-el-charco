@@ -213,7 +213,7 @@ $totalPortada = count($portada);
             <input type="text" id="mapa_coordenadas" name="mapa_coordenadas" maxlength="40"
                    placeholder="15.0208512, -91.1474688" pattern="-?[0-9]{1,3}(\.[0-9]+)?\s*,\s*-?[0-9]{1,3}(\.[0-9]+)?"
                    value="<?= htmlspecialchars($config['mapa_coordenadas'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-            <span class="campo-ayuda">Latitud, longitud. En Google Maps: clic derecho sobre el local y se copian al tocar el primer renglón. Si se deja vacío, el mapa busca por la dirección.</span>
+            <span class="campo-ayuda">Se llenan solas al guardar un enlace nuevo de Google Maps (abajo), para que el mapa quede exactamente donde apunta ese enlace. Solo escríbelas a mano si necesitas otro punto. Si se dejan vacías, el mapa busca por la dirección.</span>
         </div>
         <div class="campo">
             <label for="google_maps_embed">Enlace para compartir de Google Maps</label>

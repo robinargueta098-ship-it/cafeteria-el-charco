@@ -6,6 +6,7 @@ namespace App\Controllers\Admin;
 
 use App\Core\Controller;
 use App\Core\Flash;
+use App\Core\GoogleMaps;
 use App\Core\ImagenOptimizada;
 use App\Core\SubidaArchivo;
 use App\Core\Validator;
@@ -116,10 +117,30 @@ class ConfiguracionController extends Controller
             return;
         }
 
+        // El mapa se centra donde apunta el enlace de Google Maps: al pegar un enlace nuevo, las
+        // coordenadas se sacan solas de él (salvo que el Administrador haya escrito otras a mano
+        // en esta misma edición). Si no se pudieran leer, se conservan las que ya había.
+        $avisoMapa = null;
+        $enlaceCambio = $datos['google_maps_embed'] !== '' && $datos['google_maps_embed'] !== ($configActual['google_maps_embed'] ?? '');
+        $coordenadasManuales = $datos['mapa_coordenadas'] !== ($configActual['mapa_coordenadas'] ?? '');
+        if ($enlaceCambio && !$coordenadasManuales) {
+            $coordenadas = GoogleMaps::coordenadasDesdeEnlace($datos['google_maps_embed']);
+            if ($coordenadas !== null) {
+                $datos['mapa_coordenadas'] = $coordenadas;
+            } else {
+                $avisoMapa = 'No se pudieron leer las coordenadas del enlace de Google Maps; el mapa conserva la ubicación anterior. Puedes escribirlas a mano en "Coordenadas exactas".';
+            }
+        }
+
         $configModelo->actualizarMultiples($datos);
         $this->guardarHorario($horarioPost);
 
         AuditoriaService::registrar('configuracion_sistema', 0, 'editar', $configActual, $datos);
+
+        if ($avisoMapa !== null) {
+            Flash::error('Configuración guardada, pero: ' . $avisoMapa);
+            $this->redirigir('/admin/configuracion');
+        }
 
         Flash::exito('Configuración actualizada correctamente.');
         $this->redirigir('/admin/configuracion');
