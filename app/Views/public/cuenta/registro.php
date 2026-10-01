@@ -33,7 +33,9 @@ require APP_PATH . '/Views/layouts/header_publico.php';
 
                 <div class="campo">
                     <label for="telefono">Teléfono</label>
-                    <input type="tel" id="telefono" name="telefono" maxlength="20" required
+                    <input type="tel" id="telefono" name="telefono" maxlength="8" minlength="8" required
+                           inputmode="numeric" pattern="[0-9]{8}" autocomplete="tel-national" data-solo-digitos
+                           title="8 dígitos, solo números" placeholder="12345678"
                            value="<?= htmlspecialchars($valores['telefono'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                 </div>
 

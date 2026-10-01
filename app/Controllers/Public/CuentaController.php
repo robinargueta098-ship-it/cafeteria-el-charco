@@ -53,6 +53,10 @@ class CuentaController extends Controller
 
         $errores = $validador->errores();
 
+        if ($telefono !== '' && !Cliente::telefonoValido($telefono)) {
+            $errores[] = Cliente::MENSAJE_TELEFONO;
+        }
+
         if (!preg_match('/^\d{4}$/', $pin)) {
             $errores[] = 'El PIN debe ser exactamente de 4 dígitos.';
         } elseif ($pin !== $confirmarPin) {

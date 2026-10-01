@@ -33,7 +33,9 @@ $accion = $esEdicion ? '/admin/clientes/' . (int) $cliente['id'] . '/editar' : '
 
         <div class="campo">
             <label for="telefono">Teléfono</label>
-            <input type="text" id="telefono" name="telefono" maxlength="20" required
+            <input type="tel" id="telefono" name="telefono" maxlength="8" minlength="8" required
+                   inputmode="numeric" pattern="[0-9]{8}" data-solo-digitos
+                   title="8 dígitos, solo números" placeholder="12345678"
                    value="<?= htmlspecialchars((string) ($cliente['telefono'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
         </div>
 
@@ -52,6 +54,15 @@ $accion = $esEdicion ? '/admin/clientes/' . (int) $cliente['id'] . '/editar' : '
         <button type="submit" class="btn"><?= $esEdicion ? 'Guardar cambios' : 'Crear cliente' ?></button>
         <a href="/admin/clientes" class="btn btn-secundario">Cancelar</a>
     </form>
+
+    <?php if ($esEdicion && (\App\Core\Auth::usuario()['rol_id'] ?? null) === 1): ?>
+        <form method="post" action="/admin/clientes/<?= (int) $cliente['id'] ?>/eliminar" style="margin-top:24px;"
+              onsubmit="return confirm('¿Eliminar a este cliente y TODO su historial de lealtad (cafés, recompensas y cupones)? No se puede deshacer.');">
+            <?= \App\Core\Csrf::campo() ?>
+            <button type="submit" class="btn btn-peligro">Eliminar cliente</button>
+            <span class="campo-ayuda">Borra también su historial de lealtad. Úsalo para cuentas de prueba o si el cliente lo pide.</span>
+        </form>
+    <?php endif; ?>
 </div>
 
 <?php require APP_PATH . '/Views/layouts/panel_footer.php'; ?>

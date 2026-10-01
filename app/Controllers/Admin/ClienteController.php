@@ -125,6 +125,35 @@ class ClienteController extends Controller
             ->longitudMaxima('telefono', 'Teléfono', 20)
             ->email('email', 'Correo');
 
-        return $validador->errores();
+        $errores = $validador->errores();
+        if ($datos['telefono'] !== '' && !Cliente::telefonoValido((string) $datos['telefono'])) {
+            $errores[] = Cliente::MENSAJE_TELEFONO;
+        }
+
+        return $errores;
+    }
+
+    /**
+     * Borra un cliente de prueba (o uno que lo pidió) junto con todo su historial de lealtad.
+     * Solo Administrador: es irreversible, por eso queda registrado en Auditoría con lo que había.
+     */
+    public function eliminar(string $id): void
+    {
+        $this->requerirRol(1);
+
+        $modelo = new Cliente();
+        $cliente = $modelo->buscarPorId((int) $id);
+        if ($cliente === null) {
+            $this->error404();
+        }
+
+        $historial = $modelo->contarHistorial((int) $id);
+        $modelo->eliminarConHistorial((int) $id);
+
+        unset($cliente['pin_hash']); // nunca copiar el PIN (ni su hash) a la bitácora
+        AuditoriaService::registrar('clientes', (int) $id, 'eliminar', $cliente + ['historial_borrado' => $historial], null);
+
+        Flash::exito("Cliente «{$cliente['nombre']}» eliminado junto con su historial de lealtad.");
+        $this->redirigir('/admin/clientes');
     }
 }

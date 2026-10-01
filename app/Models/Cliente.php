@@ -44,6 +44,61 @@ class Cliente
         return $n === 1 ? '1 café gratis disponible' : $n . ' cafés gratis disponibles';
     }
 
+    /** El teléfono de un cliente son exactamente 8 dígitos (números de Guatemala, sin código de país). */
+    public const DIGITOS_TELEFONO = 8;
+
+    public static function telefonoValido(string $telefono): bool
+    {
+        return preg_match('/^\d{' . self::DIGITOS_TELEFONO . '}$/', $telefono) === 1;
+    }
+
+    public const MENSAJE_TELEFONO = 'El teléfono debe tener exactamente 8 dígitos (solo números, sin espacios ni guiones).';
+
+    /**
+     * Cuántos registros de lealtad cuelgan de un cliente (para avisar antes de borrarlo).
+     *
+     * @return array{movimientos:int,recompensas:int,cupones:int}
+     */
+    public function contarHistorial(int $id): array
+    {
+        $pdo = Database::conexion();
+        $contar = function (string $tabla) use ($pdo, $id): int {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM {$tabla} WHERE cliente_id = :id");
+            $stmt->execute(['id' => $id]);
+            return (int) $stmt->fetchColumn();
+        };
+
+        return [
+            'movimientos' => $contar('lealtad_movimientos'),
+            'recompensas' => $contar('recompensas'),
+            'cupones'     => $contar('cupones_promocion'),
+        ];
+    }
+
+    /**
+     * Borra al cliente y TODO lo que depende de él (cupones, recompensas y movimientos de
+     * lealtad), en una sola transacción: o se borra todo o no se borra nada. El orden respeta
+     * las llaves foráneas (las recompensas apuntan a movimientos, y estos al cliente).
+     */
+    public function eliminarConHistorial(int $id): void
+    {
+        $pdo = Database::conexion();
+
+        try {
+            $pdo->beginTransaction();
+            foreach (['cupones_promocion', 'recompensas', 'lealtad_movimientos'] as $tabla) {
+                $pdo->prepare("DELETE FROM {$tabla} WHERE cliente_id = :id")->execute(['id' => $id]);
+            }
+            $pdo->prepare('DELETE FROM clientes WHERE id = :id')->execute(['id' => $id]);
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     /**
      * Quita espacios y guiones para que "5555 1234", "5555-1234" y
      * "55551234" se traten como el mismo teléfono tanto si lo escribe

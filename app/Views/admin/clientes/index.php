@@ -40,6 +40,13 @@ require APP_PATH . '/Views/layouts/panel_header.php';
                         <td class="acciones-tabla">
                             <a class="btn btn-pequeno" href="/admin/lealtad/<?= (int) $c['id'] ?>">Lealtad</a>
                             <a class="btn btn-secundario btn-pequeno" href="/admin/clientes/<?= (int) $c['id'] ?>/editar">Editar</a>
+                            <?php if ((\App\Core\Auth::usuario()['rol_id'] ?? null) === 1): ?>
+                                <form method="post" action="/admin/clientes/<?= (int) $c['id'] ?>/eliminar" style="display:inline;"
+                                      onsubmit="return confirm('¿Eliminar a <?= htmlspecialchars(addslashes((string) $c['nombre']), ENT_QUOTES, 'UTF-8') ?> y TODO su historial de lealtad (cafés, recompensas y cupones)? No se puede deshacer.');">
+                                    <?= \App\Core\Csrf::campo() ?>
+                                    <button type="submit" class="btn btn-peligro btn-pequeno">Eliminar</button>
+                                </form>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

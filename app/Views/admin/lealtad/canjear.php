@@ -56,7 +56,7 @@ require APP_PATH . '/Views/layouts/panel_header.php';
             </div>
             <div class="campo">
                 <label for="telefono">Teléfono del cliente <span class="campo-ayuda">(sin código: busca al cliente por su número; con código: doble verificación)</span></label>
-                <input type="tel" id="telefono" name="telefono" maxlength="20"
+                <input type="tel" id="telefono" name="telefono" maxlength="8" inputmode="numeric" data-solo-digitos
                        value="<?= htmlspecialchars($telefono, ENT_QUOTES, 'UTF-8') ?>">
             </div>
             <button type="submit" class="btn">Buscar</button>

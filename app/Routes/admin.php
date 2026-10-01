@@ -81,6 +81,7 @@ $router->get('/admin/clientes/crear', [ClienteController::class, 'mostrarCrear']
 $router->post('/admin/clientes/crear', [ClienteController::class, 'crear']);
 $router->get('/admin/clientes/{id}/editar', [ClienteController::class, 'mostrarEditar']);
 $router->post('/admin/clientes/{id}/editar', [ClienteController::class, 'actualizar']);
+$router->post('/admin/clientes/{id}/eliminar', [ClienteController::class, 'eliminar']); // solo Administrador, ver el controlador
 
 // --- Lealtad ---
 // Las rutas literales van ANTES de la ruta con {id}: si no, "canjear"

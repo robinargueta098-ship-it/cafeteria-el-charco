@@ -5,6 +5,16 @@
  * esto es puramente para que el formulario sea más claro de llenar.
  */
 document.addEventListener('DOMContentLoaded', function () {
+  // Campos de teléfono: solo números (y como máximo los que permite maxlength) mientras se escribe o se pega.
+  document.querySelectorAll('input[data-solo-digitos]').forEach(function (campo) {
+    campo.addEventListener('input', function () {
+      var limpio = campo.value.replace(/\D/g, '');
+      if (limpio !== campo.value) {
+        campo.value = limpio;
+      }
+    });
+  });
+
   inicializarAlcancePromocion();
   inicializarTipoPromocion();
   document.querySelectorAll('input[data-subida-multiple]').forEach(inicializarSubidaMultiple);
