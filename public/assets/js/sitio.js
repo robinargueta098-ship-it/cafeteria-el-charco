@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', function () {
   inicializarMenuMovil();
   inicializarHeroFondo();
   inicializarRevelado();
+  inicializarRevelaDescripciones();
+  inicializarRevelaFotos();
+  inicializarMenuPestanas();
   document.querySelectorAll('[data-carrusel]').forEach(inicializarCarrusel);
 });
 
@@ -28,9 +31,15 @@ function inicializarRevelado() {
     return; // se deja todo visible tal cual, sin animar
   }
 
-  var secciones = ['#menu', '#nosotros', '#galeria', '#promociones', '#ubicacion', '#contacto']
-    .map(function (selector) { return document.querySelector(selector); })
-    .filter(Boolean);
+  // Todas las secciones de la página (Más vendidos, Destacados, De temporada, Promociones,
+  // Menú, Nosotros, Galería, Ubicación, Lealtad, Contacto…): cada una entra al llegar a ella.
+  var secciones = Array.prototype.slice.call(document.querySelectorAll('section.sitio-seccion'));
+
+  // Las tarjetas de las primeras secciones (todo menos el menú completo) entran además una
+  // tras otra, un poco escalonadas: es el movimiento de "bienvenida" del inicio de la página.
+  var tarjetas = Array.prototype.slice.call(
+    document.querySelectorAll('section.sitio-seccion:not(#menu) .tarjeta-producto')
+  );
 
   if (secciones.length === 0) {
     return;
@@ -53,6 +62,220 @@ function inicializarRevelado() {
   secciones.forEach(function (seccion) {
     seccion.classList.add('por-revelar');
     observador.observe(seccion);
+  });
+
+  tarjetas.forEach(function (tarjeta, indice) {
+    tarjeta.classList.add('por-revelar');
+    tarjeta.style.transitionDelay = ((indice % 4) * 110) + 'ms';
+    observador.observe(tarjeta);
+  });
+}
+
+/**
+ * Menú público en el teléfono: la barra de categorías se vuelve un slider de pestañas.
+ * Al tocar una se muestran SOLO los productos de esa categoría (sin recargar la página) y la
+ * pestaña activa se centra en la barra. Las categorías salen del HTML que genera el servidor
+ * (las de la base de datos), así que agregar o quitar categorías en el panel no requiere tocar
+ * este código. En escritorio (o sin JavaScript) todo sigue como antes: enlaces que saltan.
+ */
+function inicializarMenuPestanas() {
+  var barra = document.querySelector('[data-menu-pestanas]');
+  var categorias = Array.prototype.slice.call(document.querySelectorAll('[data-menu-categoria]'));
+  if (!barra || categorias.length === 0 || !window.matchMedia) {
+    return;
+  }
+
+  var movil = window.matchMedia('(max-width: 767px)');
+  var enlaces = Array.prototype.slice.call(barra.querySelectorAll('a[href^="#cat-"]'));
+  var activa = null;
+
+  function categoriaDe(enlace) {
+    return document.getElementById(enlace.getAttribute('href').slice(1));
+  }
+
+  function centrar(enlace, suave) {
+    // Posición real de la pestaña dentro de la barra (offsetLeft no sirve: la barra no es el
+    // contenedor de referencia de sus hijos).
+    var cajaEnlace = enlace.getBoundingClientRect();
+    var cajaBarra = barra.getBoundingClientRect();
+    var destino = barra.scrollLeft + (cajaEnlace.left - cajaBarra.left) - (barra.clientWidth - cajaEnlace.width) / 2;
+    if (barra.scrollTo) {
+      barra.scrollTo({ left: Math.max(0, destino), behavior: suave ? 'smooth' : 'auto' });
+    } else {
+      barra.scrollLeft = Math.max(0, destino);
+    }
+  }
+
+  function activar(enlace, suave) {
+    activa = enlace;
+    enlaces.forEach(function (otro) {
+      var seleccionada = otro === enlace;
+      otro.setAttribute('aria-selected', seleccionada ? 'true' : 'false');
+      otro.tabIndex = seleccionada ? 0 : -1;
+      var panel = categoriaDe(otro);
+      if (panel) {
+        panel.hidden = !seleccionada;
+      }
+    });
+    centrar(enlace, suave);
+  }
+
+  function alTocar(evento) {
+    evento.preventDefault();
+    var enlace = evento.currentTarget;
+    activar(enlace, true);
+
+    // Si el menú quedó más arriba de lo visible (la lista era larga), vuelve al inicio de la barra.
+    var arriba = barra.getBoundingClientRect().top;
+    if (arriba < 60) {
+      window.scrollTo({ top: window.pageYOffset + arriba - 70, behavior: 'smooth' });
+    }
+  }
+
+  function alTeclear(evento) {
+    var indice = enlaces.indexOf(evento.currentTarget);
+    var siguiente = null;
+    if (evento.key === 'ArrowRight') { siguiente = enlaces[Math.min(enlaces.length - 1, indice + 1)]; }
+    if (evento.key === 'ArrowLeft') { siguiente = enlaces[Math.max(0, indice - 1)]; }
+    if (siguiente) {
+      evento.preventDefault();
+      activar(siguiente, true);
+      siguiente.focus();
+    }
+  }
+
+  function encender() {
+    barra.classList.add('menu-nav--pestanas');
+    barra.setAttribute('role', 'tablist');
+    enlaces.forEach(function (enlace) {
+      enlace.setAttribute('role', 'tab');
+      enlace.addEventListener('click', alTocar);
+      enlace.addEventListener('keydown', alTeclear);
+      var panel = categoriaDe(enlace);
+      if (panel) {
+        panel.setAttribute('role', 'tabpanel');
+      }
+    });
+
+    // Empieza en la primera categoría, salvo que la dirección ya apunte a una (ej. #cat-smoothies).
+    var inicial = enlaces.filter(function (e) { return e.getAttribute('href') === window.location.hash; })[0] || enlaces[0];
+    activar(inicial, false);
+  }
+
+  function apagar() {
+    barra.classList.remove('menu-nav--pestanas');
+    barra.removeAttribute('role');
+    enlaces.forEach(function (enlace) {
+      enlace.removeAttribute('role');
+      enlace.removeAttribute('aria-selected');
+      enlace.removeAttribute('tabindex');
+      enlace.removeEventListener('click', alTocar);
+      enlace.removeEventListener('keydown', alTeclear);
+    });
+    categorias.forEach(function (panel) {
+      panel.hidden = false;
+      panel.removeAttribute('role');
+    });
+    activa = null;
+  }
+
+  function sincronizar() {
+    if (movil.matches && !activa) {
+      encender();
+    } else if (!movil.matches && activa) {
+      apagar();
+    }
+  }
+
+  sincronizar();
+  if (movil.addEventListener) {
+    movil.addEventListener('change', sincronizar);
+  } else if (movil.addListener) {
+    movil.addListener(sincronizar);
+  }
+}
+
+/**
+ * Las fotos de las tarjetas (temporada, promociones, productos) suben suavemente desde abajo
+ * cuando están a la vista Y ya terminaron de descargarse. Las imágenes usan carga diferida
+ * (loading="lazy"), así que sin esto aparecían de golpe al terminar de cargar.
+ */
+function inicializarRevelaFotos() {
+  if (!('IntersectionObserver' in window)) {
+    return;
+  }
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return;
+  }
+
+  var fotos = document.querySelectorAll('.tarjeta-producto > img, .tarjeta-producto > picture img');
+  if (fotos.length === 0) {
+    return;
+  }
+
+  function mostrar(foto) {
+    // Dos fotogramas: el navegador pinta primero el estado oculto y la transición sí se ve.
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { foto.classList.add('img-lista'); });
+    });
+  }
+
+  var observador = new IntersectionObserver(function (entradas, obs) {
+    entradas.forEach(function (entrada) {
+      if (!entrada.isIntersecting) {
+        return;
+      }
+      var foto = entrada.target;
+      obs.unobserve(foto);
+      if (foto.complete && foto.naturalWidth > 0) {
+        mostrar(foto);
+      } else {
+        foto.addEventListener('load', function () { mostrar(foto); }, { once: true });
+        foto.addEventListener('error', function () { foto.classList.add('img-lista'); }, { once: true });
+      }
+    });
+  }, { threshold: 0.1 });
+
+  Array.prototype.forEach.call(fotos, function (foto) {
+    foto.classList.add('img-por-cargar');
+    observador.observe(foto);
+  });
+}
+
+/**
+ * Cada descripción de producto aparece sola (fade-in + subida suave) al entrar en pantalla,
+ * con un pequeño escalonado entre las tarjetas de una misma fila. Reutiliza las clases
+ * ".por-revelar" / ".revelado" de la sección Promociones (inicializarRevelado) y respeta
+ * "reducir movimiento"; sin JavaScript las descripciones quedan visibles tal cual.
+ */
+function inicializarRevelaDescripciones() {
+  if (!('IntersectionObserver' in window)) {
+    return;
+  }
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return;
+  }
+
+  var descripciones = document.querySelectorAll('#menu .tarjeta-producto-descripcion');
+  if (descripciones.length === 0) {
+    return;
+  }
+
+  var observador = new IntersectionObserver(function (entradas, obs) {
+    entradas.forEach(function (entrada) {
+      if (entrada.isIntersecting) {
+        entrada.target.classList.add('revelado');
+        obs.unobserve(entrada.target);
+      }
+    });
+  }, { threshold: 0.2, rootMargin: '0px 0px -30px 0px' });
+
+  Array.prototype.forEach.call(descripciones, function (parrafo, indice) {
+    parrafo.classList.add('por-revelar');
+    parrafo.style.transitionDelay = ((indice % 3) * 90) + 'ms';
+    observador.observe(parrafo);
   });
 }
 

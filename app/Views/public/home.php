@@ -258,14 +258,16 @@ $tarjetaProducto = function (array $p) {
         <?php if ($menu === []): ?>
             <p class="sitio-seccion-intro">El menú se está preparando.</p>
         <?php else: ?>
-            <nav class="menu-nav" aria-label="Ir a una categoría">
+            <?php /* sitio.js convierte esta barra en pestañas deslizables SOLO en móvil (data-menu-pestanas);
+                     sin JavaScript, o en escritorio, siguen siendo enlaces que saltan a cada categoría. */ ?>
+            <nav class="menu-nav" id="menu-nav" aria-label="Ir a una categoría" data-menu-pestanas>
                 <?php foreach ($menu as $cat): ?>
                     <a href="#cat-<?= htmlspecialchars($cat['slug'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($cat['nombre'], ENT_QUOTES, 'UTF-8') ?></a>
                 <?php endforeach; ?>
             </nav>
 
             <?php foreach ($menu as $cat): ?>
-                <div class="menu-categoria" id="cat-<?= htmlspecialchars($cat['slug'], ENT_QUOTES, 'UTF-8') ?>">
+                <div class="menu-categoria" id="cat-<?= htmlspecialchars($cat['slug'], ENT_QUOTES, 'UTF-8') ?>" data-menu-categoria>
                     <h3><?= htmlspecialchars($cat['nombre'], ENT_QUOTES, 'UTF-8') ?></h3>
                     <?php if (!empty($cat['notas'])): ?>
                         <p class="menu-categoria-notas"><?= htmlspecialchars($cat['notas'], ENT_QUOTES, 'UTF-8') ?></p>
