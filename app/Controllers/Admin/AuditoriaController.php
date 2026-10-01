@@ -13,7 +13,7 @@ class AuditoriaController extends Controller
         'categorias', 'productos', 'galeria', 'temporadas', 'promociones',
         'clientes', 'lealtad_movimientos', 'configuracion_sistema', 'usuarios',
     ];
-    private const ACCIONES_CONOCIDAS = ['crear', 'editar', 'eliminar', 'login', 'consumo', 'canje'];
+    private const ACCIONES_CONOCIDAS = ['crear', 'editar', 'eliminar', 'login', 'consumo', 'ajuste', 'canje'];
 
     public function index(): void
     {

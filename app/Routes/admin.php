@@ -98,7 +98,6 @@ $router->post('/admin/lealtad/{id}/ajuste', [LealtadController::class, 'registra
 
 // --- Recompensas ---
 $router->get('/admin/recompensas', [RecompensaController::class, 'index']);
-$router->post('/admin/recompensas/{id}/cancelar', [RecompensaController::class, 'cancelar']);
 
 // --- Cupones de promoción (§4.20) — cancelar es exclusivo de Administrador, ver el controlador ---
 $router->get('/admin/cupones', [CuponPromocionController::class, 'index']);

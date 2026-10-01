@@ -64,22 +64,27 @@ class LealtadService
      *
      * @return array{ok:bool,error?:string,codigos_generados?:array<int,string>}
      */
-    public static function registrarConsumo(int $clienteId, int $cantidad, int $usuarioId, ?string $nota = null): array
+    public static function registrarConsumo(int $clienteId, int $cantidad, int $usuarioId, string $motivo): array
     {
         if ($cantidad <= 0) {
             return ['ok' => false, 'error' => 'La cantidad debe ser mayor que cero.'];
         }
 
-        $resultado = self::conCandado($clienteId, function (int $saldoActual) use ($clienteId, $cantidad, $usuarioId, $nota) {
+        $motivo = trim($motivo);
+        if ($motivo === '') {
+            return ['ok' => false, 'error' => 'El motivo del consumo es obligatorio.'];
+        }
+
+        $resultado = self::conCandado($clienteId, function (int $saldoActual) use ($clienteId, $cantidad, $usuarioId, $motivo) {
             $movimientos = new LealtadMovimiento();
-            $movimientos->insertar($clienteId, 'consumo', $cantidad, $usuarioId, $nota);
+            $movimientos->insertar($clienteId, 'consumo', $cantidad, $usuarioId, $motivo);
 
             return self::generarRecompensasSiCorresponde($clienteId, $saldoActual + $cantidad, $usuarioId);
         });
 
         if ($resultado['ok']) {
             AuditoriaService::registrar('lealtad_movimientos', $clienteId, 'consumo', null, [
-                'cantidad' => $cantidad, 'codigos_generados' => $resultado['codigos_generados'],
+                'cantidad' => $cantidad, 'motivo' => $motivo, 'codigos_generados' => $resultado['codigos_generados'],
             ]);
         }
 
@@ -108,13 +113,69 @@ class LealtadService
             return ['ok' => false, 'error' => 'El motivo del ajuste es obligatorio.'];
         }
 
-        $resultado = self::conCandado($clienteId, function (int $saldoActual) use ($clienteId, $cantidad, $tipo, $motivo, $usuarioId) {
+        $codigosRevocados = [];
+
+        $resultado = self::conCandado($clienteId, function (int $saldoActual) use ($clienteId, $cantidad, $tipo, $motivo, $usuarioId, &$codigosRevocados) {
+            $movimientos = new LealtadMovimiento();
+
             if ($tipo === 'ajuste_negativo' && $cantidad > $saldoActual) {
-                return ['ok' => false, 'error' => "El cliente solo tiene {$saldoActual} café(s) acumulados; no se puede restar {$cantidad}."];
+                // El saldo real es solo lo que sobra de la tarjeta en curso: los cafés de una
+                // tarjeta completa ya se convirtieron en una recompensa (20 cafés = 2 recompensas
+                // y saldo 0). Para corregir "compró 19, no 20" hay que deshacer lo necesario de
+                // esas recompensas SIEMPRE que sigan sin canjear; si ya se entregó el café gratis
+                // no se puede restar de más, porque esos cafés ya se usaron.
+                $umbral = self::obtenerUmbral();
+                $revocar = (int) ceil(($cantidad - $saldoActual) / $umbral);
+
+                $stmt = Database::conexion()->prepare(
+                    "SELECT id, codigo FROM recompensas
+                     WHERE cliente_id = :cliente_id AND estado = 'disponible'
+                     ORDER BY fecha_generada DESC, id DESC FOR UPDATE"
+                );
+                $stmt->execute(['cliente_id' => $clienteId]);
+                $disponibles = $stmt->fetchAll();
+
+                if (count($disponibles) < $revocar) {
+                    $maximo = $saldoActual + count($disponibles) * $umbral;
+                    return ['ok' => false, 'error' => "No se pueden restar {$cantidad} cafés: solo hay {$maximo} que no se han usado en cafés gratis ya canjeados."];
+                }
+
+                $nuevoSaldo = $saldoActual;
+                foreach (array_slice($disponibles, 0, $revocar) as $recompensa) {
+                    $movimientoId = $movimientos->insertar(
+                        $clienteId,
+                        'recompensa_cancelada',
+                        $umbral,
+                        $usuarioId,
+                        'Recompensa deshecha por ajuste: ' . $motivo,
+                        $recompensa['codigo']
+                    );
+                    Database::conexion()->prepare(
+                        "UPDATE recompensas
+                         SET estado = 'cancelada', usuario_cancelacion_id = :usuario_id, fecha_cancelacion = NOW(),
+                             motivo_cancelacion = :motivo, movimiento_cancelacion_id = :movimiento_id
+                         WHERE id = :id AND estado = 'disponible'"
+                    )->execute([
+                        'usuario_id'    => $usuarioId,
+                        'motivo'        => $motivo,
+                        'movimiento_id' => $movimientoId,
+                        'id'            => $recompensa['id'],
+                    ]);
+                    $nuevoSaldo += $umbral;
+                    $codigosRevocados[] = $recompensa['codigo'];
+                }
+
+                $movimientos->insertar($clienteId, $tipo, -$cantidad, $usuarioId, $motivo);
+                $nuevoSaldo -= $cantidad;
+
+                Database::conexion()->prepare('UPDATE clientes SET cafes_acumulados = :saldo WHERE id = :id')
+                    ->execute(['saldo' => $nuevoSaldo, 'id' => $clienteId]);
+
+                return ['ok' => true, 'codigos_generados' => []];
             }
 
             $cantidadConSigno = $tipo === 'ajuste_negativo' ? -$cantidad : $cantidad;
-            (new LealtadMovimiento())->insertar($clienteId, $tipo, $cantidadConSigno, $usuarioId, $motivo);
+            $movimientos->insertar($clienteId, $tipo, $cantidadConSigno, $usuarioId, $motivo);
 
             $nuevoSaldo = $saldoActual + $cantidadConSigno;
 
@@ -131,94 +192,12 @@ class LealtadService
         if ($resultado['ok']) {
             AuditoriaService::registrar('lealtad_movimientos', $clienteId, 'ajuste', null, [
                 'tipo' => $tipo, 'cantidad' => $cantidad, 'motivo' => $motivo,
+                'recompensas_deshechas' => $codigosRevocados,
             ]);
+            $resultado['codigos_revocados'] = $codigosRevocados;
         }
 
         return $resultado;
-    }
-
-    /**
-     * Cancela una recompensa NO canjeada (ej. se generó por error) y le
-     * devuelve al cliente los cafés que costó — nunca se pierden
-     * silenciosamente. Si al devolverlos el saldo vuelve a alcanzar el
-     * umbral (lo normal: se le restituye exactamente lo que costó la
-     * recompensa cancelada), se genera de inmediato una recompensa nueva
-     * con generarRecompensasSiCorresponde() — la MISMA función que usa el
-     * registro de consumo/ajuste — para que el cliente nunca se quede con
-     * el progreso completo pero sin ningún código válido para reclamarlo.
-     *
-     * @return array{ok:bool,error?:string,codigos_generados?:array<int,string>}
-     */
-    public static function cancelarRecompensa(int $recompensaId, int $usuarioId, string $motivo): array
-    {
-        if (trim($motivo) === '') {
-            return ['ok' => false, 'error' => 'El motivo de la cancelación es obligatorio.'];
-        }
-
-        $pdo = Database::conexion();
-        $recompensas = new Recompensa();
-
-        try {
-            $pdo->beginTransaction();
-
-            $recompensa = $recompensas->buscarPorIdConBloqueo($recompensaId);
-            if ($recompensa === null) {
-                $pdo->rollBack();
-                return ['ok' => false, 'error' => 'Recompensa no encontrada.'];
-            }
-
-            if ($recompensa['estado'] !== 'disponible') {
-                $pdo->rollBack();
-                return ['ok' => false, 'error' => 'Esta recompensa ya no está disponible (estado actual: ' . $recompensa['estado'] . ').'];
-            }
-
-            $movimientoGenerador = (new LealtadMovimiento())->buscarPorId((int) $recompensa['movimiento_generador_id']);
-            $cafesARestituir = $movimientoGenerador !== null ? abs((int) $movimientoGenerador['cantidad']) : self::obtenerUmbral();
-
-            $stmtCliente = $pdo->prepare('SELECT cafes_acumulados FROM clientes WHERE id = :id FOR UPDATE');
-            $stmtCliente->execute(['id' => $recompensa['cliente_id']]);
-            $cliente = $stmtCliente->fetch();
-            if ($cliente === false) {
-                $pdo->rollBack();
-                return ['ok' => false, 'error' => 'Cliente no encontrado.'];
-            }
-
-            $movimientoId = (new LealtadMovimiento())->insertar(
-                (int) $recompensa['cliente_id'],
-                'recompensa_cancelada',
-                $cafesARestituir,
-                $usuarioId,
-                $motivo,
-                $recompensa['codigo']
-            );
-
-            $recompensas->marcarCancelada($recompensaId, $usuarioId, $motivo, $movimientoId);
-
-            // La fila del cliente ya está bloqueada (FOR UPDATE arriba): se
-            // reutiliza la misma función que registrarConsumo()/registrarAjuste()
-            // para sumar los cafés devueltos y, si con eso vuelve a alcanzar el
-            // umbral, generar de inmediato una recompensa nueva — nunca queda el
-            // cliente con el progreso completo y sin ningún código para canjearlo.
-            $nuevoSaldo = (int) $cliente['cafes_acumulados'] + $cafesARestituir;
-            $generado = self::generarRecompensasSiCorresponde((int) $recompensa['cliente_id'], $nuevoSaldo, $usuarioId);
-
-            $pdo->commit();
-        } catch (Throwable $e) {
-            $pdo->rollBack();
-            Logger::error('Error cancelando recompensa: ' . $e->getMessage());
-            return ['ok' => false, 'error' => 'No se pudo cancelar la recompensa.'];
-        }
-
-        AuditoriaService::registrar('recompensas', $recompensaId, 'editar', ['estado' => 'disponible'], ['estado' => 'cancelada', 'motivo' => $motivo]);
-
-        if ($generado['codigos_generados'] !== []) {
-            AuditoriaService::registrar('lealtad_movimientos', (int) $recompensa['cliente_id'], 'ajuste', null, [
-                'motivo' => 'Recompensa regenerada automáticamente tras cancelar ' . $recompensa['codigo'],
-                'codigos_generados' => $generado['codigos_generados'],
-            ]);
-        }
-
-        return ['ok' => true, 'codigos_generados' => $generado['codigos_generados']];
     }
 
     /**

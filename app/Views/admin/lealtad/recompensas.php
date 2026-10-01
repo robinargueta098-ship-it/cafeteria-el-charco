@@ -35,7 +35,7 @@ $etiquetasEstado = ['disponible' => 'Disponible', 'canjeada' => 'Canjeada', 'can
         <p class="tabla-vacio">No hay recompensas con ese filtro.</p>
     <?php else: ?>
         <table class="tabla tabla-primera-sin-corte">
-            <thead><tr><th>Código</th><th>Cliente</th><th>Estado</th><th>Generada</th><th>Café entregado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Código</th><th>Cliente</th><th>Estado</th><th>Generada</th><th>Café entregado</th></tr></thead>
             <tbody>
                 <?php foreach ($canjes as $r): ?>
                     <tr>
@@ -48,16 +48,6 @@ $etiquetasEstado = ['disponible' => 'Disponible', 'canjeada' => 'Canjeada', 'can
                         </td>
                         <td><?= htmlspecialchars(substr($r['fecha_generada'], 0, 16), ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string) ($r['producto_nombre'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
-                        <td>
-                            <?php if ($r['estado'] === 'disponible'): ?>
-                                <form method="post" action="/admin/recompensas/<?= (int) $r['id'] ?>/cancelar"
-                                      onsubmit="return confirm('¿Cancelar esta recompensa? Los cafés se devolverán al saldo del cliente.');">
-                                    <?= Csrf::campo() ?>
-                                    <input type="hidden" name="motivo" value="Cancelada manualmente desde Recompensas">
-                                    <button type="submit" class="btn btn-peligro btn-pequeno">Cancelar</button>
-                                </form>
-                            <?php endif; ?>
-                        </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

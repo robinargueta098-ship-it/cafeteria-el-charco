@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
-use App\Core\Auth;
 use App\Core\Controller;
-use App\Core\Flash;
 use App\Models\Recompensa;
-use App\Services\LealtadService;
 
 class RecompensaController extends Controller
 {
@@ -26,35 +23,5 @@ class RecompensaController extends Controller
             'canjes'        => (new Recompensa())->listarTodas($filtros),
             'estadoFiltro'  => $estado,
         ]);
-    }
-
-    public function cancelar(string $id): void
-    {
-        $this->requerirRol(1, 2);
-
-        $recompensa = (new Recompensa())->buscarPorId((int) $id);
-        if ($recompensa === null) {
-            $this->error404();
-        }
-
-        $motivo = trim((string) ($_POST['motivo'] ?? ''));
-        $usuario = Auth::usuario();
-
-        $resultado = LealtadService::cancelarRecompensa((int) $id, $usuario['id'], $motivo);
-
-        if ($resultado['ok']) {
-            $mensaje = 'Recompensa cancelada; los cafés se devolvieron al saldo del cliente.';
-            if ($resultado['codigos_generados'] !== []) {
-                // El saldo devuelto volvió a alcanzar el umbral: se generó de inmediato
-                // un código nuevo (nunca queda el cliente sin ninguno para canjear).
-                $mensaje .= ' Como el saldo volvió a completar el umbral, se generó automáticamente un nuevo código: '
-                    . implode(', ', $resultado['codigos_generados']) . '.';
-            }
-            Flash::exito($mensaje);
-        } else {
-            Flash::error($resultado['error']);
-        }
-
-        $this->redirigir('/admin/recompensas');
     }
 }

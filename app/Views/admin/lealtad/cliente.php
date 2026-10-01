@@ -5,13 +5,17 @@
  * @var array<int,array<string,mixed>> $historial
  * @var array<int,array<string,mixed>> $recompensas
  */
+use App\Core\Auth;
 use App\Core\Csrf;
 
 require APP_PATH . '/Views/layouts/panel_header.php';
 
-$saldo = (int) $cliente['cafes_acumulados'];
-$porcentaje = min(100, (int) round(($saldo / max(1, $umbral)) * 100));
 $disponibles = array_filter($recompensas, fn ($r) => $r['estado'] === 'disponible');
+$cliente['recompensas_disponibles'] = count($disponibles);
+$progreso = \App\Models\Cliente::progresoTarjeta($cliente, $umbral);
+$saldo = $progreso['mostrado'];
+$totalMostrado = $progreso['total'];
+$porcentaje = min(100, (int) round(($saldo / max(1, $totalMostrado)) * 100));
 
 $etiquetasTipo = [
     'consumo' => 'Consumo', 'ajuste_positivo' => 'Ajuste (+)', 'ajuste_negativo' => 'Ajuste (-)',
@@ -26,7 +30,10 @@ $etiquetasEstadoRecompensa = ['disponible' => 'Disponible', 'canjeada' => 'Canje
 
 <div class="tarjeta" style="margin-bottom:16px;">
     <h2 style="margin-top:0;">Progreso hacia la próxima recompensa</h2>
-    <p><?= $saldo ?> de <?= $umbral ?> cafés acumulados (el umbral se lee de Configuración; cambiarlo ahí cambia esta regla para todos).</p>
+    <p>
+        <?= $saldo ?> de <?= $totalMostrado ?> cafés acumulados (el umbral se lee de Configuración; cambiarlo ahí cambia esta regla para todos).
+        <?php if ($progreso['completa']): ?><br><strong>Tarjeta completa: <?= htmlspecialchars(\App\Models\Cliente::etiquetaGratis($progreso['disponibles']), ENT_QUOTES, 'UTF-8') ?> para canjear; el siguiente conteo empieza en 0.</strong><?php endif; ?>
+    </p>
     <div class="progreso-lealtad">
         <div class="progreso-lealtad-barra" style="width:<?= $porcentaje ?>%;"></div>
     </div>
@@ -47,10 +54,16 @@ $etiquetasEstadoRecompensa = ['disponible' => 'Disponible', 'canjeada' => 'Canje
                 <label for="cantidad">Cantidad de cafés comprados</label>
                 <input type="number" id="cantidad" name="cantidad" min="1" value="1" required>
             </div>
+            <div class="campo">
+                <label for="motivo_consumo">Motivo (obligatorio)</label>
+                <input type="text" id="motivo_consumo" name="motivo" maxlength="255" required
+                       placeholder="Ej. 2 lattes y 1 capuchino">
+            </div>
             <button type="submit" class="btn">Registrar</button>
         </form>
     </div>
 
+    <?php if ((Auth::usuario()['rol_id'] ?? null) === 1): ?>
     <div class="tarjeta" style="flex:1;min-width:280px;">
         <h2 style="margin-top:0;">Ajuste manual</h2>
         <form method="post" action="/admin/lealtad/<?= (int) $cliente['id'] ?>/ajuste">
@@ -74,6 +87,7 @@ $etiquetasEstadoRecompensa = ['disponible' => 'Disponible', 'canjeada' => 'Canje
             <button type="submit" class="btn btn-secundario">Aplicar ajuste</button>
         </form>
     </div>
+    <?php endif; ?>
 </div>
 
 <h2>Recompensas</h2>
@@ -82,7 +96,7 @@ $etiquetasEstadoRecompensa = ['disponible' => 'Disponible', 'canjeada' => 'Canje
         <p class="tabla-vacio">Todavía no ha generado ninguna recompensa.</p>
     <?php else: ?>
         <table class="tabla">
-            <thead><tr><th>Código</th><th>Estado</th><th>Generada</th><th>Vence</th><th>Café entregado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Código</th><th>Estado</th><th>Generada</th><th>Vence</th><th>Café entregado</th></tr></thead>
             <tbody>
                 <?php foreach ($recompensas as $r): ?>
                     <tr>
@@ -91,16 +105,6 @@ $etiquetasEstadoRecompensa = ['disponible' => 'Disponible', 'canjeada' => 'Canje
                         <td><?= htmlspecialchars(substr($r['fecha_generada'], 0, 16), ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= $r['fecha_vencimiento'] !== null ? htmlspecialchars(substr($r['fecha_vencimiento'], 0, 10), ENT_QUOTES, 'UTF-8') : 'No vence' ?></td>
                         <td><?= htmlspecialchars((string) ($r['producto_nombre'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
-                        <td>
-                            <?php if ($r['estado'] === 'disponible'): ?>
-                                <form method="post" action="/admin/recompensas/<?= (int) $r['id'] ?>/cancelar"
-                                      onsubmit="return confirm('¿Cancelar esta recompensa? Los cafés se devolverán al saldo.');">
-                                    <?= Csrf::campo() ?>
-                                    <input type="hidden" name="motivo" value="Cancelada manualmente desde la ficha del cliente">
-                                    <button type="submit" class="btn btn-peligro btn-pequeno">Cancelar</button>
-                                </form>
-                            <?php endif; ?>
-                        </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -117,7 +121,7 @@ $etiquetasEstadoRecompensa = ['disponible' => 'Disponible', 'canjeada' => 'Canje
             <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Motivo</th><th>Referencia</th><th>Registrado por</th></tr></thead>
             <tbody>
                 <?php foreach ($historial as $m): ?>
-                    <tr style="<?= $m['estado'] === 'anulado' ? 'opacity:0.5;text-decoration:line-through;' : '' ?>">
+                    <tr>
                         <td><?= htmlspecialchars($m['creado_en'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= $etiquetasTipo[$m['tipo']] ?? $m['tipo'] ?></td>
                         <td><?= (int) $m['cantidad'] ?></td>

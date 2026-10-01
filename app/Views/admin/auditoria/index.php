@@ -11,7 +11,7 @@ require APP_PATH . '/Views/layouts/panel_header.php';
 
 $etiquetasAccion = [
     'crear' => 'Creación', 'editar' => 'Edición', 'eliminar' => 'Eliminación',
-    'login' => 'Inicio de sesión', 'consumo' => 'Consumo de lealtad', 'canje' => 'Canje de recompensa',
+    'login' => 'Inicio de sesión', 'consumo' => 'Registrar consumo', 'ajuste' => 'Ajuste manual', 'canje' => 'Canje de recompensa',
 ];
 ?>
 
@@ -46,7 +46,7 @@ $etiquetasAccion = [
         <p class="tabla-vacio">No hay registros de auditoría con esos filtros.</p>
     <?php else: ?>
         <table class="tabla tabla-primera-sin-corte">
-            <thead><tr><th>Fecha</th><th>Módulo</th><th>Acción</th><th>Registro</th><th>Usuario</th><th>IP</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Módulo</th><th>Acción</th><th>Registro</th><th>Cliente</th><th>Detalle</th><th>Usuario</th><th>IP</th></tr></thead>
             <tbody>
                 <?php foreach ($registros as $r): ?>
                     <tr>
@@ -54,6 +54,22 @@ $etiquetasAccion = [
                         <td><?= htmlspecialchars($r['tabla_afectada'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($etiquetasAccion[$r['accion']] ?? $r['accion'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td>#<?= (int) $r['registro_id'] ?></td>
+                        <td><?= htmlspecialchars((string) ($r['cliente_nombre'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
+                        <?php
+                        $d = $r['tabla_afectada'] === 'lealtad_movimientos' && $r['valores_despues'] !== null
+                            ? (json_decode((string) $r['valores_despues'], true) ?: []) : [];
+                        $partes = [];
+                        if (isset($d['tipo'])) {
+                            $partes[] = $d['tipo'] === 'ajuste_negativo' ? 'Restar' : 'Sumar';
+                        }
+                        if (isset($d['cantidad'])) {
+                            $partes[] = (int) $d['cantidad'] . ' café(s)';
+                        }
+                        if (!empty($d['motivo'])) {
+                            $partes[] = 'Motivo: ' . $d['motivo'];
+                        }
+                        ?>
+                        <td><?= htmlspecialchars($partes !== [] ? implode(' · ', $partes) : '—', ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string) ($r['usuario_nombre'] ?? 'Sistema'), ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string) ($r['ip'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>

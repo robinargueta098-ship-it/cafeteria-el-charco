@@ -136,25 +136,9 @@ class Recompensa
             ->execute(['id' => $id]);
     }
 
-    public function marcarCancelada(int $id, int $usuarioId, string $motivo, int $movimientoCancelacionId): void
-    {
-        Database::conexion()->prepare(
-            'UPDATE recompensas
-             SET estado = "cancelada", usuario_cancelacion_id = :usuario_id,
-                 fecha_cancelacion = NOW(), motivo_cancelacion = :motivo,
-                 movimiento_cancelacion_id = :movimiento_id
-             WHERE id = :id'
-        )->execute([
-            'usuario_id'    => $usuarioId,
-            'motivo'        => $motivo,
-            'movimiento_id' => $movimientoCancelacionId,
-            'id'            => $id,
-        ]);
-    }
-
     /**
      * Bloquea la fila (SELECT ... FOR UPDATE) dentro de una transacción
-     * ya abierta por el llamador — para canjear/cancelar sin condición
+     * ya abierta por el llamador — para canjear sin condición
      * de carrera. Debe usarse siempre dentro de una transacción. Mismo
      * criterio "ignorando guiones" que buscarPorCodigo() — ver ahí el porqué.
      */
@@ -164,15 +148,6 @@ class Recompensa
             "SELECT * FROM recompensas WHERE REPLACE(codigo, '-', '') = :codigo FOR UPDATE"
         );
         $stmt->execute(['codigo' => $codigo]);
-
-        return $stmt->fetch() ?: null;
-    }
-
-    /** Igual que buscarPorCodigoConBloqueo pero por ID (para cancelar). Usar dentro de una transacción. */
-    public function buscarPorIdConBloqueo(int $id): ?array
-    {
-        $stmt = Database::conexion()->prepare('SELECT * FROM recompensas WHERE id = :id FOR UPDATE');
-        $stmt->execute(['id' => $id]);
 
         return $stmt->fetch() ?: null;
     }
