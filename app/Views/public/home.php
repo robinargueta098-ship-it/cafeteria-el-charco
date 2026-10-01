@@ -346,7 +346,12 @@ $tarjetaProducto = function (array $p) {
                     // embed (propenso a errores: un link corto de compartir ahí no
                     // sirve, como pasó antes). Se genera solo a partir de la
                     // dirección de texto, con el formato de Google Maps sin API key.
-                    $urlMapa = 'https://www.google.com/maps?q=' . rawurlencode($direccionTexto) . '&output=embed';
+                    // Con coordenadas exactas (Configuración) el pin cae en el local; sin ellas, busca por texto.
+                    $coordenadas = trim((string) ($config['mapa_coordenadas'] ?? ''));
+                    $consultaMapa = preg_match('/^-?\d{1,3}(\.\d+)?\s*,\s*-?\d{1,3}(\.\d+)?$/', $coordenadas)
+                        ? str_replace(' ', '', $coordenadas)
+                        : $direccionTexto;
+                    $urlMapa = 'https://www.google.com/maps?q=' . rawurlencode($consultaMapa) . '&z=17&output=embed';
                     ?>
                     <div class="ubicacion-mapa-marcador">
                         <iframe src="<?= htmlspecialchars($urlMapa, ENT_QUOTES, 'UTF-8') ?>"

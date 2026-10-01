@@ -209,6 +209,13 @@ $totalPortada = count($portada);
 
         <h2>Ubicación y calificación de Google</h2>
         <div class="campo">
+            <label for="mapa_coordenadas">Coordenadas exactas del local (para el mapa)</label>
+            <input type="text" id="mapa_coordenadas" name="mapa_coordenadas" maxlength="40"
+                   placeholder="15.0208512, -91.1474688" pattern="-?[0-9]{1,3}(\.[0-9]+)?\s*,\s*-?[0-9]{1,3}(\.[0-9]+)?"
+                   value="<?= htmlspecialchars($config['mapa_coordenadas'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+            <span class="campo-ayuda">Latitud, longitud. En Google Maps: clic derecho sobre el local y se copian al tocar el primer renglón. Si se deja vacío, el mapa busca por la dirección.</span>
+        </div>
+        <div class="campo">
             <label for="google_maps_embed">Enlace para compartir de Google Maps</label>
             <input type="url" id="google_maps_embed" name="google_maps_embed" maxlength="255"
                    placeholder="https://maps.app.goo.gl/..."

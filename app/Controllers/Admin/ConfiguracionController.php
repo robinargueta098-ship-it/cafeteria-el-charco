@@ -22,7 +22,7 @@ class ConfiguracionController extends Controller
         'whatsapp_numero', 'boton_whatsapp_texto', 'whatsapp_flotante_texto',
         'instagram_usuario', 'tiktok_usuario',
         'facebook_nombre', 'facebook_url',
-        'umbral_lealtad', 'google_maps_embed', 'google_calificacion',
+        'umbral_lealtad', 'google_maps_embed', 'mapa_coordenadas', 'google_calificacion',
         'google_calificacion_url', 'sobre_nosotros_texto',
     ];
 
