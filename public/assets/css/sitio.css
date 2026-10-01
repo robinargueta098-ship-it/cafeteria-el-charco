@@ -555,10 +555,6 @@ img {
   margin-bottom: 48px;
 }
 
-.menu-categoria[hidden] {
-  display: none;
-}
-
 .menu-categoria:last-child {
   margin-bottom: 0;
 }
@@ -596,37 +592,58 @@ img {
   display: none;                    /* Chrome/Safari */
 }
 
-/* Pestañas de categoría (móvil): se activan con sitio.js (.menu-nav--pestanas). Se deslizan
-   con el dedo, cada una tiene un área de toque cómoda (≥ 44 px de alto) y la activa se resalta. */
-.menu-nav--pestanas {
-  scroll-snap-type: x proximity;
-  overscroll-behavior-x: contain;
-  gap: 10px;
-  padding: 4px 16px 12px;
-  margin-left: -16px;
-  margin-right: -16px;
+/* Accesos rápidos a cada categoría (móvil): chips grandes y fáciles de tocar. */
+@media (max-width: 767px) {
+  .menu-nav {
+    gap: 10px;
+    padding: 4px 16px 12px;
+    margin-left: -16px;
+    margin-right: -16px;
+  }
+
+  .menu-nav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 20px;
+    white-space: nowrap;
+  }
 }
 
-.menu-nav--pestanas a {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  padding: 10px 20px;
-  scroll-snap-align: center;
-  white-space: nowrap;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
+/*
+ * Menú en el teléfono: cada categoría es una fila de tarjetas que se desliza de lado
+ * con el dedo (scroll horizontal con imán, sin barra visible); la tarjeta siguiente asoma
+ * por la derecha para que se note que hay más. Las categorías siguen una debajo de otra.
+ * En pantallas anchas se mantiene la cuadrícula de siempre.
+ */
+@media (max-width: 767px) {
+  .menu-categoria .tarjetas-grid {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0 -16px;
+    padding: 4px 16px 16px;
+    scroll-padding: 0 16px;
+  }
 
-.menu-nav--pestanas a[aria-selected="true"] {
-  background: var(--color-verde);
-  border-color: var(--color-verde);
-  color: var(--color-blanco);
-  box-shadow: 0 2px 8px rgba(75, 107, 58, 0.35);
-}
+  .menu-categoria .tarjetas-grid::-webkit-scrollbar {
+    display: none;
+  }
 
-.menu-nav--pestanas a:focus-visible {
-  outline: 3px solid var(--color-cafe-oscuro);
-  outline-offset: 2px;
+  .menu-categoria .tarjetas-grid > .tarjeta-producto {
+    flex: 0 0 74%;
+    max-width: 300px;
+    scroll-snap-align: start;
+  }
+
+  .menu-categoria h3::after {
+    content: "  ›";
+    color: var(--color-verde);
+  }
 }
 
 .menu-nav a {
