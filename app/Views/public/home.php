@@ -22,6 +22,7 @@ use App\Core\ImagenOptimizada;
 use App\Core\Vista;
 use App\Core\WhatsApp;
 
+$mostrarCarrito = true; // el encabezado muestra el botón del carrito (ver public/_carrito.php)
 require APP_PATH . '/Views/layouts/header_publico.php';
 
 $nombreSitio = $config['nombre_sitio'] ?? 'Cafetería El Charco';
@@ -68,20 +69,34 @@ $tarjetaProducto = function (array $p) {
                 <?php endif; ?>
             </p>
             <?php
-            // Botón(es) de agregar al carrito: uno por variante (ej. Frappé / Batido). El carrito lee
-            // nombre y precio de estos atributos, así que siempre coinciden con lo que se ve en el menú.
+            // Agregar al carrito: cantidad + UN solo botón. Si el producto tiene dos versiones (ej. Frappé y
+            // Batido sin café) la segunda viaja en los atributos data-alt-* y se elige dentro del carrito; el
+            // nombre completo de cada una es el que sale en el mensaje de WhatsApp. El carrito lee nombres y
+            // precios de estos atributos, así que siempre coinciden con lo que se ve en el menú.
             $variantesPedido = Vista::variantesPedido($p, (string) ($p['cat_nombre'] ?? $p['categoria_nombre'] ?? ''));
+            $vBase = $variantesPedido[0];
+            $vAlt = $variantesPedido[1] ?? null;
             ?>
-            <div class="agregar-carrito<?= count($variantesPedido) > 1 ? ' agregar-carrito--varios' : '' ?>">
-                <?php foreach ($variantesPedido as $v): ?>
-                    <button type="button" class="btn btn-agregar" data-agregar
-                            data-clave="<?= htmlspecialchars($v['clave'], ENT_QUOTES, 'UTF-8') ?>"
-                            data-nombre="<?= htmlspecialchars($v['nombre'], ENT_QUOTES, 'UTF-8') ?>"
-                            data-precio="<?= number_format($v['precio'], 2, '.', '') ?>"
-                            aria-label="Agregar al carrito: <?= htmlspecialchars($v['nombre'], ENT_QUOTES, 'UTF-8') ?>">
-                        <?= count($variantesPedido) > 1 ? htmlspecialchars('+ ' . $v['etiqueta'] . ' · Q' . number_format($v['precio'], 2), ENT_QUOTES, 'UTF-8') : '+ Agregar' ?>
-                    </button>
-                <?php endforeach; ?>
+            <div class="agregar-carrito">
+                <div class="cantidad-agregar" role="group" aria-label="Cantidad a agregar">
+                    <button type="button" data-cantidad="-1" aria-label="Una menos">&minus;</button>
+                    <output aria-live="polite">1</output>
+                    <button type="button" data-cantidad="1" aria-label="Una más">+</button>
+                </div>
+                <button type="button" class="btn btn-agregar" data-agregar
+                        data-clave="<?= htmlspecialchars($vBase['clave'], ENT_QUOTES, 'UTF-8') ?>"
+                        data-nombre="<?= htmlspecialchars($vBase['nombre'], ENT_QUOTES, 'UTF-8') ?>"
+                        data-precio="<?= number_format($vBase['precio'], 2, '.', '') ?>"
+                        data-corta="<?= htmlspecialchars($vBase['corta'], ENT_QUOTES, 'UTF-8') ?>"
+                        <?php if ($vAlt !== null): ?>
+                        data-alt-clave="<?= htmlspecialchars($vAlt['clave'], ENT_QUOTES, 'UTF-8') ?>"
+                        data-alt-nombre="<?= htmlspecialchars($vAlt['nombre'], ENT_QUOTES, 'UTF-8') ?>"
+                        data-alt-precio="<?= number_format($vAlt['precio'], 2, '.', '') ?>"
+                        data-alt-corta="<?= htmlspecialchars($vAlt['corta'], ENT_QUOTES, 'UTF-8') ?>"
+                        <?php endif; ?>
+                        aria-label="Agregar al carrito: <?= htmlspecialchars($vBase['nombre'], ENT_QUOTES, 'UTF-8') ?>">
+                    + Agregar
+                </button>
             </div>
             <?php if ((int) ($p['es_destacado'] ?? 0) === 1 || (int) ($p['es_mas_vendido'] ?? 0) === 1): ?>
                 <div class="etiquetas-producto">

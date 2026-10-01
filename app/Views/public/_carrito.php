@@ -26,11 +26,6 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 
 <div id="carrito" class="carrito" hidden
      data-carrito="<?= htmlspecialchars((string) json_encode($datosCarrito, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') ?>">
-    <button type="button" class="carrito-fab" id="carrito-abrir" aria-haspopup="dialog" aria-controls="carrito-panel" aria-label="Ver mi carrito">
-        <?= $iconoCarrito ?>
-        <span class="carrito-contador" id="carrito-contador" hidden>0</span>
-    </button>
-
     <div class="carrito-fondo" id="carrito-fondo" hidden></div>
 
     <aside class="carrito-panel" id="carrito-panel" role="dialog" aria-modal="true" aria-labelledby="carrito-titulo" hidden>

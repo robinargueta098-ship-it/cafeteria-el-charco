@@ -20,6 +20,11 @@
     return;
   }
   raiz.hidden = false;
+  var botonCarrito = document.getElementById('carrito-abrir');
+  if (!botonCarrito) {
+    return;
+  }
+  botonCarrito.hidden = false;   // el botón del encabezado solo se muestra si el carrito funciona
 
   var CLAVE_ALMACEN = 'elcharco_carrito_v1';
 
@@ -46,10 +51,22 @@
   // ---- Catálogo: lo que hay en la página (precio y nombre siempre actuales) ----
   var catalogo = {};
   Array.prototype.forEach.call(document.querySelectorAll('[data-agregar]'), function (boton) {
-    catalogo[boton.getAttribute('data-clave')] = {
+    var clave = boton.getAttribute('data-clave');
+    var claveAlt = boton.getAttribute('data-alt-clave');
+    catalogo[clave] = {
       nombre: boton.getAttribute('data-nombre'),
-      precio: parseFloat(boton.getAttribute('data-precio')) || 0
+      precio: parseFloat(boton.getAttribute('data-precio')) || 0,
+      corta: boton.getAttribute('data-corta') || '',
+      hermana: claveAlt || ''          // la otra versión del mismo producto (ej. Frappé <-> Batido)
     };
+    if (claveAlt) {
+      catalogo[claveAlt] = {
+        nombre: boton.getAttribute('data-alt-nombre'),
+        precio: parseFloat(boton.getAttribute('data-alt-precio')) || 0,
+        corta: boton.getAttribute('data-alt-corta') || '',
+        hermana: clave
+      };
+    }
   });
 
   // ---- Estado (se guarda en el navegador; si no se puede, funciona igual sin guardar) ----
@@ -247,6 +264,24 @@
       info.appendChild(nombre);
       info.appendChild(unitario);
 
+      if (p.hermana && catalogo[p.hermana]) {
+        // Producto con dos versiones: se elige aquí cuál se pide (el mensaje de WhatsApp lleva el nombre completo).
+        var versiones = document.createElement('div');
+        versiones.className = 'carrito-versiones';
+        versiones.setAttribute('role', 'group');
+        versiones.setAttribute('aria-label', 'Versión de ' + p.nombre);
+        [clave, p.hermana].sort(function (x, y) { return x.length - y.length; }).forEach(function (claveVersion) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = catalogo[claveVersion].corta + ' · ' + dinero(catalogo[claveVersion].precio);
+          b.setAttribute('data-accion', 'version');
+          b.setAttribute('data-destino', claveVersion);
+          b.setAttribute('aria-pressed', claveVersion === clave ? 'true' : 'false');
+          versiones.appendChild(b);
+        });
+        info.appendChild(versiones);
+      }
+
       var control = document.createElement('div');
       control.className = 'carrito-cantidad';
       function boton(texto, accion, etiqueta) {
@@ -318,6 +353,24 @@
     pintar();
   }
 
+  // Cambia una línea a la otra versión del producto (Frappé <-> Batido), conservando la cantidad.
+  function cambiarVersion(clave, destino) {
+    if (!items.hasOwnProperty(clave) || !catalogo[destino] || destino === clave) {
+      return;
+    }
+    var cantidad = items[clave];
+    if (items.hasOwnProperty(destino)) {
+      items[destino] = Math.min(99, items[destino] + cantidad);       // ya había de esa versión: se suman
+      orden = orden.filter(function (c) { return c !== clave; });
+    } else {
+      items[destino] = cantidad;
+      orden = orden.map(function (c) { return c === clave ? destino : c; });   // mismo lugar en la lista
+    }
+    delete items[clave];
+    guardar();
+    pintar();
+  }
+
   // ---- Panel ----
   var ultimoFoco = null;
 
@@ -340,19 +393,44 @@
   }
 
   // ---- Eventos ----
+  function cantidadDeTarjeta(boton) {
+    var salida = boton.parentNode.querySelector('.cantidad-agregar output');
+    return Math.max(1, Math.min(99, parseInt(salida ? salida.textContent : '1', 10) || 1));
+  }
+
   document.addEventListener('click', function (evento) {
-    var boton = evento.target.closest ? evento.target.closest('[data-agregar]') : null;
+    var objetivo = evento.target.closest ? evento.target : null;
+    if (!objetivo) {
+      return;
+    }
+
+    // - / + de la tarjeta: cuántos se van a agregar
+    var paso = objetivo.closest('.cantidad-agregar button[data-cantidad]');
+    if (paso) {
+      var salida = paso.parentNode.querySelector('output');
+      var nueva = Math.max(1, Math.min(99, (parseInt(salida.textContent, 10) || 1) + parseInt(paso.getAttribute('data-cantidad'), 10)));
+      salida.textContent = String(nueva);
+      return;
+    }
+
+    var boton = objetivo.closest('[data-agregar]');
     if (!boton) {
       return;
     }
-    cambiar(boton.getAttribute('data-clave'), 1);
-    el.abrir.classList.remove('carrito-fab--salto');
+    var cuantos = cantidadDeTarjeta(boton);
+    cambiar(boton.getAttribute('data-clave'), cuantos);
+    var salidaTarjeta = boton.parentNode.querySelector('.cantidad-agregar output');
+    if (salidaTarjeta) {
+      salidaTarjeta.textContent = '1';
+    }
+
+    el.abrir.classList.remove('nav-carrito--salto');
     void el.abrir.offsetWidth;   // reinicia la animación
-    el.abrir.classList.add('carrito-fab--salto');
+    el.abrir.classList.add('nav-carrito--salto');
 
     var original = boton.getAttribute('data-texto') || boton.textContent;
     boton.setAttribute('data-texto', original);
-    boton.textContent = 'Agregado ✓';
+    boton.textContent = cuantos > 1 ? cuantos + ' agregados \u2713' : 'Agregado \u2713';
     boton.classList.add('btn-agregar--listo');
     window.setTimeout(function () {
       boton.textContent = original;
@@ -376,6 +454,10 @@
     }
     var clave = boton.closest('li').getAttribute('data-clave');
     var accion = boton.getAttribute('data-accion');
+    if (accion === 'version') {
+      cambiarVersion(clave, boton.getAttribute('data-destino'));
+      return;
+    }
     cambiar(clave, accion === 'mas' ? 1 : (accion === 'menos' ? -1 : -items[clave]));
   });
 

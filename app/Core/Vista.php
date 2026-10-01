@@ -118,7 +118,7 @@ class Vista
      *  - Cualquier otro: "Fresa (Smoothies)"; con segundo precio: "Fresa (Smoothies, Sin café)".
      *
      * @param array<string,mixed> $producto fila de `productos`
-     * @return array<int,array{clave:string,nombre:string,precio:float,etiqueta:string}>
+     * @return array<int,array{clave:string,nombre:string,precio:float,etiqueta:string,corta:string}>
      */
     public static function variantesPedido(array $producto, string $categoria): array
     {
@@ -134,14 +134,14 @@ class Vista
             $alterna = self::singular($partes[1] ?? $etiquetaAlt);
 
             return [
-                ['clave' => $id, 'nombre' => "{$base} de {$nombre}", 'precio' => (float) $producto['precio'], 'etiqueta' => $base],
+                ['clave' => $id, 'nombre' => "{$base} de {$nombre}", 'precio' => (float) $producto['precio'], 'etiqueta' => $base, 'corta' => $base],
                 ['clave' => $id . '-alt', 'nombre' => "{$alterna} de {$nombre}", 'precio' => (float) $producto['precio_alt'],
-                 'etiqueta' => $etiquetaAlt !== '' ? "{$alterna} ({$etiquetaAlt})" : $alterna],
+                 'etiqueta' => $etiquetaAlt !== '' ? "{$alterna} ({$etiquetaAlt})" : $alterna, 'corta' => $alterna],
             ];
         }
 
         $sufijo = $categoria !== '' ? " ({$categoria})" : '';
-        $variantes = [['clave' => $id, 'nombre' => $nombre . $sufijo, 'precio' => (float) $producto['precio'], 'etiqueta' => '']];
+        $variantes = [['clave' => $id, 'nombre' => $nombre . $sufijo, 'precio' => (float) $producto['precio'], 'etiqueta' => '', 'corta' => 'Normal']];
 
         if ($tieneAlt) {
             $detalle = $etiquetaAlt !== '' ? $etiquetaAlt : 'Opción 2';
@@ -151,6 +151,7 @@ class Vista
                 'nombre' => $nombre . ($categoria !== '' ? " ({$categoria}, {$detalle})" : " ({$detalle})"),
                 'precio' => (float) $producto['precio_alt'],
                 'etiqueta' => $detalle,
+                'corta' => $detalle,
             ];
         }
 

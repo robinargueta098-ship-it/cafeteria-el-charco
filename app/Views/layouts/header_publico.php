@@ -39,7 +39,16 @@ $anclaInicio = $rutaPagina === '' ? '' : '/';
             <?php endif; ?>
             <?= htmlspecialchars($nombreSitio, ENT_QUOTES, 'UTF-8') ?>
         </a>
-        <button type="button" class="sitio-nav-boton-menu" aria-expanded="false" aria-label="Abrir menú de navegación">☰</button>
+        <div class="sitio-nav-acciones">
+            <?php if (!empty($mostrarCarrito)): ?>
+                <?php /* Botón del carrito (solo en la página con menú). Lo activa carrito.js; sin JavaScript queda oculto. */ ?>
+                <button type="button" class="nav-carrito" id="carrito-abrir" hidden aria-haspopup="dialog" aria-controls="carrito-panel" aria-label="Ver mi carrito">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 7H6"/></svg>
+                    <span class="carrito-contador" id="carrito-contador" hidden>0</span>
+                </button>
+            <?php endif; ?>
+            <button type="button" class="sitio-nav-boton-menu" aria-expanded="false" aria-label="Abrir menú de navegación">☰</button>
+        </div>
         <div class="sitio-nav-enlaces">
             <a href="<?= $anclaInicio ?>#inicio">Inicio</a>
             <a href="<?= $anclaInicio ?>#menu">Menú</a>
