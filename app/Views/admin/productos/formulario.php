@@ -72,6 +72,18 @@ $temporadaIdsSeleccionadas = $producto['temporada_ids'] ?? [];
         </div>
 
         <div class="campo">
+            <label for="temperatura">Temperatura (para el carrito)</label>
+            <?php $temperaturaActual = (string) ($producto['temperatura'] ?? ''); ?>
+            <select id="temperatura" name="temperatura">
+                <option value="" <?= $temperaturaActual === '' ? 'selected' : '' ?>>No aplica</option>
+                <option value="ambas" <?= $temperaturaActual === 'ambas' ? 'selected' : '' ?>>Se puede pedir caliente o frío (el cliente elige)</option>
+                <option value="caliente" <?= $temperaturaActual === 'caliente' ? 'selected' : '' ?>>Solo caliente</option>
+                <option value="frio" <?= $temperaturaActual === 'frio' ? 'selected' : '' ?>>Solo frío</option>
+            </select>
+            <span class="campo-ayuda">Se muestra en el pedido de WhatsApp (ej. "Moka - Caliente"). Si eliges "caliente o frío", el cliente debe escoger al agregarlo.</span>
+        </div>
+
+        <div class="campo">
             <label for="imagen">Foto</label>
             <?php if (!empty($producto['imagen'])): ?>
                 <div style="margin-bottom:8px;">

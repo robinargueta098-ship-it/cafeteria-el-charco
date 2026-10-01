@@ -7,8 +7,10 @@ namespace App\Controllers\Admin;
 use App\Core\Controller;
 use App\Core\Flash;
 use App\Core\SubidaArchivo;
+use App\Core\TemperaturaProductos;
 use App\Core\Validator;
 use App\Models\Categoria;
+use App\Models\Configuracion;
 use App\Models\Producto;
 use App\Models\Temporada;
 use App\Services\AuditoriaService;
@@ -59,8 +61,9 @@ class ProductoController extends Controller
         $modelo = new Producto();
         $id = $modelo->crear($datos);
         $modelo->sincronizarTemporadas($id, $this->temporadaIdsDelFormulario());
+        TemperaturaProductos::guardar($id, $this->temperaturaDelFormulario());
 
-        AuditoriaService::registrar('productos', $id, 'crear', null, $datos);
+        AuditoriaService::registrar('productos', $id, 'crear', null, $datos + ['temperatura' => $this->temperaturaDelFormulario()]);
 
         Flash::exito('Producto creado correctamente.');
         $this->redirigir('/admin/productos');
@@ -77,6 +80,7 @@ class ProductoController extends Controller
         }
 
         $producto['temporada_ids'] = $modelo->obtenerTemporadaIds((int) $id);
+        $producto['temperatura'] = TemperaturaProductos::mapa((new Configuracion())->obtenerTodas())[(int) $id] ?? '';
         $this->formulario($producto, []);
     }
 
@@ -106,6 +110,7 @@ class ProductoController extends Controller
         if ($errores !== []) {
             $datos['id'] = $id;
             $datos['temporada_ids'] = $this->temporadaIdsDelFormulario();
+            $datos['temperatura'] = $this->temperaturaDelFormulario();
             $this->formulario($datos, $errores);
             return;
         }
@@ -115,6 +120,7 @@ class ProductoController extends Controller
 
         $modelo->actualizar((int) $id, $datos);
         $modelo->sincronizarTemporadas((int) $id, $this->temporadaIdsDelFormulario());
+        TemperaturaProductos::guardar((int) $id, $this->temperaturaDelFormulario());
 
         if ($imagenNueva !== null && $existente['imagen'] !== null) {
             SubidaArchivo::eliminar(UPLOADS_PATH . '/productos', $existente['imagen']);
@@ -175,6 +181,14 @@ class ProductoController extends Controller
             'activo'              => isset($_POST['activo']) ? 1 : 0,
             'orden'               => (int) ($_POST['orden'] ?? 0),
         ];
+    }
+
+    /** 'ambas' | 'caliente' | 'frio' | '' (sin opción de temperatura). Va aparte de $datos: no es una columna de `productos`. */
+    private function temperaturaDelFormulario(): string
+    {
+        $valor = (string) ($_POST['temperatura'] ?? '');
+
+        return in_array($valor, TemperaturaProductos::VALIDAS, true) ? $valor : '';
     }
 
     /** @return array<int,int> */

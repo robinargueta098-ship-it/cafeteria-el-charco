@@ -50,23 +50,39 @@
 
   // ---- Catálogo: lo que hay en la página (precio y nombre siempre actuales) ----
   var catalogo = {};
+  var NOMBRES_TEMP = { c: 'Caliente', f: 'Frío' };
+
+  // Cada combinación pedible (versión x temperatura) es una entrada con su propia clave:
+  //   "12"  producto sin opciones · "12-alt" segunda versión (Batido) · "12~c" / "12~f" caliente / frío
   Array.prototype.forEach.call(document.querySelectorAll('[data-agregar]'), function (boton) {
-    var clave = boton.getAttribute('data-clave');
+    var base = boton.getAttribute('data-clave');
     var claveAlt = boton.getAttribute('data-alt-clave');
-    catalogo[clave] = {
-      nombre: boton.getAttribute('data-nombre'),
-      precio: parseFloat(boton.getAttribute('data-precio')) || 0,
-      corta: boton.getAttribute('data-corta') || '',
-      hermana: claveAlt || ''          // la otra versión del mismo producto (ej. Frappé <-> Batido)
-    };
+    var temp = boton.getAttribute('data-temp') || '';
+    var temps = temp === 'ambas' ? ['c', 'f'] : (temp === 'caliente' ? ['c'] : (temp === 'frio' ? ['f'] : ['']));
+    var versiones = [{
+      clave: base, nombre: boton.getAttribute('data-nombre'),
+      precio: parseFloat(boton.getAttribute('data-precio')) || 0, corta: boton.getAttribute('data-corta') || ''
+    }];
     if (claveAlt) {
-      catalogo[claveAlt] = {
-        nombre: boton.getAttribute('data-alt-nombre'),
-        precio: parseFloat(boton.getAttribute('data-alt-precio')) || 0,
-        corta: boton.getAttribute('data-alt-corta') || '',
-        hermana: clave
-      };
+      versiones.push({
+        clave: claveAlt, nombre: boton.getAttribute('data-alt-nombre'),
+        precio: parseFloat(boton.getAttribute('data-alt-precio')) || 0, corta: boton.getAttribute('data-alt-corta') || ''
+      });
     }
+    versiones.forEach(function (v, i) {
+      temps.forEach(function (t) {
+        var sufijo = t ? '~' + t : '';
+        var otra = versiones[1 - i];
+        catalogo[v.clave + sufijo] = {
+          nombre: v.nombre + (t ? ' - ' + NOMBRES_TEMP[t] : ''),
+          precio: v.precio,
+          corta: v.corta,
+          hermana: otra ? otra.clave + sufijo : '',                       // la otra versión (Frappé <-> Batido)
+          otraTemp: temp === 'ambas' ? v.clave + '~' + (t === 'c' ? 'f' : 'c') : '',   // la otra temperatura
+          tempCorta: t ? NOMBRES_TEMP[t] : ''
+        };
+      });
+    });
   });
 
   // ---- Estado (se guarda en el navegador; si no se puede, funciona igual sin guardar) ----
@@ -264,22 +280,37 @@
       info.appendChild(nombre);
       info.appendChild(unitario);
 
-      if (p.hermana && catalogo[p.hermana]) {
-        // Producto con dos versiones: se elige aquí cuál se pide (el mensaje de WhatsApp lleva el nombre completo).
-        var versiones = document.createElement('div');
-        versiones.className = 'carrito-versiones';
-        versiones.setAttribute('role', 'group');
-        versiones.setAttribute('aria-label', 'Versión de ' + p.nombre);
-        [clave, p.hermana].sort(function (x, y) { return x.length - y.length; }).forEach(function (claveVersion) {
+      function selector(opciones, etiqueta) {
+        var grupo = document.createElement('div');
+        grupo.className = 'carrito-versiones';
+        grupo.setAttribute('role', 'group');
+        grupo.setAttribute('aria-label', etiqueta + ' de ' + p.nombre);
+        opciones.forEach(function (o) {
           var b = document.createElement('button');
           b.type = 'button';
-          b.textContent = catalogo[claveVersion].corta + ' · ' + dinero(catalogo[claveVersion].precio);
+          b.textContent = o.texto;
           b.setAttribute('data-accion', 'version');
-          b.setAttribute('data-destino', claveVersion);
-          b.setAttribute('aria-pressed', claveVersion === clave ? 'true' : 'false');
-          versiones.appendChild(b);
+          b.setAttribute('data-destino', o.clave);
+          b.setAttribute('aria-pressed', o.clave === clave ? 'true' : 'false');
+          grupo.appendChild(b);
         });
-        info.appendChild(versiones);
+        return grupo;
+      }
+
+      // Producto con dos versiones: se elige aquí cuál se pide (el mensaje de WhatsApp lleva el nombre completo).
+      if (p.hermana && catalogo[p.hermana]) {
+        var claves2 = [clave, p.hermana].sort(function (x, y) { return (x.indexOf('-alt') === -1 ? 0 : 1) - (y.indexOf('-alt') === -1 ? 0 : 1); });
+        info.appendChild(selector(claves2.map(function (k) {
+          return { clave: k, texto: catalogo[k].corta + ' \u00b7 ' + dinero(catalogo[k].precio) };
+        }), 'Versión'));
+      }
+
+      // Producto que se puede pedir caliente o frío: se puede cambiar aquí.
+      if (p.otraTemp && catalogo[p.otraTemp]) {
+        var temps2 = [clave, p.otraTemp].sort(function (x, y) { return (catalogo[x].tempCorta === 'Caliente' ? 0 : 1) - (catalogo[y].tempCorta === 'Caliente' ? 0 : 1); });
+        info.appendChild(selector(temps2.map(function (k) {
+          return { clave: k, texto: catalogo[k].tempCorta };
+        }), 'Temperatura'));
       }
 
       var control = document.createElement('div');
@@ -413,12 +444,41 @@
       return;
     }
 
+    // Caliente / Frío de la tarjeta
+    var chip = objetivo.closest('.temperatura-agregar button[data-temperatura]');
+    if (chip) {
+      Array.prototype.forEach.call(chip.parentNode.querySelectorAll('button'), function (otro) {
+        otro.setAttribute('aria-pressed', otro === chip ? 'true' : 'false');
+      });
+      var aviso = chip.closest('.tarjeta-producto').querySelector('.temperatura-aviso');
+      if (aviso) { aviso.hidden = true; }
+      return;
+    }
+
     var boton = objetivo.closest('[data-agregar]');
     if (!boton) {
       return;
     }
+    var clave = boton.getAttribute('data-clave');
+    if (boton.getAttribute('data-temp') === 'ambas') {
+      var tarjeta = boton.closest('.tarjeta-producto');
+      var elegida = tarjeta.querySelector('.temperatura-agregar [aria-pressed="true"]');
+      if (!elegida) {
+        // Falta elegir caliente o frío (es necesario para saber qué preparar).
+        var mensajeTemp = tarjeta.querySelector('.temperatura-aviso');
+        if (mensajeTemp) { mensajeTemp.hidden = false; }
+        tarjeta.querySelector('.temperatura-agregar').classList.add('temperatura-agregar--falta');
+        return;
+      }
+      tarjeta.querySelector('.temperatura-agregar').classList.remove('temperatura-agregar--falta');
+      clave += '~' + elegida.getAttribute('data-temperatura');
+    } else if (boton.getAttribute('data-temp') === 'caliente') {
+      clave += '~c';
+    } else if (boton.getAttribute('data-temp') === 'frio') {
+      clave += '~f';
+    }
     var cuantos = cantidadDeTarjeta(boton);
-    cambiar(boton.getAttribute('data-clave'), cuantos);
+    cambiar(clave, cuantos);
     var salidaTarjeta = boton.parentNode.querySelector('.cantidad-agregar output');
     if (salidaTarjeta) {
       salidaTarjeta.textContent = '1';

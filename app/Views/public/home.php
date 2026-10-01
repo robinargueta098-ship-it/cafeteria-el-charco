@@ -19,6 +19,7 @@
  * @var int $umbralLealtad
  */
 use App\Core\ImagenOptimizada;
+use App\Core\TemperaturaProductos;
 use App\Core\Vista;
 use App\Core\WhatsApp;
 
@@ -53,7 +54,8 @@ foreach ($portada as $imagenPortada) {
  * Temporada / Menú, para no repetir el mismo bloque de HTML cuatro
  * veces con el riesgo de que se desincronicen.
  */
-$tarjetaProducto = function (array $p) {
+$temperaturasProductos = TemperaturaProductos::mapa($config);
+$tarjetaProducto = function (array $p) use ($temperaturasProductos) {
     ?>
     <article class="tarjeta-producto">
         <?= Vista::fotoOMarcador($p['imagen'] ?? null, UPLOADS_URL . '/productos', $p['nombre']) ?>
@@ -76,7 +78,15 @@ $tarjetaProducto = function (array $p) {
             $variantesPedido = Vista::variantesPedido($p, (string) ($p['cat_nombre'] ?? $p['categoria_nombre'] ?? ''));
             $vBase = $variantesPedido[0];
             $vAlt = $variantesPedido[1] ?? null;
+            $temperatura = $temperaturasProductos[(int) $p['id']] ?? '';
             ?>
+            <?php if ($temperatura === 'ambas'): ?>
+                <div class="temperatura-agregar" role="group" aria-label="Temperatura">
+                    <button type="button" data-temperatura="c" aria-pressed="false">Caliente</button>
+                    <button type="button" data-temperatura="f" aria-pressed="false">Frío</button>
+                </div>
+                <p class="temperatura-aviso" role="alert" hidden>Elige caliente o frío para agregarlo.</p>
+            <?php endif; ?>
             <div class="agregar-carrito">
                 <div class="cantidad-agregar" role="group" aria-label="Cantidad a agregar">
                     <button type="button" data-cantidad="-1" aria-label="Una menos">&minus;</button>
@@ -88,6 +98,7 @@ $tarjetaProducto = function (array $p) {
                         data-nombre="<?= htmlspecialchars($vBase['nombre'], ENT_QUOTES, 'UTF-8') ?>"
                         data-precio="<?= number_format($vBase['precio'], 2, '.', '') ?>"
                         data-corta="<?= htmlspecialchars($vBase['corta'], ENT_QUOTES, 'UTF-8') ?>"
+                        data-temp="<?= htmlspecialchars($temperatura, ENT_QUOTES, 'UTF-8') ?>"
                         <?php if ($vAlt !== null): ?>
                         data-alt-clave="<?= htmlspecialchars($vAlt['clave'], ENT_QUOTES, 'UTF-8') ?>"
                         data-alt-nombre="<?= htmlspecialchars($vAlt['nombre'], ENT_QUOTES, 'UTF-8') ?>"

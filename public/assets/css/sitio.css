@@ -1887,3 +1887,50 @@ html.carrito-abierto body {
   background: var(--color-cafe);
   color: var(--color-blanco);
 }
+
+
+/* Caliente / Frío en la tarjeta (productos que se pueden pedir de las dos formas). */
+.temperatura-agregar {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.temperatura-agregar button {
+  flex: 1 1 0;
+  min-height: 40px;
+  border: 2px solid var(--color-cafe);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-cafe);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.temperatura-agregar button[aria-pressed="true"] {
+  background: var(--color-cafe);
+  color: var(--color-blanco);
+}
+
+.temperatura-agregar--falta {
+  outline: 2px solid var(--color-error);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+.temperatura-aviso {
+  margin: 6px 0 0;
+  color: var(--color-error);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.temperatura-aviso[hidden] {
+  display: none;
+}
+
+.carrito-item-info .carrito-versiones + .carrito-versiones {
+  margin-left: 6px;
+}
