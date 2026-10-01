@@ -43,7 +43,7 @@ $anclaInicio = $rutaPagina === '' ? '' : '/';
             <?php if (!empty($mostrarCarrito)): ?>
                 <?php /* Botón del carrito (solo en la página con menú). Lo activa carrito.js; sin JavaScript queda oculto. */ ?>
                 <button type="button" class="nav-carrito" id="carrito-abrir" hidden aria-haspopup="dialog" aria-controls="carrito-panel" aria-label="Ver mi carrito">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 7H6"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path class="nav-carrito-cuerpo" d="M6 7h14.2a.8.8 0 0 1 .78.98l-1.5 6.6a1.6 1.6 0 0 1-1.56 1.25H8.9a1.6 1.6 0 0 1-1.57-1.28L5.2 4.4A1.2 1.2 0 0 0 4 3.5H2.5" fill="currentColor" fill-opacity=".14"/><circle cx="9.5" cy="19.6" r="1.4" fill="currentColor" stroke="none"/><circle cx="17" cy="19.6" r="1.4" fill="currentColor" stroke="none"/><path d="M10 10.2h7.4" /></svg>
                     <span class="carrito-contador" id="carrito-contador" hidden>0</span>
                 </button>
             <?php endif; ?>

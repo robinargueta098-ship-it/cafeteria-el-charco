@@ -1818,16 +1818,17 @@ html.carrito-abierto body {
 
 .nav-carrito {
   position: relative;
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
   display: grid;
   place-items: center;
   border: 2px solid var(--color-cafe-oscuro);
   border-radius: 50%;
-  background: transparent;
+  background: var(--color-blanco);
   color: var(--color-cafe-oscuro);
+  box-shadow: 0 2px 8px rgba(59, 36, 21, 0.18);
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .nav-carrito[hidden] {
@@ -1838,11 +1839,52 @@ html.carrito-abierto body {
 .nav-carrito:focus-visible {
   background: var(--color-cafe-oscuro);
   color: var(--color-blanco);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(59, 36, 21, 0.28);
+}
+
+.nav-carrito:focus-visible {
+  outline: 3px solid var(--color-verde);
+  outline-offset: 3px;
 }
 
 .nav-carrito svg {
-  width: 24px;
+  width: 26px;
+  height: 26px;
+}
+
+/* Con productos dentro, el carrito se tiñe de verde (el contador lo resalta) para invitar a terminar el pedido. */
+.nav-carrito:has(.carrito-contador:not([hidden])) {
+  border-color: var(--color-verde);
+  color: var(--color-verde);
+}
+
+.nav-carrito:has(.carrito-contador:not([hidden])):hover,
+.nav-carrito:has(.carrito-contador:not([hidden])):focus-visible {
+  background: var(--color-verde);
+  border-color: var(--color-verde);
+  color: var(--color-blanco);
+}
+
+.nav-carrito .carrito-contador {
+  top: -7px;
+  right: -7px;
+  min-width: 24px;
   height: 24px;
+  line-height: 20px;
+  font-size: 0.78rem;
+  box-shadow: 0 2px 5px rgba(59, 36, 21, 0.3);
+}
+
+/* Al agregar algo, el contador "salta". */
+.nav-carrito--salto .carrito-contador {
+  animation: contador-salto 0.5s ease;
+}
+
+@keyframes contador-salto {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.45); }
+  100% { transform: scale(1); }
 }
 
 @media (min-width: 1024px) {
@@ -1860,6 +1902,7 @@ html.carrito-abierto body {
 
 @media (prefers-reduced-motion: reduce) {
   .nav-carrito { transition: none; }
+  .nav-carrito--salto .carrito-contador { animation: none; }
 }
 
 
