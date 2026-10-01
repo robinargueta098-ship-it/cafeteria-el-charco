@@ -193,6 +193,17 @@ function inicializarMenuPestanas() {
   } else if (movil.addListener) {
     movil.addListener(sincronizar);
   }
+
+  // Respaldo: cambiar el tamaño de la ventana, girar el teléfono o abrir/cerrar el modo móvil de
+  // las herramientas de desarrollo no siempre dispara "change" a tiempo; con esto las pestañas
+  // se encienden o apagan igual sin tener que recargar la página.
+  var pendiente = null;
+  function alCambiarTamano() {
+    clearTimeout(pendiente);
+    pendiente = setTimeout(sincronizar, 120);
+  }
+  window.addEventListener('resize', alCambiarTamano);
+  window.addEventListener('orientationchange', alCambiarTamano);
 }
 
 /**
