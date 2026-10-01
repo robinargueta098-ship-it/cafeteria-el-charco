@@ -55,9 +55,11 @@
   }
 
   function iniciar() {
-    // getUserMedia solo existe en páginas seguras (HTTPS, o localhost).
+    // getUserMedia solo existe en páginas seguras (HTTPS, o localhost). En producción el
+    // sitio va por HTTPS y el navegador pide el permiso de la cámara al abrirla; en local
+    // se usa http://elcharco.localhost (el navegador lo trata como localhost).
     if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      sinCamara('El navegador no permite usar la cámara en esta dirección (necesita HTTPS o localhost).');
+      sinCamara('El navegador no permite usar la cámara en esta dirección (necesita HTTPS o localhost; en local usa http://elcharco.localhost).');
       return;
     }
     if (typeof Html5Qrcode === 'undefined') {

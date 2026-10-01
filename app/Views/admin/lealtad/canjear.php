@@ -49,33 +49,34 @@ require APP_PATH . '/Views/layouts/panel_header.php';
             <?= Csrf::campo() ?>
             <div class="campo">
                 <label for="codigo">Código (QR personal, de recompensa o de cupón)</label>
-                <input type="text" id="codigo" name="codigo" maxlength="20" required autofocus
+                <input type="text" id="codigo" name="codigo" maxlength="20" autofocus
                        autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="G5S3WYHX"
                        class="campo-codigo"
                        value="<?= htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8') ?>">
             </div>
             <div class="campo">
-                <label for="telefono">Teléfono del cliente <span class="campo-ayuda">(opcional, para doble verificación)</span></label>
+                <label for="telefono">Teléfono del cliente <span class="campo-ayuda">(sin código: busca al cliente por su número; con código: doble verificación)</span></label>
                 <input type="tel" id="telefono" name="telefono" maxlength="20"
                        value="<?= htmlspecialchars($telefono, ENT_QUOTES, 'UTF-8') ?>">
             </div>
-            <button type="submit" class="btn">Buscar código</button>
+            <button type="submit" class="btn">Buscar</button>
         </form>
     </div>
 </div>
 
 <?php if ($clienteEscaneado !== null): ?>
-    <?php $saldoEscaneado = (int) $clienteEscaneado['cafes_acumulados']; ?>
+    <?php $progEscaneado = \App\Models\Cliente::progresoTarjeta($clienteEscaneado, (int) $umbral);
+    $saldoEscaneado = $progEscaneado['mostrado']; ?>
     <div class="tarjeta" style="max-width:480px;margin-top:24px;">
         <h2 style="margin-top:0;">Cliente identificado</h2>
         <p><strong>Cliente:</strong> <?= htmlspecialchars($clienteEscaneado['nombre'], ENT_QUOTES, 'UTF-8') ?></p>
         <p><strong>Teléfono:</strong> <?= htmlspecialchars($clienteEscaneado['telefono'], ENT_QUOTES, 'UTF-8') ?></p>
-        <p><strong>Cafés acumulados:</strong> <?= $saldoEscaneado ?> de <?= (int) $umbral ?></p>
+        <p><strong>Cafés acumulados:</strong> <?= $saldoEscaneado ?> de <?= $progEscaneado['total'] ?></p>
 
         <form method="post" action="/admin/lealtad/canjear/sumar">
             <?= Csrf::campo() ?>
             <?php /* El servidor vuelve a buscar al cliente por este código: no se envía ningún id. */ ?>
-            <input type="hidden" name="codigo_qr" value="<?= htmlspecialchars($codigo, ENT_QUOTES, 'UTF-8') ?>">
+            <input type="hidden" name="codigo_qr" value="<?= htmlspecialchars((string) ($clienteEscaneado['codigo_qr'] ?? $codigo), ENT_QUOTES, 'UTF-8') ?>">
             <div class="campo">
                 <label for="cantidad">Cafés comprados</label>
                 <input type="number" id="cantidad" name="cantidad" min="1" max="50" value="1" required>
@@ -94,6 +95,19 @@ require APP_PATH . '/Views/layouts/panel_header.php';
                 </form>
             <?php endforeach; ?>
         <?php endif; ?>
+
+        <?php if (!empty($cuponesDisponibles)): ?>
+            <hr style="margin:24px 0;border:0;border-top:1px solid var(--color-beige);">
+            <p><strong>🏷 Tiene <?= count($cuponesDisponibles) ?> cupón(es) de promoción:</strong></p>
+            <?php foreach ($cuponesDisponibles as $cp): ?>
+                <form method="post" action="/admin/lealtad/canjear/consultar" style="margin-bottom:8px;">
+                    <?= Csrf::campo() ?>
+                    <input type="hidden" name="codigo" value="<?= htmlspecialchars($cp['codigo'], ENT_QUOTES, 'UTF-8') ?>">
+                    <button type="submit" class="btn btn-secundario">Canjear <?= htmlspecialchars($cp['promocion_nombre'], ENT_QUOTES, 'UTF-8') ?> (<?= htmlspecialchars($cp['codigo'], ENT_QUOTES, 'UTF-8') ?>)</button>
+                </form>
+            <?php endforeach; ?>
+        <?php endif; ?>
+        <p style="margin-top:16px;"><a href="/admin/lealtad/canjear">✕ No es este / limpiar pantalla</a></p>
     </div>
 <?php endif; ?>
 
@@ -134,6 +148,7 @@ require APP_PATH . '/Views/layouts/panel_header.php';
                 Esta recompensa ya no se puede canjear (estado: <?= htmlspecialchars($recompensa['estado'], ENT_QUOTES, 'UTF-8') ?><?= $recompensa['fecha_canjeada'] !== null ? ', usada el ' . htmlspecialchars(substr($recompensa['fecha_canjeada'], 0, 16), ENT_QUOTES, 'UTF-8') : '' ?>).
             </p>
         <?php endif; ?>
+        <p style="margin-top:16px;"><a href="/admin/lealtad/canjear">✕ No es este / limpiar pantalla</a></p>
     </div>
 <?php endif; ?>
 
@@ -167,6 +182,7 @@ require APP_PATH . '/Views/layouts/panel_header.php';
                 Este cupón ya no se puede canjear (estado: <?= htmlspecialchars($cupon['estado'], ENT_QUOTES, 'UTF-8') ?><?= $cupon['fecha_canje'] !== null ? ', usado el ' . htmlspecialchars(substr((string) $cupon['fecha_canje'], 0, 16), ENT_QUOTES, 'UTF-8') : '' ?>).
             </p>
         <?php endif; ?>
+        <p style="margin-top:16px;"><a href="/admin/lealtad/canjear">✕ No es este / limpiar pantalla</a></p>
     </div>
 <?php endif; ?>
 

@@ -127,6 +127,21 @@ class CuponPromocion
         )->fetchAll();
     }
 
+    /** @return array<int,array<string,mixed>> Cupones sin canjear de un cliente (para ofrecerlos al cajero al identificarlo por teléfono). */
+    public function listarDisponiblesDeCliente(int $clienteId): array
+    {
+        $stmt = Database::conexion()->prepare(
+            "SELECT cp.codigo, p.nombre AS promocion_nombre
+             FROM cupones_promocion cp
+             JOIN promociones p ON p.id = cp.promocion_id
+             WHERE cp.cliente_id = :cliente_id AND cp.estado = 'disponible'
+             ORDER BY cp.fecha_reclamo DESC"
+        );
+        $stmt->execute(['cliente_id' => $clienteId]);
+
+        return $stmt->fetchAll();
+    }
+
     public function contarPorPromocion(int $promocionId): int
     {
         $stmt = Database::conexion()->prepare('SELECT COUNT(*) FROM cupones_promocion WHERE promocion_id = :id');

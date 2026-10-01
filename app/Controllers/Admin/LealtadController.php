@@ -58,9 +58,10 @@ class LealtadController extends Controller
         }
 
         $cantidad = (int) ($_POST['cantidad'] ?? 0);
+        $motivo = trim((string) ($_POST['motivo'] ?? ''));
         $usuario = Auth::usuario();
 
-        $resultado = LealtadService::registrarConsumo((int) $id, $cantidad, $usuario['id']);
+        $resultado = LealtadService::registrarConsumo((int) $id, $cantidad, $usuario['id'], $motivo);
 
         if ($resultado['ok']) {
             $mensaje = "Se registraron {$cantidad} café(s) para {$cliente['nombre']}.";
@@ -79,7 +80,7 @@ class LealtadController extends Controller
 
     public function registrarAjuste(string $id): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirRol(1); // solo Administrador: el Cajero no corrige saldos
 
         $cliente = (new Cliente())->buscarPorId((int) $id);
         if ($cliente === null) {
@@ -95,6 +96,10 @@ class LealtadController extends Controller
 
         if ($resultado['ok']) {
             $mensaje = 'Ajuste registrado correctamente.';
+            if (!empty($resultado['codigos_revocados'])) {
+                $mensaje .= ' Se dejó sin efecto el café gratis ' . implode(', ', $resultado['codigos_revocados'])
+                    . ' (aún no se había canjeado) para que el saldo cuadre.';
+            }
             if ($resultado['codigos_generados'] !== []) {
                 $mensaje .= ' Se generó recompensa: ' . implode(', ', $resultado['codigos_generados']) . '.';
             }
@@ -114,12 +119,46 @@ class LealtadController extends Controller
     {
         $this->requerirRol(1, 2);
 
-        $this->vistaCanjear(
-            Recompensa::normalizarCodigo((string) ($_GET['codigo'] ?? '')),
-            Cliente::normalizarTelefono((string) ($_GET['telefono'] ?? '')),
-            null,
-            null
-        );
+        // Resultado de la consulta anterior (se guarda al responder un POST y se muestra UNA
+        // sola vez): al recargar, la pantalla vuelve limpia en vez de repetir el envío.
+        $estado = $_SESSION['_canje'] ?? null;
+        unset($_SESSION['_canje']);
+        if (is_array($estado)) {
+            $this->vistaCanjear(
+                (string) $estado['codigo'], (string) $estado['telefono'], $estado['recompensa'],
+                $estado['error'], $estado['clienteEscaneado'], $estado['cupon']
+            );
+            return;
+        }
+
+        $codigo = Recompensa::normalizarCodigo((string) ($_GET['codigo'] ?? ''));
+        $telefono = Cliente::normalizarTelefono((string) ($_GET['telefono'] ?? ''));
+
+        // Venir desde la ficha de un cliente ("Canjear") trae solo el teléfono: se identifica de una vez.
+        if ($codigo === '' && $telefono !== '') {
+            $this->identificarPorTelefono($telefono);
+            return;
+        }
+
+        $this->vistaCanjear($codigo, $telefono, null, null);
+    }
+
+    /**
+     * Alternativa al QR cuando el cliente no trae su teléfono/código a la mano: el cajero
+     * escribe el número y se identifica al cliente igual que si hubiera escaneado su QR
+     * personal (mismo formulario para sumar cafés, mismas recompensas y cupones por canjear,
+     * mismos permisos y auditoría). El código personal se asocia al teléfono en el servidor.
+     */
+    private function identificarPorTelefono(string $telefono): void
+    {
+        $cliente = (new Cliente())->buscarPorTelefono($telefono);
+        if ($cliente === null) {
+            $this->vistaCanjear('', $telefono, null, 'No hay ningún cliente registrado con ese teléfono.');
+            return;
+        }
+
+        $cliente['codigo_qr'] = (new Cliente())->obtenerCodigoQr((int) $cliente['id']);
+        $this->vistaCanjear('', $telefono, null, null, $cliente);
     }
 
     /**
@@ -138,7 +177,11 @@ class LealtadController extends Controller
         $codigo = Cliente::normalizarCodigoQr($entrada); // limpieza genérica: mayúsculas y solo A-Z0-9
 
         if ($codigo === '') {
-            $this->vistaCanjear('', $telefono, null, 'Escanea el QR o escribe el código.');
+            if ($telefono !== '') {
+                $this->identificarPorTelefono($telefono);
+                return;
+            }
+            $this->vistaCanjear('', $telefono, null, 'Escanea el QR, escribe el código o busca al cliente por su teléfono.');
             return;
         }
 
@@ -196,6 +239,7 @@ class LealtadController extends Controller
 
         $codigoQr = Cliente::normalizarCodigoQr((string) ($_POST['codigo_qr'] ?? ''));
         $cantidad = (int) ($_POST['cantidad'] ?? 0);
+        $motivo = 'Escaneo de QR personal'; // compra normal: no se le pide motivo al cajero
         $usuario = Auth::usuario();
 
         $cliente = $codigoQr !== '' ? (new Cliente())->buscarPorCodigoQr($codigoQr) : null;
@@ -205,7 +249,7 @@ class LealtadController extends Controller
             return;
         }
 
-        $resultado = LealtadService::registrarConsumo((int) $cliente['id'], $cantidad, $usuario['id'], 'Escaneo de QR personal');
+        $resultado = LealtadService::registrarConsumo((int) $cliente['id'], $cantidad, $usuario['id'], $motivo);
 
         if (!$resultado['ok']) {
             $this->vistaCanjear($codigoQr, '', null, $resultado['error'], $cliente);
@@ -327,6 +371,18 @@ class LealtadController extends Controller
         ?array $clienteEscaneado = null,
         ?array $cupon = null
     ): void {
+        // Post/Redirect/Get: tras un envío no se dibuja la pantalla directamente (recargar
+        // repetiría la búsqueda y dejaría el cupón o código equivocado en pantalla); se guarda
+        // el resultado y se redirige, así recargar o volver atrás deja la pantalla limpia.
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            $_SESSION['_canje'] = [
+                'codigo' => $codigo, 'telefono' => $telefono, 'recompensa' => $recompensa,
+                'error' => $error, 'clienteEscaneado' => $clienteEscaneado, 'cupon' => $cupon,
+            ];
+            $this->redirigir('/admin/lealtad/canjear');
+            return;
+        }
+
         $disponibles = [];
         if ($clienteEscaneado !== null) {
             $disponibles = array_values(array_filter(
@@ -346,6 +402,9 @@ class LealtadController extends Controller
             'clienteEscaneado' => $clienteEscaneado,
             'umbral'           => LealtadService::obtenerUmbral(),
             'disponibles'      => $disponibles,
+            'cuponesDisponibles' => $clienteEscaneado !== null
+                ? (new CuponPromocion())->listarDisponiblesDeCliente((int) $clienteEscaneado['id'])
+                : [],
         ]);
     }
 }

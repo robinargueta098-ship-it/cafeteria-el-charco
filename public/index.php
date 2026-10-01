@@ -42,6 +42,8 @@ ErrorHandler::registrar();
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 header('Referrer-Policy: strict-origin-when-cross-origin');
+// La cámara se usa solo en esta misma página (escáner de QR del panel); nada de terceros.
+header('Permissions-Policy: camera=(self), microphone=(), geolocation=()');
 
 Session::iniciar();
 
