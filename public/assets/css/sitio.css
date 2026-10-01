@@ -1255,3 +1255,414 @@ img {
     transition: none;
   }
 }
+
+/* ---------- Carrito de compras (pedido por WhatsApp) ---------- */
+
+.carrito[hidden],
+.carrito-fondo[hidden],
+.carrito-panel[hidden],
+.carrito-contador[hidden],
+.carrito-aviso[hidden],
+.carrito-pie[hidden],
+.carrito-vacio[hidden],
+.carrito-error[hidden] {
+  display: none;
+}
+
+/* Botón "+ Agregar" de cada tarjeta de producto. */
+.agregar-carrito {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.agregar-carrito--varios {
+  flex-wrap: wrap;
+}
+
+.btn-agregar {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 2px solid var(--color-cafe);
+  border-radius: var(--radio-borde);
+  background: transparent;
+  color: var(--color-cafe);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.btn-agregar:hover,
+.btn-agregar:focus-visible {
+  background: var(--color-cafe);
+  color: var(--color-blanco);
+}
+
+.btn-agregar:active {
+  transform: scale(0.97);
+}
+
+.btn-agregar.btn-agregar--listo {
+  background: var(--color-verde);
+  border-color: var(--color-verde);
+  color: var(--color-blanco);
+}
+
+/* Botón flotante del carrito: a la izquierda, para no tapar el de WhatsApp (derecha). */
+.carrito-fab {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 70;
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7d5a41, var(--color-cafe) 55%, #5a3d2b);
+  color: var(--color-blanco);
+  box-shadow: 0 6px 18px rgba(59, 36, 21, 0.4);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.carrito-fab:hover,
+.carrito-fab:focus-visible {
+  transform: scale(1.06);
+}
+
+.carrito-fab svg {
+  width: 28px;
+  height: 28px;
+}
+
+.carrito-contador {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 12px;
+  background: var(--color-verde);
+  border: 2px solid var(--color-beige-claro);
+  color: var(--color-blanco);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+.carrito-fab--salto {
+  animation: carrito-salto 0.45s ease;
+}
+
+@keyframes carrito-salto {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18) rotate(-6deg); }
+  100% { transform: scale(1); }
+}
+
+.carrito-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(59, 36, 21, 0.5);
+}
+
+.carrito-panel {
+  position: fixed;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-beige-claro);
+  color: var(--color-texto);
+  box-shadow: -8px 0 30px rgba(59, 36, 21, 0.3);
+  /* Móvil: hoja que sube desde abajo. */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 92vh;
+  overflow-y: auto;          /* móvil: todo el panel se desplaza, así siempre se alcanza el botón de enviar */
+  border-radius: 18px 18px 0 0;
+  animation: carrito-subir 0.28s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (min-width: 768px) {
+  /* Escritorio: panel lateral a la derecha. */
+  .carrito-panel {
+    left: auto;
+    top: 0;
+    width: 440px;
+    max-height: none;
+    overflow-y: visible;
+    border-radius: 0;
+    animation-name: carrito-entrar;
+  }
+
+  /* Escritorio: la lista se desplaza y el total y el envío quedan siempre a la vista. */
+  .carrito-cuerpo {
+    flex: 1 1 auto;
+    overflow-y: auto;
+  }
+}
+
+@keyframes carrito-subir {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes carrito-entrar {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+html.carrito-abierto {
+  overflow: hidden;
+}
+
+.carrito-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-beige);
+}
+
+.carrito-encabezado h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--color-cafe-oscuro);
+}
+
+.carrito-cerrar {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--color-cafe-oscuro);
+  cursor: pointer;
+}
+
+.carrito-aviso {
+  margin: 12px 20px 0;
+  padding: 12px 14px;
+  border-radius: var(--radio-borde);
+  background: #fff4d6;
+  border: 1px solid #e8c766;
+  color: #5c4300;
+  font-size: 0.92rem;
+}
+
+.carrito-aviso strong {
+  display: block;
+}
+
+.carrito-cuerpo {
+  flex: none;
+  padding: 8px 20px;
+}
+
+.carrito-vacio {
+  text-align: center;
+  color: #6b5a4d;
+  padding: 32px 8px;
+}
+
+.carrito-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.carrito-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-template-areas:
+    "info cant sub"
+    "info quitar quitar";
+  gap: 4px 12px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-beige);
+}
+
+.carrito-item-info { grid-area: info; min-width: 0; }
+.carrito-cantidad { grid-area: cant; }
+.carrito-item-subtotal { grid-area: sub; }
+.carrito-item-quitar { grid-area: quitar; justify-self: end; }
+
+.carrito-item-nombre {
+  margin: 0;
+  font-weight: 700;
+  color: var(--color-cafe-oscuro);
+}
+
+.carrito-item-unitario {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b5a4d;
+}
+
+.carrito-cantidad {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-blanco);
+  border: 1px solid var(--color-beige);
+  border-radius: 999px;
+}
+
+.carrito-cantidad button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: none;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-cafe);
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.carrito-cantidad button:hover {
+  background: var(--color-beige);
+}
+
+.carrito-cantidad-valor {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.carrito-item-subtotal {
+  margin: 0;
+  min-width: 70px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--color-verde);
+}
+
+.carrito-item-quitar {
+  border: none;
+  background: none;
+  color: var(--color-error);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 32px;
+}
+
+.carrito-pie {
+  padding: 14px 20px 20px;
+  border-top: 1px solid var(--color-beige);
+  background: var(--color-blanco);
+}
+
+.carrito-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 1.1rem;
+}
+
+.carrito-total strong {
+  font-size: 1.5rem;
+  color: var(--color-cafe-oscuro);
+}
+
+.carrito-pago {
+  border: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.carrito-pago legend {
+  font-weight: 700;
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.carrito-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  border: 1px solid var(--color-beige);
+  border-radius: var(--radio-borde);
+  cursor: pointer;
+}
+
+.carrito-opcion:has(input:checked) {
+  border-color: var(--color-verde);
+  background: #eef4ea;
+  font-weight: 700;
+}
+
+.carrito-opcion input {
+  accent-color: var(--color-verde);
+  width: 20px;
+  height: 20px;
+}
+
+.carrito-ayuda {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: #6b5a4d;
+}
+
+.carrito-error {
+  margin: 10px 0 0;
+  color: var(--color-error);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.carrito-enviar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px 18px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  box-sizing: border-box;
+}
+
+.carrito-enviar[aria-disabled="true"] {
+  opacity: 0.75;
+}
+
+.carrito-vaciar {
+  display: block;
+  margin: 12px auto 0;
+  border: none;
+  background: none;
+  color: #6b5a4d;
+  text-decoration: underline;
+  font-size: 0.85rem;
+  cursor: pointer;
+  min-height: 36px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carrito-panel,
+  .carrito-fab--salto {
+    animation: none;
+  }
+
+  .carrito-fab,
+  .btn-agregar {
+    transition: none;
+  }
+}

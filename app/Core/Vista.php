@@ -101,6 +101,62 @@ class Vista
         };
     }
 
+    /** "Frappés" -> "Frappé", "Batidos" -> "Batido" (singular sencillo para armar el nombre del pedido). */
+    private static function singular(string $palabra): string
+    {
+        $palabra = trim($palabra);
+        return mb_strlen($palabra) > 3 && str_ends_with($palabra, 's') ? mb_substr($palabra, 0, -1) : $palabra;
+    }
+
+    /**
+     * Variantes que se pueden pedir de un producto, con el nombre COMPLETO que va en el mensaje
+     * de WhatsApp para que no haya ambigüedad de qué preparar: el mismo "Fresa" existe en
+     * Smoothies, Lassie y Sodas italianas, y un frappé tiene versión con café y sin café.
+     *
+     *  - Producto con segundo precio en una categoría "A / B" (ej. "Frappés / Batidos"):
+     *    "Frappé de Moka" (precio normal) y "Batido de Moka" (segundo precio).
+     *  - Cualquier otro: "Fresa (Smoothies)"; con segundo precio: "Fresa (Smoothies, Sin café)".
+     *
+     * @param array<string,mixed> $producto fila de `productos`
+     * @return array<int,array{clave:string,nombre:string,precio:float,etiqueta:string}>
+     */
+    public static function variantesPedido(array $producto, string $categoria): array
+    {
+        $id = (string) $producto['id'];
+        $nombre = trim((string) $producto['nombre']);
+        $categoria = trim($categoria);
+        $tieneAlt = !empty($producto['precio_alt']);
+        $etiquetaAlt = trim((string) ($producto['etiqueta_precio_alt'] ?? ''));
+
+        if ($tieneAlt && str_contains($categoria, '/')) {
+            $partes = array_map('trim', explode('/', $categoria));
+            $base = self::singular($partes[0]);
+            $alterna = self::singular($partes[1] ?? $etiquetaAlt);
+
+            return [
+                ['clave' => $id, 'nombre' => "{$base} de {$nombre}", 'precio' => (float) $producto['precio'], 'etiqueta' => $base],
+                ['clave' => $id . '-alt', 'nombre' => "{$alterna} de {$nombre}", 'precio' => (float) $producto['precio_alt'],
+                 'etiqueta' => $etiquetaAlt !== '' ? "{$alterna} ({$etiquetaAlt})" : $alterna],
+            ];
+        }
+
+        $sufijo = $categoria !== '' ? " ({$categoria})" : '';
+        $variantes = [['clave' => $id, 'nombre' => $nombre . $sufijo, 'precio' => (float) $producto['precio'], 'etiqueta' => '']];
+
+        if ($tieneAlt) {
+            $detalle = $etiquetaAlt !== '' ? $etiquetaAlt : 'Opción 2';
+            $variantes[0]['etiqueta'] = 'Normal';
+            $variantes[] = [
+                'clave' => $id . '-alt',
+                'nombre' => $nombre . ($categoria !== '' ? " ({$categoria}, {$detalle})" : " ({$detalle})"),
+                'precio' => (float) $producto['precio_alt'],
+                'etiqueta' => $detalle,
+            ];
+        }
+
+        return $variantes;
+    }
+
     /**
      * Logo oficial de WhatsApp como SVG en línea (trazo de Simple Icons,
      * simpleicons.org, licencia CC0 — sin depender de ningún servidor

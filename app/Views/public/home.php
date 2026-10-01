@@ -67,6 +67,22 @@ $tarjetaProducto = function (array $p) {
                     <small> · Q<?= number_format((float) $p['precio_alt'], 2) ?> (<?= htmlspecialchars($p['etiqueta_precio_alt'], ENT_QUOTES, 'UTF-8') ?>)</small>
                 <?php endif; ?>
             </p>
+            <?php
+            // Botón(es) de agregar al carrito: uno por variante (ej. Frappé / Batido). El carrito lee
+            // nombre y precio de estos atributos, así que siempre coinciden con lo que se ve en el menú.
+            $variantesPedido = Vista::variantesPedido($p, (string) ($p['cat_nombre'] ?? $p['categoria_nombre'] ?? ''));
+            ?>
+            <div class="agregar-carrito<?= count($variantesPedido) > 1 ? ' agregar-carrito--varios' : '' ?>">
+                <?php foreach ($variantesPedido as $v): ?>
+                    <button type="button" class="btn btn-agregar" data-agregar
+                            data-clave="<?= htmlspecialchars($v['clave'], ENT_QUOTES, 'UTF-8') ?>"
+                            data-nombre="<?= htmlspecialchars($v['nombre'], ENT_QUOTES, 'UTF-8') ?>"
+                            data-precio="<?= number_format($v['precio'], 2, '.', '') ?>"
+                            aria-label="Agregar al carrito: <?= htmlspecialchars($v['nombre'], ENT_QUOTES, 'UTF-8') ?>">
+                        <?= count($variantesPedido) > 1 ? htmlspecialchars('+ ' . $v['etiqueta'] . ' · Q' . number_format($v['precio'], 2), ENT_QUOTES, 'UTF-8') : '+ Agregar' ?>
+                    </button>
+                <?php endforeach; ?>
+            </div>
             <?php if ((int) ($p['es_destacado'] ?? 0) === 1 || (int) ($p['es_mas_vendido'] ?? 0) === 1): ?>
                 <div class="etiquetas-producto">
                     <?php if ((int) ($p['es_mas_vendido'] ?? 0) === 1): ?><span class="etiqueta etiqueta-mas-vendido">Más vendido</span><?php endif; ?>
@@ -448,4 +464,5 @@ $tarjetaProducto = function (array $p) {
 </section>
 
 <?php
+require APP_PATH . '/Views/public/_carrito.php';
 require APP_PATH . '/Views/layouts/footer_publico.php';
