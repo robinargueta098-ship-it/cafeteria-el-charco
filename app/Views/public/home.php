@@ -352,6 +352,18 @@ $tarjetaProducto = function (array $p) {
                         ? str_replace(' ', '', $coordenadas)
                         : $direccionTexto;
                     $urlMapa = 'https://www.google.com/maps?q=' . rawurlencode($consultaMapa) . '&z=17&output=embed';
+
+                    // Si el enlace de Google Maps es de un lugar con ficha (ej. "El Charco"), se usa el mismo
+                    // formato del "Insertar un mapa" de Google: así se ve la ficha del local (nombre,
+                    // calificación, rutas) igual que al tocar "Cómo llegar", no solo un pin suelto.
+                    $lugarId = trim((string) ($config['mapa_lugar_id'] ?? ''));
+                    $lugarNombre = trim((string) ($config['mapa_lugar_nombre'] ?? ''));
+                    if ($lugarId !== '' && $lugarNombre !== '' && preg_match('/^-?\d{1,3}(\.\d+)?,-?\d{1,3}(\.\d+)?$/', $consultaMapa)) {
+                        [$latMapa, $lngMapa] = explode(',', $consultaMapa);
+                        $urlMapa = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1200!2d' . $lngMapa . '!3d' . $latMapa
+                            . '!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s' . rawurlencode($lugarId)
+                            . '!2s' . rawurlencode($lugarNombre) . '!5e0!3m2!1ses!2sgt!5m2!1ses!2sgt';
+                    }
                     ?>
                     <div class="ubicacion-mapa-marcador">
                         <iframe src="<?= htmlspecialchars($urlMapa, ENT_QUOTES, 'UTF-8') ?>"

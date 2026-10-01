@@ -123,10 +123,17 @@ class ConfiguracionController extends Controller
         $avisoMapa = null;
         $enlaceCambio = $datos['google_maps_embed'] !== '' && $datos['google_maps_embed'] !== ($configActual['google_maps_embed'] ?? '');
         $coordenadasManuales = $datos['mapa_coordenadas'] !== ($configActual['mapa_coordenadas'] ?? '');
+        if ($coordenadasManuales) {
+            // Coordenadas escritas a mano: el mapa vuelve a ser un pin en ese punto, sin ficha del lugar.
+            $datos['mapa_lugar_id'] = '';
+            $datos['mapa_lugar_nombre'] = '';
+        }
         if ($enlaceCambio && !$coordenadasManuales) {
-            $coordenadas = GoogleMaps::coordenadasDesdeEnlace($datos['google_maps_embed']);
-            if ($coordenadas !== null) {
-                $datos['mapa_coordenadas'] = $coordenadas;
+            $lugar = GoogleMaps::datosDesdeEnlace($datos['google_maps_embed']);
+            if ($lugar !== null) {
+                $datos['mapa_coordenadas'] = $lugar['coordenadas'];
+                $datos['mapa_lugar_id'] = $lugar['lugar_id'];
+                $datos['mapa_lugar_nombre'] = $lugar['nombre'];
             } else {
                 $avisoMapa = 'No se pudieron leer las coordenadas del enlace de Google Maps; el mapa conserva la ubicación anterior. Puedes escribirlas a mano en "Coordenadas exactas".';
             }

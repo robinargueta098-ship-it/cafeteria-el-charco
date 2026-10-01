@@ -23,6 +23,18 @@ class GoogleMaps
      */
     public static function coordenadasDesdeEnlace(string $enlace): ?string
     {
+        return self::datosDesdeEnlace($enlace)['coordenadas'] ?? null;
+    }
+
+    /**
+     * Coordenadas del pin y, si el enlace es de un lugar de Google (con ficha), su identificador
+     * y nombre: con ellos el mapa de la página muestra la MISMA ficha que "Cómo llegar" (nombre,
+     * calificación, botón de rutas) y no un pin suelto.
+     *
+     * @return array{coordenadas:string,lugar_id:string,nombre:string}|null
+     */
+    public static function datosDesdeEnlace(string $enlace): ?array
+    {
         $enlace = trim($enlace);
         if ($enlace === '' || !self::esEnlacePermitido($enlace) || !function_exists('curl_init')) {
             return null;
@@ -47,22 +59,31 @@ class GoogleMaps
             return null;
         }
 
+        $decodificada = urldecode($urlFinal);
+        $coordenadas = null;
+
         // 1) El pin del lugar en la URL final: !3d<lat>!4d<lng> (es el punto exacto del negocio).
-        if (preg_match('/!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/', urldecode($urlFinal), $m)) {
-            return $m[1] . ',' . $m[2];
+        if (preg_match('/!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/', $decodificada, $m)) {
+            $coordenadas = $m[1] . ',' . $m[2];
+        } elseif (preg_match('/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/', $urlFinal, $m)) {
+            // 2) El centro de la vista: @<lat>,<lng>
+            $coordenadas = $m[1] . ',' . $m[2];
+        } elseif (is_string($cuerpo) && preg_match('/center=(-?\d{1,3}\.\d+)(?:%2C|,)(-?\d{1,3}\.\d+)/', $cuerpo, $m)) {
+            // 3) Último recurso: la imagen de vista previa de la propia página.
+            $coordenadas = $m[1] . ',' . $m[2];
         }
 
-        // 2) El centro de la vista: @<lat>,<lng>
-        if (preg_match('/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/', $urlFinal, $m)) {
-            return $m[1] . ',' . $m[2];
+        if ($coordenadas === null) {
+            return null;
         }
 
-        // 3) Último recurso: la imagen de vista previa de la propia página.
-        if (is_string($cuerpo) && preg_match('/center=(-?\d{1,3}\.\d+)(?:%2C|,)(-?\d{1,3}\.\d+)/', $cuerpo, $m)) {
-            return $m[1] . ',' . $m[2];
-        }
+        // Ficha del lugar: identificador (!1s0x...:0x...) y nombre (/maps/place/<nombre>/).
+        $lugarId = preg_match('/!1s(0x[0-9a-f]+:0x[0-9a-f]+)/i', $decodificada, $m) ? $m[1] : '';
+        $nombre = preg_match('#/maps/place/([^/@]+)#', $urlFinal, $m)
+            ? trim(str_replace('+', ' ', urldecode($m[1])))
+            : '';
 
-        return null;
+        return ['coordenadas' => $coordenadas, 'lugar_id' => $lugarId, 'nombre' => $nombre];
     }
 
     private static function esEnlacePermitido(string $url): bool
