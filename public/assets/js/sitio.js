@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
   inicializarRevelado();
   inicializarRevelaDescripciones();
   inicializarRevelaFotos();
+  inicializarMenuPestanas();
   document.querySelectorAll('[data-carrusel]').forEach(inicializarCarrusel);
 });
 
@@ -68,6 +69,170 @@ function inicializarRevelado() {
     tarjeta.style.transitionDelay = ((indice % 4) * 110) + 'ms';
     observador.observe(tarjeta);
   });
+}
+
+/**
+ * Menú público en el teléfono: la barra de categorías pasa a ser una barra fija con pestañas.
+ *  - Tocar una pestaña baja suavemente hasta esa categoría, que queda justo debajo de la barra.
+ *  - Al desplazarse con el dedo, la pestaña de la categoría que se está viendo se marca sola y la
+ *    barra se desliza de lado para mantenerla a la vista.
+ * Todas las categorías siguen en la página (una debajo de otra): nada se oculta ni se reemplaza.
+ * Las categorías salen del HTML del servidor (las de la base de datos), así que agregar o quitar
+ * categorías en el panel no requiere tocar este código. En escritorio, o sin JavaScript, la barra
+ * sigue siendo una lista de enlaces de ancla.
+ */
+function inicializarMenuPestanas() {
+  var barra = document.querySelector('[data-menu-pestanas]');
+  var enlaces = barra ? Array.prototype.slice.call(barra.querySelectorAll('a[href^="#cat-"]')) : [];
+  var paneles = enlaces.map(function (e) { return document.getElementById(e.getAttribute('href').slice(1)); });
+  if (!barra || enlaces.length === 0 || paneles.indexOf(null) !== -1 || !window.matchMedia) {
+    return;
+  }
+
+  var movil = window.matchMedia('(max-width: 767px)');
+  var encendido = false;
+  var activa = -1;
+  var bloqueoHasta = 0;   // mientras dura el desplazamiento provocado por un toque, no se re-marca
+  var esperando = false;
+  var encabezado = document.querySelector('.sitio-nav');
+
+  function altoEncabezado() {
+    return encabezado ? encabezado.getBoundingClientRect().height : 0;
+  }
+
+  // Línea bajo la cual "empieza" lo visible: encabezado fijo + barra de pestañas.
+  function lineaSuperior() {
+    return altoEncabezado() + barra.getBoundingClientRect().height + 8;
+  }
+
+  function centrar(enlace, suave) {
+    var cajaEnlace = enlace.getBoundingClientRect();
+    var cajaBarra = barra.getBoundingClientRect();
+    var destino = barra.scrollLeft + (cajaEnlace.left - cajaBarra.left) - (barra.clientWidth - cajaEnlace.width) / 2;
+    if (barra.scrollTo) {
+      barra.scrollTo({ left: Math.max(0, destino), behavior: suave ? 'smooth' : 'auto' });
+    } else {
+      barra.scrollLeft = Math.max(0, destino);
+    }
+  }
+
+  function marcar(indice, suave) {
+    if (indice === activa) {
+      return;
+    }
+    activa = indice;
+    enlaces.forEach(function (enlace, i) {
+      enlace.setAttribute('aria-selected', i === indice ? 'true' : 'false');
+    });
+    centrar(enlaces[indice], suave);
+  }
+
+  // La categoría "actual" es la última cuyo encabezado ya pasó la línea de la barra.
+  function categoriaVisible() {
+    var linea = lineaSuperior() + 4;
+    var actual = 0;
+    paneles.forEach(function (panel, i) {
+      if (panel.getBoundingClientRect().top <= linea) {
+        actual = i;
+      }
+    });
+    return actual;
+  }
+
+  function alDesplazar() {
+    if (esperando || Date.now() < bloqueoHasta) {
+      return;
+    }
+    esperando = true;
+    requestAnimationFrame(function () {
+      esperando = false;
+      marcar(categoriaVisible(), true);
+    });
+  }
+
+  function alTocar(evento) {
+    evento.preventDefault();
+    var indice = enlaces.indexOf(evento.currentTarget);
+    var destino = paneles[indice].getBoundingClientRect().top + window.pageYOffset - lineaSuperior() + 4;
+
+    bloqueoHasta = Date.now() + 900;   // dura lo que tarda el desplazamiento suave
+    marcar(indice, true);
+    window.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', enlaces[indice].getAttribute('href'));
+    }
+  }
+
+  function alTeclear(evento) {
+    var indice = enlaces.indexOf(evento.currentTarget);
+    var siguiente = null;
+    if (evento.key === 'ArrowRight') { siguiente = Math.min(enlaces.length - 1, indice + 1); }
+    if (evento.key === 'ArrowLeft') { siguiente = Math.max(0, indice - 1); }
+    if (siguiente !== null) {
+      evento.preventDefault();
+      enlaces[siguiente].focus();
+    }
+  }
+
+  function encender() {
+    encendido = true;
+    barra.classList.add('menu-nav--pestanas');
+    barra.setAttribute('role', 'tablist');
+    enlaces.forEach(function (enlace) {
+      enlace.setAttribute('role', 'tab');
+      enlace.addEventListener('click', alTocar);
+      enlace.addEventListener('keydown', alTeclear);
+    });
+    document.documentElement.style.setProperty('--alto-nav', altoEncabezado() + 'px');
+    // Para que los saltos con enlaces (#cat-...) también queden bajo la barra fija.
+    paneles.forEach(function (panel) { panel.style.scrollMarginTop = lineaSuperior() + 'px'; });
+    window.addEventListener('scroll', alDesplazar, { passive: true });
+    activa = -1;
+    marcar(categoriaVisible(), false);
+  }
+
+  function apagar() {
+    encendido = false;
+    barra.classList.remove('menu-nav--pestanas');
+    barra.removeAttribute('role');
+    enlaces.forEach(function (enlace) {
+      enlace.removeAttribute('role');
+      enlace.removeAttribute('aria-selected');
+      enlace.removeEventListener('click', alTocar);
+      enlace.removeEventListener('keydown', alTeclear);
+    });
+    paneles.forEach(function (panel) { panel.style.scrollMarginTop = ''; });
+    document.documentElement.style.removeProperty('--alto-nav');
+    window.removeEventListener('scroll', alDesplazar);
+    activa = -1;
+  }
+
+  function sincronizar() {
+    if (movil.matches && !encendido) {
+      encender();
+    } else if (!movil.matches && encendido) {
+      apagar();
+    } else if (encendido) {
+      document.documentElement.style.setProperty('--alto-nav', altoEncabezado() + 'px');
+    }
+  }
+
+  sincronizar();
+  if (movil.addEventListener) {
+    movil.addEventListener('change', sincronizar);
+  } else if (movil.addListener) {
+    movil.addListener(sincronizar);
+  }
+
+  // Respaldo: cambiar el tamaño de la ventana, girar el teléfono o abrir/cerrar el modo móvil de
+  // las herramientas de desarrollo no siempre dispara "change" a tiempo.
+  var pendiente = null;
+  function alCambiarTamano() {
+    clearTimeout(pendiente);
+    pendiente = setTimeout(sincronizar, 120);
+  }
+  window.addEventListener('resize', alCambiarTamano);
+  window.addEventListener('orientationchange', alCambiarTamano);
 }
 
 /**

@@ -592,22 +592,44 @@ img {
   display: none;                    /* Chrome/Safari */
 }
 
-/* Accesos rápidos a cada categoría (móvil): chips grandes y fáciles de tocar. */
-@media (max-width: 767px) {
-  .menu-nav {
-    gap: 10px;
-    padding: 4px 16px 12px;
-    margin-left: -16px;
-    margin-right: -16px;
-  }
+/*
+ * Barra de categorías en el teléfono (sitio.js le añade .menu-nav--pestanas): queda fija debajo
+ * del encabezado mientras se recorre el menú, se desliza de lado con el dedo, y la pestaña de la
+ * categoría que se está viendo se resalta en verde. Cada pestaña mide >= 44 px de alto.
+ */
+.menu-nav--pestanas {
+  position: sticky;
+  top: var(--alto-nav, 76px);
+  z-index: 40;
+  background: var(--color-beige-claro);
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  gap: 10px;
+  padding: 10px 16px;
+  margin: 0 -16px 20px;
+  border-bottom: 1px solid var(--color-beige);
+}
 
-  .menu-nav a {
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    padding: 10px 20px;
-    white-space: nowrap;
-  }
+.menu-nav--pestanas a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  scroll-snap-align: center;
+  white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.menu-nav--pestanas a[aria-selected="true"] {
+  background: var(--color-verde);
+  border-color: var(--color-verde);
+  color: var(--color-blanco);
+  box-shadow: 0 2px 8px rgba(75, 107, 58, 0.35);
+}
+
+.menu-nav--pestanas a:focus-visible {
+  outline: 3px solid var(--color-cafe-oscuro);
+  outline-offset: 2px;
 }
 
 /*

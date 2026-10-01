@@ -258,7 +258,10 @@ $tarjetaProducto = function (array $p) {
         <?php if ($menu === []): ?>
             <p class="sitio-seccion-intro">El menú se está preparando.</p>
         <?php else: ?>
-            <nav class="menu-nav" id="menu-nav" aria-label="Ir a una categoría">
+            <?php /* En móvil sitio.js la vuelve una barra fija con pestañas: al tocar una baja hasta esa
+                     categoría y, al desplazarse, marca la que se está viendo. Sin JavaScript, o en
+                     escritorio, son enlaces de ancla normales. */ ?>
+            <nav class="menu-nav" id="menu-nav" aria-label="Ir a una categoría" data-menu-pestanas>
                 <?php foreach ($menu as $cat): ?>
                     <a href="#cat-<?= htmlspecialchars($cat['slug'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($cat['nombre'], ENT_QUOTES, 'UTF-8') ?></a>
                 <?php endforeach; ?>
