@@ -23,9 +23,16 @@ $historicas = array_filter($recompensas, fn ($r) => $r['estado'] !== 'disponible
 // la recompensa todavía no se canjeó — sin esto el contador mostraba "0 / 10" en el mismo
 // instante en que el cliente completó sus 10 cafés, como si no hubiera pasado nada. Se
 // muestra la tarjeta llena (100%) hasta que el cliente empiece a acumular la siguiente de verdad.
-$tarjetaRecienCompletada = $disponibles !== [] && $saldo === 0;
-$numeroMostrado = $tarjetaRecienCompletada ? $umbral : $saldo;
-$porcentaje = min(100, (int) round(($numeroMostrado / max(1, $umbral)) * 100));
+// Misma regla que el panel administrativo (Cliente::progresoTarjeta): con varias recompensas
+// sin canjear y saldo 0 se ve la tarjeta llena de todas (20 / 20, 30 / 30…), no solo 10 / 10.
+$cliente['recompensas_disponibles'] = count($disponibles);
+$progreso = \App\Models\Cliente::progresoTarjeta($cliente, (int) $umbral);
+$tarjetaRecienCompletada = $progreso['completa'];
+$numeroMostrado = $progreso['mostrado'];
+$totalMostrado = $progreso['total'];
+$porcentaje = min(100, (int) round(($numeroMostrado / max(1, $totalMostrado)) * 100));
+$cantidadGratis = count($disponibles);
+$textoGratis = $cantidadGratis === 1 ? 'tu café gratis está' : "tus {$cantidadGratis} cafés gratis están";
 
 $etiquetasEstado = [
     'disponible' => 'Disponible', 'canjeada' => 'Canjeada',
@@ -75,14 +82,14 @@ $etiquetasEstado = [
         <?php endif; ?>
 
         <div class="lealtad-tarjeta" style="margin-bottom:24px;">
-            <div class="lealtad-numero"><?= $numeroMostrado ?> / <?= $umbral ?></div>
+            <div class="lealtad-numero"><?= $numeroMostrado ?> / <?= $totalMostrado ?></div>
             <div class="progreso-lealtad">
                 <div class="progreso-lealtad-barra" style="width:<?= $porcentaje ?>%;"></div>
             </div>
             <?php if ($tarjetaRecienCompletada): ?>
-                <p>¡Completaste tus <?= $umbral ?> cafés! Tu café gratis está arriba, listo para reclamar.</p>
+                <p>¡Completaste tus <?= $totalMostrado ?> cafés! <?= ucfirst($textoGratis) ?> arriba, listo<?= $cantidadGratis === 1 ? '' : 's' ?> para reclamar.</p>
             <?php elseif ($disponibles !== []): ?>
-                <p>Ya tienes un café gratis por reclamar (arriba). Esto es lo que llevas para el siguiente.</p>
+                <p>Ya tienes <?= $cantidadGratis === 1 ? 'un café gratis' : "{$cantidadGratis} cafés gratis" ?> por reclamar (arriba). Esto es lo que llevas para el siguiente.</p>
             <?php else: ?>
                 <p>Cafés acumulados hacia tu próximo café gratis.</p>
             <?php endif; ?>

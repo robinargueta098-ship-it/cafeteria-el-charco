@@ -30,7 +30,11 @@ require APP_PATH . '/Views/layouts/panel_header.php';
                         <tr>
                             <td><?= htmlspecialchars($c['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars($c['telefono'], ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= (int) $c['cafes_acumulados'] ?></td>
+                            <?php $p = \App\Models\Cliente::progresoTarjeta($c, \App\Services\LealtadService::obtenerUmbral()); ?>
+                            <td>
+                                <?= $p['mostrado'] ?> / <?= $p['total'] ?>
+                                <?php if ($p['disponibles'] > 0): ?><span class="insignia insignia-activo"><?= \App\Models\Cliente::etiquetaGratis($p['disponibles']) ?></span><?php endif; ?>
+                            </td>
                             <td><a class="btn btn-pequeno" href="/admin/lealtad/<?= (int) $c['id'] ?>">Ver</a></td>
                         </tr>
                     <?php endforeach; ?>

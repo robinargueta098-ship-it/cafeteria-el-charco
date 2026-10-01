@@ -8,6 +8,42 @@ use App\Core\Database;
 
 class Cliente
 {
+    /** Cliente + cuántas recompensas tiene disponibles (para mostrar el contador de la tarjeta). */
+    private const SELECT_CON_RECOMPENSAS =
+        "SELECT c.*, (SELECT COUNT(*) FROM recompensas r WHERE r.cliente_id = c.id AND r.estado = 'disponible') AS recompensas_disponibles FROM clientes c";
+
+    /**
+     * Contador "X / Y" de la tarjeta de lealtad. Al completar el umbral el saldo real vuelve
+     * a 0 (empieza la siguiente tarjeta) aunque las recompensas sigan sin canjear; mostrar
+     * "0 / 10" en ese momento confunde. Mientras el saldo sea 0 y haya N recompensas
+     * disponibles se muestra la tarjeta llena de las N completadas (10/10, 20/20, 30/30…).
+     * Si además hay un saldo parcial (ej. 25 cafés = 2 recompensas + 5) se muestra ese
+     * saldo normal (5 / 10) y solo se avisa cuántas recompensas hay por canjear.
+     * Mismo criterio que "Mi cuenta" (views/public/cuenta/panel.php).
+     *
+     * @param array<string,mixed> $cliente fila obtenida con recompensas_disponibles
+     * @return array{mostrado:int,total:int,completa:bool,disponibles:int}
+     */
+    public static function progresoTarjeta(array $cliente, int $umbral): array
+    {
+        $saldo = (int) $cliente['cafes_acumulados'];
+        $disponibles = (int) ($cliente['recompensas_disponibles'] ?? 0);
+        $completa = $saldo === 0 && $disponibles > 0;
+
+        return [
+            'mostrado'    => $completa ? $disponibles * $umbral : $saldo,
+            'total'       => $completa ? $disponibles * $umbral : $umbral,
+            'completa'    => $completa,
+            'disponibles' => $disponibles,
+        ];
+    }
+
+    /** "1 café gratis disponible" / "2 cafés gratis disponibles". */
+    public static function etiquetaGratis(int $n): string
+    {
+        return $n === 1 ? '1 café gratis disponible' : $n . ' cafés gratis disponibles';
+    }
+
     /**
      * Quita espacios y guiones para que "5555 1234", "5555-1234" y
      * "55551234" se traten como el mismo teléfono tanto si lo escribe
@@ -26,7 +62,7 @@ class Cliente
 
         if ($termino === '') {
             return Database::conexion()
-                ->query('SELECT * FROM clientes ORDER BY nombre ASC LIMIT 50')
+                ->query(self::SELECT_CON_RECOMPENSAS . ' ORDER BY c.nombre ASC LIMIT 50')
                 ->fetchAll();
         }
 
@@ -40,9 +76,9 @@ class Cliente
         // ATTR_EMULATE_PREPARES=false PDO no permite repetir un mismo nombre de
         // parámetro en la sentencia (error "Invalid parameter number" → 500).
         $stmt = Database::conexion()->prepare(
-            "SELECT * FROM clientes
-             WHERE nombre LIKE :por_nombre ESCAPE '\\\\' OR telefono LIKE :por_telefono ESCAPE '\\\\'
-             ORDER BY nombre ASC LIMIT 50"
+            self::SELECT_CON_RECOMPENSAS . "
+             WHERE c.nombre LIKE :por_nombre ESCAPE '\\\\' OR c.telefono LIKE :por_telefono ESCAPE '\\\\'
+             ORDER BY c.nombre ASC LIMIT 50"
         );
         $stmt->execute(['por_nombre' => $comodin, 'por_telefono' => $comodin]);
 
@@ -51,7 +87,7 @@ class Cliente
 
     public function buscarPorId(int $id): ?array
     {
-        $stmt = Database::conexion()->prepare('SELECT * FROM clientes WHERE id = :id');
+        $stmt = Database::conexion()->prepare(self::SELECT_CON_RECOMPENSAS . ' WHERE c.id = :id');
         $stmt->execute(['id' => $id]);
 
         return $stmt->fetch() ?: null;
@@ -72,7 +108,7 @@ class Cliente
     /** Compara ignorando guiones — ver normalizarCodigoQr() para el porqué. */
     public function buscarPorCodigoQr(string $codigoQr): ?array
     {
-        $stmt = Database::conexion()->prepare("SELECT * FROM clientes WHERE REPLACE(codigo_qr, '-', '') = :codigo_qr");
+        $stmt = Database::conexion()->prepare(self::SELECT_CON_RECOMPENSAS . " WHERE REPLACE(c.codigo_qr, '-', '') = :codigo_qr");
         $stmt->execute(['codigo_qr' => $codigoQr]);
 
         return $stmt->fetch() ?: null;
@@ -170,7 +206,7 @@ class Cliente
 
     public function buscarPorTelefono(string $telefono): ?array
     {
-        $stmt = Database::conexion()->prepare('SELECT * FROM clientes WHERE telefono = :telefono');
+        $stmt = Database::conexion()->prepare(self::SELECT_CON_RECOMPENSAS . ' WHERE c.telefono = :telefono');
         $stmt->execute(['telefono' => $telefono]);
 
         return $stmt->fetch() ?: null;
