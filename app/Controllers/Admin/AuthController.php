@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Core\Auth;
+use App\Core\BorradorFormulario;
 use App\Core\Controller;
 use App\Core\Flash;
 use App\Core\Validator;
@@ -45,7 +46,8 @@ class AuthController extends Controller
         $usuario = Auth::usuario();
         AuditoriaService::registrar('usuarios', $usuario['id'], 'login', null, ['usuario' => $usuario['nombre']]);
 
-        $this->redirigir('/admin');
+        // Si la sesión venció a mitad de un formulario, se vuelve a esa pantalla (con lo escrito) y no al inicio.
+        $this->redirigir(BorradorFormulario::destinoPendiente() ?? '/admin');
     }
 
     public function cerrarSesion(): void

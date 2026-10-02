@@ -75,6 +75,25 @@ class ClienteAuth
         return !empty($_SESSION['cliente_id']);
     }
 
+    /** La sesión apunta a un cliente que todavía existe (puede haber sido eliminado desde el panel). */
+    public static function clienteExiste(): bool
+    {
+        return self::verificado() && (new Cliente())->buscarPorId((int) $_SESSION['cliente_id']) !== null;
+    }
+
+    /**
+     * Cierra la sesión de un cliente que ya no existe y lo manda al login con un aviso claro.
+     * (El aviso se pone DESPUÉS de destruir la sesión vieja, en una sesión nueva.)
+     */
+    public static function expulsarPorCuentaInexistente(): never
+    {
+        self::cerrarSesion();
+        Session::iniciar();
+        Flash::error('Tu cuenta ya no está disponible. Si crees que es un error, pregunta en la cafetería.');
+        header('Location: /cuenta/login');
+        exit;
+    }
+
     /** @return array{id:int,nombre:string}|null */
     public static function cliente(): ?array
     {

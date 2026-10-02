@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Middleware;
 
 use App\Core\Auth;
+use App\Core\BorradorFormulario;
 use App\Core\ClienteAuth;
 use App\Core\Csrf;
 use App\Core\Flash;
@@ -52,11 +53,21 @@ class CsrfMiddleware
         $ruta = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
 
         if ($ruta === '/admin' || str_starts_with($ruta, '/admin/')) {
+            // Lo que el usuario alcanzó a escribir NO se pierde: se guarda un borrador temporal y se le
+            // devuelve a la misma pantalla (admin.js rellena los campos). Los archivos sí hay que elegirlos otra vez.
+            $destino = BorradorFormulario::destinoSeguro($ruta, $_SERVER['HTTP_REFERER'] ?? null);
+            $guardado = BorradorFormulario::guardar($ruta, $_POST, $destino);
+            $conArchivos = array_filter($_FILES, fn ($f) => is_array($f) && ($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) !== [];
+            $avisoArchivos = $conArchivos ? ' Vuelve a seleccionar la foto o el archivo.' : '';
+
             if (Auth::verificado()) {
-                Flash::error('La página estaba desactualizada y no se guardó nada. Vuelve a intentarlo.');
-                header('Location: /admin');
+                Flash::error('La página estaba desactualizada y no se guardó nada.'
+                    . ($guardado ? ' Recuperamos lo que escribiste: revísalo y vuelve a enviar.' : ' Vuelve a intentarlo.') . $avisoArchivos);
+                header('Location: ' . ($guardado ? $destino : '/admin'));
             } else {
-                Flash::error('Tu sesión expiró. Inicia sesión de nuevo.');
+                Flash::error($guardado
+                    ? 'Tu sesión expiró. Inicia sesión y volverás a la pantalla donde estabas, con lo que escribiste.' . $avisoArchivos
+                    : 'Tu sesión expiró. Inicia sesión de nuevo.');
                 header('Location: /admin/login');
             }
             exit;

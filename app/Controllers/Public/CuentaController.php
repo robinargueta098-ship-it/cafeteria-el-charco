@@ -145,6 +145,9 @@ class CuentaController extends Controller
         $clienteId = ClienteAuth::cliente()['id'];
 
         $cliente = (new Cliente())->buscarPorId($clienteId);
+        if ($cliente === null) {
+            ClienteAuth::expulsarPorCuentaInexistente(); // defensa extra: el cliente se borró entre la verificación y aquí
+        }
         $umbral = LealtadService::obtenerUmbral();
 
         // Código personal para sumar cafés. Si falla (ej. falta aplicar la migración

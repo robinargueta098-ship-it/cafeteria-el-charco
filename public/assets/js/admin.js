@@ -4,7 +4,43 @@
  * real ocurre en el servidor (App\Core\Validator y cada controlador),
  * esto es puramente para que el formulario sea más claro de llenar.
  */
+/**
+ * Rellena el formulario con el borrador que dejó el servidor (window.__BORRADOR) cuando un envío se rechazó
+ * por token vencido o sesión expirada. Solo toca el formulario cuyo action coincide con el envío rechazado.
+ */
+function restaurarBorrador() {
+  var borrador = window.__BORRADOR;
+  if (!borrador || !borrador.datos) {
+    return;
+  }
+
+  var forms = Array.prototype.filter.call(document.querySelectorAll('form'), function (f) {
+    var destino = f.getAttribute('action');
+    var ruta = destino ? new URL(destino, window.location.href).pathname : window.location.pathname;
+    return ruta.replace(/\/$/, '') === borrador.ruta.replace(/\/$/, '');
+  });
+
+  forms.forEach(function (form) {
+    Array.prototype.forEach.call(form.elements, function (campo) {
+      var nombre = campo.name;
+      if (!nombre || campo.type === 'file' || campo.type === 'hidden' || campo.type === 'submit' || campo.type === 'button') {
+        return;
+      }
+      var clave = nombre.replace(/\[\]$/, '');
+      var guardado = borrador.datos[clave];
+
+      if (campo.type === 'checkbox' || campo.type === 'radio') {
+        var lista = Array.isArray(guardado) ? guardado : (guardado === undefined ? [] : [guardado]);
+        campo.checked = lista.indexOf(campo.value) !== -1;
+      } else if (guardado !== undefined && !Array.isArray(guardado)) {
+        campo.value = guardado;
+      }
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+  restaurarBorrador();
   // Campos de teléfono: solo números (y como máximo los que permite maxlength) mientras se escribe o se pega.
   document.querySelectorAll('input[data-solo-digitos]').forEach(function (campo) {
     campo.addEventListener('input', function () {

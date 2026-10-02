@@ -19,5 +19,11 @@ class ClienteAuthMiddleware
             header('Location: /cuenta/login');
             exit;
         }
+
+        // Si el Administrador eliminó a este cliente mientras tenía la sesión abierta, no se muestra una
+        // cuenta vacía: se cierra la sesión y se le avisa.
+        if (!ClienteAuth::clienteExiste()) {
+            ClienteAuth::expulsarPorCuentaInexistente();
+        }
     }
 }
