@@ -185,6 +185,30 @@
     return h + ':' + (m < 10 ? '0' : '') + m;
   }
 
+  var NOMBRES_DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+  /**
+   * Próxima vez que abre el negocio, mirando el resto de hoy y luego los días siguientes según el
+   * horario configurado en el panel (incluye el segundo turno de un horario partido).
+   * @return {string} ej. "hoy a las 16:00", "mañana (sábado) a las 17:00", "el lunes a las 9:00"; '' si nunca abre
+   */
+  function proximaApertura(horario, t) {
+    for (var desplazamiento = 0; desplazamiento <= 7; desplazamiento++) {
+      var dia = (t.dia + desplazamiento) % 7;
+      var datosDia = horario.filter(function (d) { return d.dia === dia; })[0];
+      if (!datosDia) {
+        continue;
+      }
+      var turno = datosDia.turnos.filter(function (tr) { return desplazamiento > 0 || tr[0] > t.minutos; })[0];
+      if (turno) {
+        var cuando = desplazamiento === 0 ? 'hoy'
+          : (desplazamiento === 1 ? 'mañana (' + NOMBRES_DIA[dia] + ')' : 'el ' + NOMBRES_DIA[dia]);
+        return cuando + ' a las ' + hhmm(turno[0]);
+      }
+    }
+    return '';
+  }
+
   /** @return {{abierto:boolean, hoy:string, proxima:string}} */
   function estadoHorario() {
     var horario = datos.horario || [];
@@ -197,11 +221,11 @@
       return { abierto: true, hoy: '', proxima: '' };
     }
     var abierto = hoy.turnos.some(function (turno) { return t.minutos >= turno[0] && t.minutos < turno[1]; });
-    var proximo = hoy.turnos.filter(function (turno) { return turno[0] > t.minutos; })[0];
+    var proxima = abierto ? '' : proximaApertura(horario, t);
     return {
       abierto: abierto,
       hoy: hoy.texto,
-      proxima: proximo ? 'Abrimos hoy a las ' + hhmm(proximo[0]) + '.' : ''
+      proxima: proxima ? 'Volvemos a atender ' + proxima + '.' : ''
     };
   }
 
@@ -218,7 +242,7 @@
     el.aviso.appendChild(principal);
     var detalle = document.createElement('span');
     var hoy = estado.hoy === 'Cerrado' ? 'Hoy no abrimos.' : (estado.hoy ? 'Horario de hoy: ' + estado.hoy + '.' : '');
-    detalle.textContent = ' ' + [hoy, estado.proxima].filter(Boolean).join(' ') + ' Lo atenderemos en cuanto abramos.';
+    detalle.textContent = ' ' + [estado.proxima, hoy].filter(Boolean).join(' ') + ' Lo atenderemos en cuanto abramos.';
     el.aviso.appendChild(detalle);
   }
 
