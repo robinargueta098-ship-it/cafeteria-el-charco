@@ -64,15 +64,59 @@ class LealtadService
      *
      * @return array{ok:bool,error?:string,codigos_generados?:array<int,string>}
      */
+    /** Una cafetería no vende al mayoreo: más de esto en un solo consumo casi seguro es un error de captura. */
+    public const MAX_CAFES_POR_CONSUMO = 30;
+    public const MAX_CAFES_POR_AJUSTE = 200;
+
+    /**
+     * Lee la cantidad escrita por el usuario: entero, mayor que cero y no más de $maximo. Rechaza
+     * decimales ("2.5") en vez de truncarlos a 2 en silencio. $accion completa la frase de error
+     * ("registrar en un solo consumo").
+     *
+     * @param mixed $entrada valor crudo de $_POST
+     * @return array{ok:bool,valor?:int,error?:string}
+     */
+    public static function leerCantidad(mixed $entrada, int $maximo, string $accion): array
+    {
+        $texto = is_string($entrada) || is_int($entrada) ? trim((string) $entrada) : '';
+
+        if ($texto === '') {
+            return ['ok' => false, 'error' => 'Escribe la cantidad de cafés.'];
+        }
+        if (preg_match('/^[+-]?\d+[.,]\d+$/', $texto) === 1) {
+            return ['ok' => false, 'error' => 'La cantidad debe ser un número entero, sin decimales (ej. 2, no 2.5).'];
+        }
+        if (preg_match('/^\d{1,6}$/', $texto) !== 1) {
+            return ['ok' => false, 'error' => 'La cantidad debe ser un número entero mayor que cero.'];
+        }
+
+        $valor = (int) $texto;
+        if ($valor < 1) {
+            return ['ok' => false, 'error' => 'La cantidad debe ser mayor que cero.'];
+        }
+        if ($valor > $maximo) {
+            return ['ok' => false, 'error' => "No se pueden {$accion} más de {$maximo} cafés. Si de verdad corresponde, hazlo en varias operaciones."];
+        }
+
+        return ['ok' => true, 'valor' => $valor];
+    }
+
     public static function registrarConsumo(int $clienteId, int $cantidad, int $usuarioId, string $motivo): array
     {
         if ($cantidad <= 0) {
             return ['ok' => false, 'error' => 'La cantidad debe ser mayor que cero.'];
         }
 
+        if ($cantidad > self::MAX_CAFES_POR_CONSUMO) {
+            return ['ok' => false, 'error' => 'No se pueden registrar más de ' . self::MAX_CAFES_POR_CONSUMO . ' cafés en un solo consumo.'];
+        }
+
         $motivo = trim($motivo);
         if ($motivo === '') {
             return ['ok' => false, 'error' => 'El motivo del consumo es obligatorio.'];
+        }
+        if (mb_strlen($motivo) > 255) {
+            return ['ok' => false, 'error' => 'El motivo no puede tener más de 255 caracteres.'];
         }
 
         $resultado = self::conCandado($clienteId, function (int $saldoActual) use ($clienteId, $cantidad, $usuarioId, $motivo) {
@@ -109,8 +153,15 @@ class LealtadService
             return ['ok' => false, 'error' => 'La cantidad del ajuste debe ser mayor que cero.'];
         }
 
+        if ($cantidad > self::MAX_CAFES_POR_AJUSTE) {
+            return ['ok' => false, 'error' => 'No se pueden ajustar más de ' . self::MAX_CAFES_POR_AJUSTE . ' cafés de una sola vez.'];
+        }
+
         if (trim($motivo) === '') {
             return ['ok' => false, 'error' => 'El motivo del ajuste es obligatorio.'];
+        }
+        if (mb_strlen(trim($motivo)) > 255) {
+            return ['ok' => false, 'error' => 'El motivo no puede tener más de 255 caracteres.'];
         }
 
         $codigosRevocados = [];

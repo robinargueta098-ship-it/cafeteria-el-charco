@@ -240,7 +240,7 @@ $totalPortada = count($portada);
         <h2>Lealtad</h2>
         <div class="campo">
             <label for="umbral_lealtad">Cafés necesarios para 1 gratis</label>
-            <input type="number" id="umbral_lealtad" name="umbral_lealtad" min="1"
+            <input type="number" id="umbral_lealtad" name="umbral_lealtad" min="1" max="100" step="1"
                    value="<?= htmlspecialchars($config['umbral_lealtad'] ?? '10', ENT_QUOTES, 'UTF-8') ?>">
         </div>
 

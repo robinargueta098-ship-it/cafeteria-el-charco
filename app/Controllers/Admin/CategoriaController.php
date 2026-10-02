@@ -173,7 +173,13 @@ class CategoriaController extends Controller
             ->longitudMaxima('descripcion', 'Descripción', 255)
             ->longitudMaxima('notas', 'Notas', 255);
 
-        return $validador->errores();
+        $errores = $validador->errores();
+
+        if ($datos['orden'] < 0 || $datos['orden'] > 9999) {
+            $errores[] = 'El orden debe ser un número entre 0 y 9999.';
+        }
+
+        return $errores;
     }
 
     private function nuloSiVacio(mixed $valor): ?string

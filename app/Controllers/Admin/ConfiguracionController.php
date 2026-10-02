@@ -312,12 +312,28 @@ class ConfiguracionController extends Controller
             ->longitudMaxima('facebook_nombre', 'Facebook', 100)
             ->longitudMaxima('frase_hero', 'Frase de bienvenida', 200)
             ->longitudMaxima('descripcion_corta', 'Descripción breve', 300)
-            ->numerico('umbral_lealtad', 'Umbral de lealtad');
+            ->longitudMaxima('google_maps_embed', 'Enlace de Google Maps', 255);
 
         $errores = $validador->errores();
 
-        if ($datos['umbral_lealtad'] !== '' && (int) $datos['umbral_lealtad'] <= 0) {
-            $errores[] = 'El umbral de lealtad debe ser un número mayor que cero.';
+        // Umbral de lealtad: entero entre 1 y 100 (sin decimales ni notación científica).
+        if ($datos['umbral_lealtad'] !== '' && preg_match('/^\d{1,3}$/', $datos['umbral_lealtad']) !== 1) {
+            $errores[] = 'El umbral de lealtad debe ser un número entero (ej. 10), sin decimales.';
+        } elseif ($datos['umbral_lealtad'] !== '' && ((int) $datos['umbral_lealtad'] < 1 || (int) $datos['umbral_lealtad'] > 100)) {
+            $errores[] = 'El umbral de lealtad debe estar entre 1 y 100 cafés.';
+        }
+
+        $coordenadas = trim((string) ($datos['mapa_coordenadas'] ?? ''));
+        if ($coordenadas !== '') {
+            if (preg_match('/^(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/', $coordenadas, $m) !== 1
+                || abs((float) $m[1]) > 90 || abs((float) $m[2]) > 180) {
+                $errores[] = 'Las coordenadas del mapa deben tener el formato "latitud, longitud" (ej. 15.0176, -91.1525).';
+            }
+        }
+
+        $enlaceMapa = (string) ($datos['google_maps_embed'] ?? '');
+        if ($enlaceMapa !== '' && !preg_match('#^https://#i', $enlaceMapa)) {
+            $errores[] = 'El enlace de Google Maps debe empezar con https://';
         }
 
         return $errores;

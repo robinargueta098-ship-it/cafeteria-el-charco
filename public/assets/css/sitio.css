@@ -433,10 +433,16 @@ img {
   }
 }
 
+/* 3 columnas desde 900px (a 768px las tarjetas de ~195px útiles no alcanzaban para cantidad + "Agregar"). */
 @media (min-width: 768px) {
   .tarjetas-grid {
-    grid-template-columns: repeat(3, 1fr);
     gap: 24px;
+  }
+}
+
+@media (min-width: 900px) {
+  .tarjetas-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -657,7 +663,7 @@ img {
   }
 
   .menu-categoria .tarjetas-grid > .tarjeta-producto {
-    flex: 0 0 74%;
+    flex: 0 0 82%;
     max-width: 300px;
     scroll-snap-align: start;
   }
@@ -1272,6 +1278,7 @@ img {
 /* Botón "+ Agregar" de cada tarjeta de producto. */
 .agregar-carrito {
   display: flex;
+  flex-wrap: wrap;      /* si no cabe a la par de la cantidad (pantallas de ~320px), el botón baja y ocupa todo el ancho */
   align-items: stretch;
   gap: 8px;
   margin-top: 10px;
@@ -1312,7 +1319,8 @@ img {
 }
 
 .btn-agregar {
-  flex: 1 1 auto;
+  flex: 1 1 110px;
+  min-width: 0;
   min-height: 44px;
   padding: 8px 10px;
   white-space: nowrap;

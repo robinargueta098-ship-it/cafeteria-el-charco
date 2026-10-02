@@ -90,7 +90,7 @@ class PromocionController extends Controller
         }
 
         $datos = $this->datosDelFormulario();
-        $errores = $this->validar($datos);
+        $errores = $this->validar($datos, (string) $existente['fecha_inicio']);
 
         $imagenNueva = null;
         if ($errores === [] && ($_FILES['imagen']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
@@ -201,14 +201,18 @@ class PromocionController extends Controller
     }
 
     /** @return array<int,string> */
-    private function validar(array $datos): array
+    /** @param string|null $inicioExistente fecha de inicio ya guardada (al editar): si no cambia, no se exige que sea futura */
+    private function validar(array $datos, ?string $inicioExistente = null): array
     {
         $validador = new Validator($datos);
         $validador
             ->requerido('nombre', 'Nombre')
             ->longitudMaxima('nombre', 'Nombre', 120)
+            ->longitudMaxima('descripcion', 'Descripción', 255)
             ->requerido('fecha_inicio', 'Fecha de inicio')
+            ->fecha('fecha_inicio', 'Fecha de inicio')
             ->requerido('fecha_fin', 'Fecha de fin')
+            ->fecha('fecha_fin', 'Fecha de fin')
             ->enQueValores('tipo', 'Tipo', self::TIPOS_VALIDOS);
 
         $errores = $validador->errores();
@@ -220,11 +224,30 @@ class PromocionController extends Controller
                 $errores[] = 'Ingresa un valor numérico mayor que cero para este tipo de promoción.';
             } elseif ($datos['tipo'] === 'descuento_porcentaje' && (float) $datos['valor'] > 100) {
                 $errores[] = 'El descuento porcentual no puede ser mayor a 100.';
+            } else {
+                // Mismo cuidado que con los precios: máximo 2 decimales, sin notación científica.
+                $tope = $datos['tipo'] === 'descuento_porcentaje' ? 100.0 : Producto::PRECIO_MAXIMO;
+                $v = new Validator(['valor' => $datos['valor']]);
+                $v->precio('valor', 'El valor', $tope);
+                $errores = array_merge($errores, $v->errores());
             }
         }
 
-        if ($datos['fecha_inicio'] !== '' && $datos['fecha_fin'] !== '' && $datos['fecha_fin'] < $datos['fecha_inicio']) {
+        if ($datos['prioridad'] < -100 || $datos['prioridad'] > 100) {
+            $errores[] = 'La prioridad debe ser un número entre -100 y 100.';
+        }
+
+        $inicioValido = Validator::esFechaValida($datos['fecha_inicio']);
+        $finValido = Validator::esFechaValida($datos['fecha_fin']);
+
+        if ($inicioValido && $finValido && $datos['fecha_fin'] < $datos['fecha_inicio']) {
             $errores[] = 'La fecha de fin no puede ser anterior a la fecha de inicio.';
+        }
+
+        // Una promoción nueva no puede empezar en el pasado. Al EDITAR una que ya empezó, la fecha de
+        // inicio se deja como está (si no, no se podría ni corregir el nombre de una promoción vigente).
+        if ($inicioValido && $datos['fecha_inicio'] < date('Y-m-d') && $datos['fecha_inicio'] !== $inicioExistente) {
+            $errores[] = 'La fecha de inicio no puede ser anterior a hoy.';
         }
 
         if ($datos['hora_inicio'] !== null && $datos['hora_fin'] !== null && $datos['hora_fin'] < $datos['hora_inicio']) {

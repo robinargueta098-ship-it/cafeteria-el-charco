@@ -43,6 +43,9 @@ class ClienteController extends Controller
             try {
                 $id = (new Cliente())->crear($datos);
             } catch (PDOException $e) {
+                if ((int) ($e->errorInfo[1] ?? 0) !== 1062) {
+                    throw $e; // no era un duplicado: no se disfraza de "ya existe"
+                }
                 $errores[] = 'Ya existe un cliente con ese número de teléfono.';
             }
         }
@@ -87,6 +90,9 @@ class ClienteController extends Controller
             try {
                 $modelo->actualizar((int) $id, $datos);
             } catch (PDOException $e) {
+                if ((int) ($e->errorInfo[1] ?? 0) !== 1062) {
+                    throw $e; // no era un duplicado: no se disfraza de "ya existe"
+                }
                 $errores[] = 'Ya existe otro cliente con ese número de teléfono.';
             }
         }
@@ -123,7 +129,9 @@ class ClienteController extends Controller
             ->longitudMaxima('nombre', 'Nombre', 120)
             ->requerido('telefono', 'Teléfono')
             ->longitudMaxima('telefono', 'Teléfono', 20)
-            ->email('email', 'Correo');
+            ->email('email', 'Correo')
+            ->longitudMaxima('email', 'Correo', 150)
+            ->longitudMaxima('notas', 'Notas', 255);
 
         $errores = $validador->errores();
         if ($datos['telefono'] !== '' && !Cliente::telefonoValido((string) $datos['telefono'])) {

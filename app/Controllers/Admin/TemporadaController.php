@@ -90,7 +90,7 @@ class TemporadaController extends Controller
         }
 
         $datos = $this->datosDelFormulario();
-        $errores = $this->validar($datos);
+        $errores = $this->validar($datos, (string) $existente['fecha_inicio']);
 
         $imagenNueva = null;
         if ($errores === [] && ($_FILES['imagen']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
@@ -167,19 +167,31 @@ class TemporadaController extends Controller
     }
 
     /** @return array<int,string> */
-    private function validar(array $datos): array
+    /** @param string|null $inicioExistente fecha de inicio ya guardada (al editar) */
+    private function validar(array $datos, ?string $inicioExistente = null): array
     {
         $validador = new Validator($datos);
         $validador
             ->requerido('nombre', 'Nombre')
             ->longitudMaxima('nombre', 'Nombre', 100)
+            ->longitudMaxima('descripcion', 'Descripción', 255)
             ->requerido('fecha_inicio', 'Fecha de inicio')
-            ->requerido('fecha_fin', 'Fecha de fin');
+            ->fecha('fecha_inicio', 'Fecha de inicio')
+            ->requerido('fecha_fin', 'Fecha de fin')
+            ->fecha('fecha_fin', 'Fecha de fin');
 
         $errores = $validador->errores();
 
-        if ($datos['fecha_inicio'] !== '' && $datos['fecha_fin'] !== '' && $datos['fecha_fin'] < $datos['fecha_inicio']) {
+        $inicioValido = Validator::esFechaValida($datos['fecha_inicio']);
+        $finValido = Validator::esFechaValida($datos['fecha_fin']);
+
+        if ($inicioValido && $finValido && $datos['fecha_fin'] < $datos['fecha_inicio']) {
             $errores[] = 'La fecha de fin no puede ser anterior a la fecha de inicio.';
+        }
+
+        // Temporada nueva: no puede empezar en el pasado. Al editar una que ya empezó, su inicio no cambia.
+        if ($inicioValido && $datos['fecha_inicio'] < date('Y-m-d') && $datos['fecha_inicio'] !== $inicioExistente) {
+            $errores[] = 'La fecha de inicio no puede ser anterior a hoy.';
         }
 
         return $errores;

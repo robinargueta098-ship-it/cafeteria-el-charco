@@ -8,6 +8,9 @@ use App\Core\Database;
 
 class Producto
 {
+    /** Tope razonable para un producto de cafetería (en quetzales); también evita valores absurdos por error de captura. */
+    public const PRECIO_MAXIMO = 500.0;
+
     /** @return array<int,array<string,mixed>> */
     public function listarTodos(): array
     {

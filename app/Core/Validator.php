@@ -72,6 +72,48 @@ class Validator
         return $this;
     }
 
+    /**
+     * Dinero con hasta 2 decimales y un máximo: rechaza notación científica ("1e3"), comas, letras
+     * y más de 2 decimales (antes MariaDB los redondeaba o recortaba en silencio).
+     */
+    public function precio(string $campo, string $etiqueta, float $maximo): static
+    {
+        $valor = $this->valor($campo);
+
+        if ($valor === null || $valor === '') {
+            return $this;
+        }
+
+        $texto = is_string($valor) || is_int($valor) || is_float($valor) ? trim((string) $valor) : '';
+
+        if (preg_match('/^\d{1,6}(\.\d{1,2})?$/', $texto) !== 1) {
+            $this->errores[] = "{$etiqueta} debe ser un número con máximo 2 decimales (ej. 25 o 25.50), sin comas, letras ni notación científica.";
+        } elseif ((float) $texto > $maximo) {
+            $this->errores[] = sprintf('%s no puede ser mayor a Q%s.', $etiqueta, number_format($maximo, 2, '.', ''));
+        }
+
+        return $this;
+    }
+
+    /** Fecha de calendario real en formato AAAA-MM-DD (rechaza "2026-02-30", "ayer" o 0000-00-00). */
+    public function fecha(string $campo, string $etiqueta): static
+    {
+        $valor = $this->valor($campo);
+
+        if ($valor !== null && $valor !== '' && !self::esFechaValida((string) $valor)) {
+            $this->errores[] = "{$etiqueta} no es una fecha válida (usa el calendario: AAAA-MM-DD).";
+        }
+
+        return $this;
+    }
+
+    public static function esFechaValida(string $fecha): bool
+    {
+        $d = \DateTime::createFromFormat('!Y-m-d', $fecha);
+
+        return $d !== false && $d->format('Y-m-d') === $fecha && $fecha >= '2000-01-01';
+    }
+
     public function email(string $campo, string $etiqueta): static
     {
         $valor = $this->valor($campo);

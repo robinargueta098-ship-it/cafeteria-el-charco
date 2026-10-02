@@ -210,8 +210,9 @@ class ProductoController extends Controller
             ->requerido('nombre', 'Nombre')
             ->longitudMaxima('nombre', 'Nombre', 120)
             ->longitudMaxima('descripcion', 'Descripción', 255)
+            ->longitudMaxima('etiqueta_precio_alt', 'La etiqueta del precio alternativo', 40)
             ->requerido('precio', 'Precio')
-            ->numerico('precio', 'Precio');
+            ->precio('precio', 'Precio', Producto::PRECIO_MAXIMO);
 
         $errores = $validador->errores();
 
@@ -220,12 +221,19 @@ class ProductoController extends Controller
         }
 
         if ($datos['precio_alt'] !== null) {
-            if (!is_numeric($datos['precio_alt']) || (float) $datos['precio_alt'] <= 0) {
-                $errores[] = 'El precio alternativo debe ser un número mayor que cero.';
+            $alt = new Validator(['precio_alt' => $datos['precio_alt']]);
+            $alt->precio('precio_alt', 'Precio alternativo', Producto::PRECIO_MAXIMO);
+            $errores = array_merge($errores, $alt->errores());
+            if ($alt->esValido() && (float) $datos['precio_alt'] <= 0) {
+                $errores[] = 'El precio alternativo debe ser mayor que cero.';
             }
             if ($datos['etiqueta_precio_alt'] === null) {
                 $errores[] = 'Si defines un precio alternativo, escribe también su etiqueta (ej. "Sin café").';
             }
+        }
+
+        if ($datos['orden'] < 0 || $datos['orden'] > 9999) {
+            $errores[] = 'El orden debe ser un número entre 0 y 9999.';
         }
 
         if ($datos['categoria_id'] <= 0 || !(new Categoria())->buscarPorId($datos['categoria_id'])) {

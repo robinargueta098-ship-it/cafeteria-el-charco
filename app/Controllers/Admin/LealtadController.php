@@ -57,7 +57,12 @@ class LealtadController extends Controller
             $this->error404();
         }
 
-        $cantidad = (int) ($_POST['cantidad'] ?? 0);
+        $lectura = LealtadService::leerCantidad($_POST['cantidad'] ?? '', LealtadService::MAX_CAFES_POR_CONSUMO, 'registrar en un solo consumo');
+        if (!$lectura['ok']) {
+            Flash::error($lectura['error']);
+            $this->redirigir('/admin/lealtad/' . $id);
+        }
+        $cantidad = $lectura['valor'];
         $motivo = trim((string) ($_POST['motivo'] ?? ''));
         $usuario = Auth::usuario();
 
@@ -88,7 +93,12 @@ class LealtadController extends Controller
         }
 
         $tipo = (string) ($_POST['tipo'] ?? '');
-        $cantidad = (int) ($_POST['cantidad'] ?? 0);
+        $lectura = LealtadService::leerCantidad($_POST['cantidad'] ?? '', LealtadService::MAX_CAFES_POR_AJUSTE, 'ajustar de una sola vez');
+        if (!$lectura['ok']) {
+            Flash::error($lectura['error']);
+            $this->redirigir('/admin/lealtad/' . $id);
+        }
+        $cantidad = $lectura['valor'];
         $motivo = trim((string) ($_POST['motivo'] ?? ''));
         $usuario = Auth::usuario();
 
@@ -238,7 +248,6 @@ class LealtadController extends Controller
         $this->requerirRol(1, 2);
 
         $codigoQr = Cliente::normalizarCodigoQr((string) ($_POST['codigo_qr'] ?? ''));
-        $cantidad = (int) ($_POST['cantidad'] ?? 0);
         $motivo = 'Escaneo de QR personal'; // compra normal: no se le pide motivo al cajero
         $usuario = Auth::usuario();
 
@@ -248,6 +257,14 @@ class LealtadController extends Controller
             $this->vistaCanjear($codigoQr, '', null, 'No se encontró ningún cliente con ese código.');
             return;
         }
+
+        // El tope se valida aquí (servidor), no solo con el atributo max del HTML.
+        $lectura = LealtadService::leerCantidad($_POST['cantidad'] ?? '', LealtadService::MAX_CAFES_POR_CONSUMO, 'registrar en un solo consumo');
+        if (!$lectura['ok']) {
+            $this->vistaCanjear($codigoQr, '', null, $lectura['error'], $cliente);
+            return;
+        }
+        $cantidad = $lectura['valor'];
 
         $resultado = LealtadService::registrarConsumo((int) $cliente['id'], $cantidad, $usuario['id'], $motivo);
 

@@ -46,6 +46,9 @@ class UsuarioController extends Controller
                 $modelo = new Usuario();
                 $id = $modelo->crear($datos['nombre'], $datos['usuario'], password_hash($datos['password'], PASSWORD_DEFAULT), $datos['rol_id'], $datos['activo']);
             } catch (PDOException $e) {
+                if ((int) ($e->errorInfo[1] ?? 0) !== 1062) {
+                    throw $e; // no era un duplicado: no se disfraza de "ya existe"
+                }
                 $errores[] = 'Ya existe un usuario con ese nombre de usuario.';
             }
         }
@@ -105,6 +108,9 @@ class UsuarioController extends Controller
                     $modelo->actualizarPassword((int) $id, password_hash($datos['password'], PASSWORD_DEFAULT));
                 }
             } catch (PDOException $e) {
+                if ((int) ($e->errorInfo[1] ?? 0) !== 1062) {
+                    throw $e; // no era un duplicado: no se disfraza de "ya existe"
+                }
                 $errores[] = 'Ya existe otro usuario con ese nombre de usuario.';
             }
         }

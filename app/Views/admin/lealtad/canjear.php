@@ -79,7 +79,7 @@ require APP_PATH . '/Views/layouts/panel_header.php';
             <input type="hidden" name="codigo_qr" value="<?= htmlspecialchars((string) ($clienteEscaneado['codigo_qr'] ?? $codigo), ENT_QUOTES, 'UTF-8') ?>">
             <div class="campo">
                 <label for="cantidad">Cafés comprados</label>
-                <input type="number" id="cantidad" name="cantidad" min="1" max="50" value="1" required>
+                <input type="number" id="cantidad" name="cantidad" min="1" max="30" step="1" value="1" required inputmode="numeric">
             </div>
             <button type="submit" class="btn btn-verde">Sumar cafés</button>
         </form>

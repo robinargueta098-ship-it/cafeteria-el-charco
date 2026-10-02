@@ -52,7 +52,7 @@ $etiquetasEstadoRecompensa = ['disponible' => 'Disponible', 'canjeada' => 'Canje
             <?= Csrf::campo() ?>
             <div class="campo">
                 <label for="cantidad">Cantidad de cafés comprados</label>
-                <input type="number" id="cantidad" name="cantidad" min="1" value="1" required>
+                <input type="number" id="cantidad" name="cantidad" min="1" max="30" step="1" value="1" required inputmode="numeric">
             </div>
             <div class="campo">
                 <label for="motivo_consumo">Motivo (obligatorio)</label>
@@ -77,7 +77,7 @@ $etiquetasEstadoRecompensa = ['disponible' => 'Disponible', 'canjeada' => 'Canje
             </div>
             <div class="campo">
                 <label for="ajuste_cantidad">Cantidad</label>
-                <input type="number" id="ajuste_cantidad" name="cantidad" min="1" required>
+                <input type="number" id="ajuste_cantidad" name="cantidad" min="1" max="200" step="1" required inputmode="numeric">
             </div>
             <div class="campo">
                 <label for="motivo">Motivo (obligatorio)</label>
