@@ -11,23 +11,27 @@ require APP_PATH . '/Views/layouts/panel_header.php';
 <h1>Bienvenido, <?= htmlspecialchars($usuario['nombre'], ENT_QUOTES, 'UTF-8') ?></h1>
 
 <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
-    <div class="tarjeta" style="flex:1;min-width:180px;">
+    <a class="tarjeta tarjeta-enlace" href="/admin/clientes" style="flex:1;min-width:180px;">
         <div style="font-size:2rem;font-weight:700;"><?= $clientesTotal ?></div>
         <div>Clientes registrados</div>
-    </div>
-    <div class="tarjeta" style="flex:1;min-width:180px;">
+        <span class="tarjeta-enlace-ver" aria-hidden="true">Ver &rarr;</span>
+    </a>
+    <a class="tarjeta tarjeta-enlace" href="/admin/recompensas?estado=disponible" style="flex:1;min-width:180px;">
         <div style="font-size:2rem;font-weight:700;"><?= $recompensasDisponibles ?></div>
         <div>Con recompensa disponible</div>
-    </div>
+        <span class="tarjeta-enlace-ver" aria-hidden="true">Ver &rarr;</span>
+    </a>
     <?php if ($esAdmin): ?>
-        <div class="tarjeta" style="flex:1;min-width:180px;">
+        <a class="tarjeta tarjeta-enlace" href="/admin/productos" style="flex:1;min-width:180px;">
             <div style="font-size:2rem;font-weight:700;"><?= $productosActivos ?></div>
             <div>Productos activos</div>
-        </div>
-        <div class="tarjeta" style="flex:1;min-width:180px;">
+            <span class="tarjeta-enlace-ver" aria-hidden="true">Ver &rarr;</span>
+        </a>
+        <a class="tarjeta tarjeta-enlace" href="/admin/promociones" style="flex:1;min-width:180px;">
             <div style="font-size:2rem;font-weight:700;"><?= $promocionesVigentes ?></div>
             <div>Promociones vigentes hoy</div>
-        </div>
+            <span class="tarjeta-enlace-ver" aria-hidden="true">Ver &rarr;</span>
+        </a>
     <?php endif; ?>
 </div>
 
