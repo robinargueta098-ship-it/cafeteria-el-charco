@@ -135,8 +135,26 @@ hasta que así se indique explícitamente.
 - [x] Panel administrativo responsive: menú de hamburguesa, tablas con
       scroll, formularios en una columna y Galería/portada usables desde el
       celular (360–414 px). Escritorio sin cambios. docs/arquitectura.md §4.7.
-- [ ] Resto de fases (diseño visual/pulido, despliegue): ver el
-      plan en docs/arquitectura.md §9
+- [x] Lealtad simplificada: sin "Cancelar"/"Anular"; **Ajuste manual** solo para
+      Administrador (con motivo) que también deshace recompensas aún sin canjear;
+      consumo con motivo desde la ficha; Auditoría con cliente, cantidad y motivo.
+      Contador de tarjeta 10/10, 20/20, 30/30 con "N cafés gratis disponibles"
+      (panel y Mi cuenta). docs/arquitectura.md §4.27-§4.28.
+- [x] Escáner del cajero: búsqueda por **teléfono** además del QR, pantalla limpia al
+      recargar y cámara probada en `elcharco.localhost` (§4.29). Teléfono de
+      **exactamente 8 dígitos** y **eliminar clientes** (solo Administrador, §4.30).
+- [x] Sitio público: descripciones de producto con sabor, animaciones de bienvenida,
+      logo más grande, "Inicio" hasta el tope (§4.31); en el teléfono cada categoría es
+      una fila deslizable con barra de pestañas fija que sigue el scroll (§4.32);
+      mapa centrado con las coordenadas del enlace de Google Maps (§4.33).
+- [x] **Carrito con pedido por WhatsApp** (sin pasarela): cantidad desde la tarjeta,
+      Frappé/Batido, caliente/frío, nombre y dirección obligatorios, forma de pago
+      informativa, aviso fuera de horario con la **próxima apertura** (nunca bloquea el
+      envío) y confirmación "¿ya enviaste tu pedido?" (§4.34-§4.36).
+- [x] Dashboard con tarjetas que llevan a su sección (§4.37).
+- [ ] Pendiente: fotos reales, revisar precios/datos del menú (§4.38), subir el
+      repositorio a un remoto de Git y el despliegue en Hostinger (HTTPS): ver el plan
+      en docs/arquitectura.md §9.
 
 ## Cómo probar en local
 
@@ -170,14 +188,26 @@ Pasos para levantar el entorno en una máquina nueva:
    (no root).
 5. Abrir `http://elcharco.local/` (sitio público) y
    `http://elcharco.local/admin/login` (panel).
+6. **Probar la cámara del escáner (QR):** el navegador solo la permite con HTTPS o
+   `localhost`, y `elcharco.local` no cuenta. Por eso el Virtual Host tiene
+   `ServerAlias elcharco.localhost` (Chrome trata cualquier `*.localhost` como seguro,
+   sin tocar el archivo hosts): entra por `http://elcharco.localhost/admin`. En
+   producción (HTTPS) no hace falta nada.
+7. **Base de datos:** la cuenta `elcharco_app` solo tiene SELECT/INSERT/UPDATE/DELETE
+   (sin ALTER). Los cambios de esquema se aplican con un usuario administrador (ver
+   `database/migrations`); por eso la temperatura de las bebidas se guarda en
+   `configuracion_sistema` (docs/arquitectura.md §4.36).
 
 ## Stack (confirmado en docs/arquitectura.md §10)
 
 - PHP 8 + PDO, arquitectura MVC ligera hecha a medida (sin framework, sin
   Composer obligatorio) — análisis completo de por qué no Laravel en
   hosting compartido en docs/arquitectura.md §2.
-- MySQL/MariaDB, Bootstrap 5 vendorizado localmente.
+- MySQL/MariaDB.
+- Front-end con CSS y JavaScript propios (sin Bootstrap ni jQuery); el único
+  componente externo es el lector de QR (`html5-qrcode`, copia local en
+  `public/assets/vendor`) y el generador de QR de `vendor/`.
 - `public/` como raíz web, aislando `app/`, `config/` y `database/`.
 - Panel con dos roles: Administrador y Cajero.
-- Sin código de aplicación todavía — la Fase 2 (base de datos) es el
-  siguiente paso.
+- Sitio público de una sola página con anclas, "Mi cuenta" para el cliente
+  (teléfono de 8 dígitos + PIN de 4) y carrito que termina en WhatsApp.

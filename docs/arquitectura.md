@@ -621,6 +621,9 @@ ya que dejaron de tener formas distintas):
 
 ### 4.11 "Mi cuenta" explica el 0/10, y cancelar una recompensa regenera el código
 
+> **Actualización:** la acción "Cancelar" descrita aquí se eliminó (ver §4.27); el contador de "Mi cuenta" se
+> generalizó a varias recompensas (ver §4.28).
+
 Dos ajustes sobre lo anterior:
 
 - **Contador sin explicación**: al llegar al umbral, el contador vuelve a 0 —
@@ -1205,6 +1208,179 @@ dependencies require a PHP version >= 8.1.0. You are running 8.0.30."*
   sin cambios (el rango solo pone un piso, no un techo).
 
 ---
+
+### 4.27 Lealtad: se quita Cancelar/Anular; un solo mecanismo de corrección (Ajuste manual)
+
+**Por qué.** "Cancelar" una recompensa (§4.11) y el estado `anulado` de un movimiento eran dos
+caminos de corrección sin una regla de negocio coherente, y el primero permitía regenerar códigos.
+Queda **un solo** mecanismo: el Ajuste manual.
+
+- Se eliminó la ruta `POST /admin/recompensas/{id}/cancelar`, `RecompensaController::cancelar`,
+  `LealtadService::cancelarRecompensa`, `Recompensa::marcarCancelada` y `buscarPorIdConBloqueo`, y
+  los botones de la ficha del cliente y de la lista de Recompensas. (Los valores `cancelada` /
+  `anulado` siguen existiendo en `schema.sql` para no tocar datos históricos; ya nada los asigna
+  salvo el caso de abajo.)
+- **Ajuste manual: solo Administrador** (`registrarAjuste` usa `requerirRol(1)`; el Cajero ni ve la
+  tarjeta) y **motivo obligatorio**.
+- **Registrar consumo desde la ficha del cliente** exige motivo (en `LealtadService::registrarConsumo`).
+  El escáner (§4.29) no lo pide: guarda "Escaneo de QR personal".
+- **Ajuste negativo con saldo insuficiente.** Con 20 cafés el saldo es 0 y hay 2 recompensas
+  disponibles; "restar 1" fallaba. Ahora `registrarAjuste` deshace las recompensas **disponibles**
+  que haga falta (las más recientes primero): por cada una inserta un movimiento
+  `recompensa_cancelada` (+umbral) y la marca `cancelada`, y luego aplica el ajuste
+  (20 → restar 1 → 9/10 con 1 recompensa). Si esas recompensas ya se canjearon, se rechaza.
+  Todo ocurre dentro de la transacción de `conCandado()`.
+- **Auditoría** (`/admin/auditoria`, solo Administrador): `consumo` y `ajuste` guardan cantidad,
+  motivo y recompensas deshechas; la lista muestra el **nombre del cliente** (JOIN con `clientes`
+  cuando el módulo es `lealtad_movimientos`), el detalle y la acción "Ajuste manual" tiene filtro.
+
+### 4.28 Contador de la tarjeta: 10/10, 20/20, 30/30 con "café(s) gratis disponible(s)"
+
+Al completar el umbral el saldo real vuelve a 0 aunque las recompensas sigan sin canjear; mostrar
+"0 / 10" en ese momento confundía. `Cliente::progresoTarjeta()` decide qué mostrar, con la misma
+regla en el panel (búsqueda de Lealtad, lista de Clientes, ficha, escáner) y en "Mi cuenta":
+
+| Situación | Se muestra |
+|---|---|
+| Saldo 0 y N recompensas disponibles | `N×umbral / N×umbral` (10/10, 20/20, 30/30) + etiqueta "N café(s) gratis disponible(s)" |
+| Saldo parcial (ej. 25 cafés = 2 recompensas + 5) | `5 / 10` + etiqueta "2 cafés gratis disponibles" |
+| Sin recompensas | saldo real |
+
+`Cliente::buscar/buscarPorId/buscarPorCodigoQr/buscarPorTelefono` traen `recompensas_disponibles`
+con una subconsulta (`SELECT_CON_RECOMPENSAS`). El saldo guardado **no** cambia.
+
+### 4.29 Escáner del cajero: teléfono, recarga limpia y cámara en local
+
+- **Búsqueda por teléfono.** Sin código, el teléfono identifica al cliente como si hubiera
+  escaneado su QR personal (`LealtadController::identificarPorTelefono`): suma cafés y lista sus
+  recompensas y cupones por canjear (`CuponPromocion::listarDisponiblesDeCliente`). Mismos permisos
+  y auditoría. El botón "Canjear" de la ficha usa esa misma vía.
+- **Post/Redirect/Get.** Tras cada POST, `vistaCanjear()` guarda el resultado en
+  `$_SESSION['_canje']` y redirige; `mostrarCanjear()` lo consume **una sola vez**. Recargar o volver
+  atrás deja la pantalla limpia (antes repetía la búsqueda y dejaba el cupón equivocado). Cada
+  resultado tiene "✕ No es este / limpiar pantalla".
+- **Cámara en desarrollo.** `getUserMedia` exige HTTPS o `localhost`. `elcharco.local` no cuenta,
+  pero **cualquier `*.localhost` sí**: el Virtual Host (`httpd-vhosts.conf`) tiene
+  `ServerAlias elcharco.localhost`. Para probar el escáner en local se entra por
+  `http://elcharco.localhost/admin`; en producción (HTTPS) el navegador pide el permiso solo.
+  `public/index.php` envía `Permissions-Policy: camera=(self), microphone=(), geolocation=()`.
+
+### 4.30 Teléfono de exactamente 8 dígitos y eliminar clientes
+
+- `Cliente::telefonoValido()` (`^\d{8}$`) se valida en el **servidor** en el registro de la cuenta
+  (`CuentaController::registrar`) y en el alta/edición del panel (`ClienteController::validar`).
+  Los `<input>` llevan `maxlength=8`, `inputmode=numeric`, `pattern` y `data-solo-digitos`
+  (admin.js / sitio.js quitan lo que no sea número al escribir o pegar).
+- **Eliminar cliente** (`POST /admin/clientes/{id}/eliminar`, solo Administrador, con confirmación
+  en la lista y en la ficha): `Cliente::eliminarConHistorial()` borra cupones, recompensas,
+  movimientos y el cliente en **una transacción** (en ese orden, por las llaves foráneas). Queda en
+  Auditoría con los datos previos y el conteo de lo borrado, **sin el hash del PIN**.
+
+### 4.31 Sitio público: descripciones, animaciones de bienvenida, logo e "Inicio"
+
+- **Descripciones de producto** más grandes (1.02 rem) y con aparición animada
+  (`inicializarRevelaDescripciones`). Los textos salen del menú físico por categoría y sabor
+  ("Puré de fresa triturada con yogurt griego, jugo de manzana y hielo", "Soda neutra con syrop de
+  lavanda y hielo"…); lo que el menú físico no describe (sándwiches, chocolates) se dejó vacío.
+- **Entrada suave** (`.por-revelar` / `.revelado`, IntersectionObserver): todas las secciones y las
+  tarjetas de las primeras secciones suben al aparecer; las fotos de las tarjetas suben **cuando ya
+  cargaron** (`inicializarRevelaFotos`, clase `.img-por-cargar`). El hero anima título, texto y botones
+  con CSS puro. Todo respeta `prefers-reduced-motion` y, sin JavaScript, el contenido queda visible.
+- **Logo** de 60 px (48 px en móvil) por requerimiento del cliente.
+- **"Inicio"** (logo, título, enlace) lleva al tope: `#inicio { scroll-margin-top: 400px }` recorta el
+  destino a 0 (antes la barra fija tapaba la parte alta del hero).
+
+### 4.32 Menú en el teléfono: fila deslizable por categoría + barra de pestañas fija
+
+Solo bajo 768 px (en escritorio el menú es la cuadrícula de siempre).
+
+- Cada categoría es una **fila horizontal** con `scroll-snap` (sin barra visible; la tarjeta
+  siguiente asoma). Las categorías siguen una debajo de otra.
+- La barra de categorías se convierte en **pestañas fijas** bajo el encabezado
+  (`inicializarMenuPestanas`): tocar una baja suave hasta esa categoría, **al desplazarse se marca
+  sola la que se está viendo** (scrollspy) y la barra se centra en ella. La activa va en verde. Las
+  categorías salen del HTML del servidor (BD), nada hardcodeado. Se enciende/apaga también al
+  cambiar el tamaño de la ventana (`matchMedia` + `resize`).
+- Se descartó un filtro que ocultara las demás categorías: se prefirió ver todo y navegar.
+
+### 4.33 Ubicación: el mapa se centra donde apunta el enlace de Google Maps
+
+- La búsqueda por texto de la dirección caía en la zona 4 de la Ciudad de Guatemala. Ahora
+  `GoogleMaps::datosDesdeEnlace()` abre el enlace "Compartir" que pega el Administrador (solo
+  `https` y dominios de Google) y guarda **coordenadas** (`mapa_coordenadas`), **id de la ficha**
+  (`mapa_lugar_id`) y **nombre** (`mapa_lugar_nombre`) en `configuracion_sistema`.
+- El mapa usa el formato oficial de "Insertar un mapa" con la ficha del lugar (nombre, calificación,
+  rutas), igual a lo que abre "Cómo llegar". Al guardar un enlace nuevo en Configuración todo se
+  actualiza solo (salvo que se escriban coordenadas a mano; entonces es un pin simple). Si el enlace
+  no se puede leer, se conservan los datos anteriores y se avisa.
+- Botón "Cómo llegar" rediseñado con la paleta del sitio (café/beige, pin en verde).
+
+### 4.34 Carrito de compras con pedido por WhatsApp
+
+Sin pasarela de pago. Archivos: `app/Views/public/_carrito.php` (panel), `public/assets/js/carrito.js`,
+estilos al final de `sitio.css`, botón en `layouts/header_publico.php` (solo si la vista define
+`$mostrarCarrito`), botones "Agregar" en `$tarjetaProducto` de `home.php`.
+
+- **Tarjeta:** selector de cantidad (− 1 +) y un solo "+ Agregar". El catálogo (nombre completo,
+  precio, versiones y temperatura) sale de los atributos `data-*` del botón, así que **siempre
+  coincide con el menú**; lo guardado en el navegador solo trae claves y cantidades.
+- **Nombres completos** (`Vista::variantesPedido`): frappé/batido ("Frappé de Galleta oreo" /
+  "Batido de Galleta oreo", derivado de la categoría "A / B" y del segundo precio); el resto,
+  "Fresa (Smoothies)", "Fresa (Lassie)". La versión (Frappé/Batido) y la temperatura se eligen
+  dentro del carrito o en la tarjeta (§4.36).
+- **Panel:** cantidades, quitar, subtotales y total; "Tus datos": **nombre y dirección
+  obligatorios**, detalles extra opcionales; **forma de pago** informativa (Pago contra entrega,
+  Transferencia, Tarjeta física). Si falta algo, el botón de enviar dice qué y marca el campo.
+  La lista se desplaza dentro del panel y el total + "Enviar" quedan fijos abajo (probado de 360×640
+  a 1280×600 y teléfono de lado).
+- **Mensaje:** `wa.me/<número configurado>?text=…` con una línea por producto, total y forma de
+  pago en *negrita* (sintaxis de WhatsApp), nombre, dirección y detalles. Se quitan `* _ ~ \``
+  de lo que escribe el cliente.
+- **Después de enviar** (el sitio no puede saber si el mensaje salió): el panel pregunta
+  "¿Ya enviaste tu pedido?" (también al volver a la pestaña). "Sí" vacía el carrito, el pago y los
+  detalles y conserva nombre y dirección; "No" lo deja intacto. Un carrito olvidado **12 horas** se
+  vacía solo.
+
+### 4.35 Horario de atención: un solo formato y aviso con la próxima apertura
+
+- `HorarioAtencion::textoDia()` arma el texto de un día ("9:00 a 14:00 y 16:00 a 21:00"); lo usan el
+  pie de página y el carrito. `HorarioAtencion::paraCarrito()` entrega los turnos en minutos.
+- El carrito compara con la hora **de la zona del negocio** (`APP_TIMEZONE`), no con la del teléfono,
+  e incluye el segundo turno. Fuera de horario muestra "En este momento no estamos atendiendo, pero
+  tu pedido sí se puede enviar", **cuándo vuelven a atender** (hoy / mañana (día) / el <día>, mirando
+  hasta 7 días) y el horario de hoy. **El horario nunca bloquea el envío**; el mensaje de WhatsApp lleva
+  una línea "fuera del horario".
+- Se lee de la BD en cada carga: lo que cambie el Administrador en Configuración se refleja solo.
+
+### 4.36 Temperatura de las bebidas (caliente / frío)
+
+`TemperaturaProductos` guarda `{id_producto: ambas|caliente|frio}` como JSON en
+`configuracion_sistema.temperaturas_productos` y se edita en **Productos → Temperatura**.
+**No es una columna de `productos`** porque la cuenta de la aplicación (`elcharco_app`) solo tiene
+SELECT/INSERT/UPDATE/DELETE (sin `ALTER`); si más adelante se prefiere columna, bastaría una migración
+y leerla en vez del JSON.
+
+- `ambas`: la tarjeta muestra "Caliente | Frío" y **exige elegir** antes de agregar; también se puede
+  cambiar en el carrito (si ya existe la otra, las cantidades se suman).
+- `caliente` / `frio`: entra con esa temperatura. El mensaje lleva "Moka - Caliente", "Affogato - Frío".
+- Cargado según el menú físico (Americano, Latte suave, lattes saborizados, Chai y Taro: ambas;
+  Espresso, Cappuccino, Mint, Pistachio y chocolates: caliente; Affogato y Carajillo: frío).
+
+### 4.37 Dashboard: tarjetas que llevan a su sección
+
+Clientes → `/admin/clientes`; Con recompensa disponible → `/admin/recompensas?estado=disponible`;
+Productos activos → `/admin/productos`; Promociones vigentes → `/admin/promociones`. El Cajero solo ve
+las dos primeras (las otras son de Administrador). Flecha en la esquina en lugar de texto.
+
+### 4.38 Pendientes y datos por revisar (a octubre de 2026)
+
+- Fotos reales de productos, galería (mínimo 6) y portada: siguen marcadas como pendientes.
+- El producto "Mantequilla de maní" tiene precio Q22 en el sistema; el menú físico dice Q30 (con café)
+  / Q25 (sin café).
+- Existe una categoría "Categoria de prueba" que conviene borrar.
+- Las descripciones y la temperatura de los productos se cargaron desde fotos del menú físico: revisar
+  contra la carta vigente.
+- Respaldo: el proyecto vive solo en esta computadora; falta un remoto de Git o copia externa.
 
 ## 5. Modelo de datos (entidades y relaciones)
 
