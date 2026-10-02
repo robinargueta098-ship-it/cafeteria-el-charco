@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Core\Controller;
+use App\Core\Entrada;
 use App\Core\Flash;
 use App\Core\GoogleMaps;
 use App\Core\ImagenOptimizada;
@@ -82,7 +83,7 @@ class ConfiguracionController extends Controller
             if (in_array($clave, self::CLAVES_ARCHIVO, true)) {
                 continue; // se resuelven abajo: o hay archivo nuevo, o se conserva el actual
             }
-            $datos[$clave] = trim((string) ($_POST[$clave] ?? ''));
+            $datos[$clave] = trim(Entrada::texto($_POST, $clave, ''));
         }
 
         $horarioPost = $this->leerHorarioDesdePost();
@@ -186,6 +187,8 @@ class ConfiguracionController extends Controller
     private function leerHorarioDesdePost(): array
     {
         $dias = [];
+        // Si 'horario' llega como texto o con otra forma (petición manipulada), se trata como vacío.
+        $horarioPost = is_array($_POST['horario'] ?? null) ? $_POST['horario'] : [];
 
         for ($dia = 0; $dia <= 6; $dia++) {
             // substr(...,0,5): defensa en el servidor, además del recorte ya
@@ -194,10 +197,14 @@ class ConfiguracionController extends Controller
             // horarios ya guardados) los reenvía tal cual al guardar, y eso
             // no pasaba la validación de formato "HH:MM" más abajo, bloqueando
             // el guardado de TODO el formulario, no solo del horario.
-            $campo = fn (string $nombre): ?string => (substr(trim((string) ($_POST['horario'][$dia][$nombre] ?? '')), 0, 5) ?: null);
+            $campo = function (string $nombre) use ($horarioPost, $dia): ?string {
+                $valor = is_array($horarioPost[$dia] ?? null) ? ($horarioPost[$dia][$nombre] ?? '') : '';
+
+                return substr(trim(is_string($valor) ? $valor : ''), 0, 5) ?: null;
+            };
 
             $dias[$dia] = [
-                'cerrado'   => !isset($_POST['horario'][$dia]['abierto']),
+                'cerrado'   => !(is_array($horarioPost[$dia] ?? null) && isset($horarioPost[$dia]['abierto'])),
                 'apertura'  => $campo('apertura'),
                 'cierre'    => $campo('cierre'),
                 'apertura2' => $campo('apertura2'),

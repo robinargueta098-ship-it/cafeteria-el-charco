@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Core\Entrada;
 use App\Core\Controller;
 use App\Core\Flash;
 use App\Core\SubidaArchivo;
@@ -166,14 +167,14 @@ class ProductoController extends Controller
     /** @return array<string,mixed> */
     private function datosDelFormulario(): array
     {
-        $precioAlt = trim((string) ($_POST['precio_alt'] ?? ''));
-        $etiquetaAlt = trim((string) ($_POST['etiqueta_precio_alt'] ?? ''));
+        $precioAlt = trim(Entrada::texto($_POST, 'precio_alt', ''));
+        $etiquetaAlt = trim(Entrada::texto($_POST, 'etiqueta_precio_alt', ''));
 
         return [
             'categoria_id'        => (int) ($_POST['categoria_id'] ?? 0),
-            'nombre'              => trim((string) ($_POST['nombre'] ?? '')),
-            'descripcion'         => $this->nuloSiVacio($_POST['descripcion'] ?? ''),
-            'precio'              => (string) ($_POST['precio'] ?? ''),
+            'nombre'              => trim(Entrada::texto($_POST, 'nombre', '')),
+            'descripcion'         => $this->nuloSiVacio(Entrada::texto($_POST, 'descripcion')),
+            'precio'              => Entrada::texto($_POST, 'precio', ''),
             'precio_alt'          => $precioAlt === '' ? null : $precioAlt,
             'etiqueta_precio_alt' => $etiquetaAlt === '' ? null : $etiquetaAlt,
             'es_destacado'        => isset($_POST['es_destacado']) ? 1 : 0,
@@ -186,7 +187,7 @@ class ProductoController extends Controller
     /** 'ambas' | 'caliente' | 'frio' | '' (sin opción de temperatura). Va aparte de $datos: no es una columna de `productos`. */
     private function temperaturaDelFormulario(): string
     {
-        $valor = (string) ($_POST['temperatura'] ?? '');
+        $valor = Entrada::texto($_POST, 'temperatura', '');
 
         return in_array($valor, TemperaturaProductos::VALIDAS, true) ? $valor : '';
     }

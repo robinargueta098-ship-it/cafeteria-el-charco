@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   inicializarMenuMovil();
+  inicializarAnclas();
   inicializarHeroFondo();
   inicializarRevelado();
   inicializarRevelaDescripciones();
@@ -82,6 +83,55 @@ function inicializarRevelado() {
 }
 
 /**
+ * Enlaces con ancla (/#cat-cafe, /#menu…). El navegador hace el salto ANTES de que terminen de cargar las
+ * imágenes y fuentes, y el contenido que cambia de tamaño después deja el destino desfasado ("a veces el
+ * desplazamiento no ocurre del todo"). Se mide la barra fija y, cuando todo cargó, se vuelve a alinear
+ * el destino una vez, salvo que la persona ya haya empezado a moverse por su cuenta.
+ */
+function inicializarAnclas() {
+  var encabezado = document.querySelector('.sitio-nav');
+  if (encabezado) {
+    var alto = function () {
+      document.documentElement.style.setProperty('--alto-nav', Math.round(encabezado.getBoundingClientRect().height) + 'px');
+    };
+    alto();
+    window.addEventListener('resize', alto);
+  }
+
+  var seMovio = false;
+  ['wheel', 'touchstart', 'mousedown', 'keydown'].forEach(function (evento) {
+    window.addEventListener(evento, function () { seMovio = true; }, { passive: true, once: true });
+  });
+
+  function alinear() {
+    if (seMovio || !window.location.hash) {
+      return;
+    }
+    var destino = null;
+    try {
+      destino = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+    } catch (e) { /* ancla mal formada */ }
+    if (!destino) {
+      return;
+    }
+    var margen = parseFloat(window.getComputedStyle(destino).scrollMarginTop) || 0;
+    var desfase = destino.getBoundingClientRect().top - margen;
+    if (Math.abs(desfase) > 6) {
+      window.scrollTo({ top: Math.max(0, window.pageYOffset + desfase), behavior: 'instant' });
+      window.dispatchEvent(new Event('scroll')); // para que la pestaña activa del menú se ponga al día de inmediato
+    }
+  }
+
+  window.addEventListener('load', function () {
+    alinear();
+    window.setTimeout(alinear, 400);
+  });
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(alinear);
+  }
+}
+
+/**
  * Menú público en el teléfono: la barra de categorías pasa a ser una barra fija con pestañas.
  *  - Tocar una pestaña baja suavemente hasta esa categoría, que queda justo debajo de la barra.
  *  - Al desplazarse con el dedo, la pestaña de la categoría que se está viendo se marca sola y la
@@ -113,6 +163,14 @@ function inicializarMenuPestanas() {
   // Línea bajo la cual "empieza" lo visible: encabezado fijo + barra de pestañas.
   function lineaSuperior() {
     return altoEncabezado() + barra.getBoundingClientRect().height + 8;
+  }
+
+  // Publica las alturas reales de las barras fijas para que CSS (scroll-margin-top) deje los títulos
+  // de las anclas bien visibles debajo de ellas.
+  function medirBarras() {
+    var raiz = document.documentElement;
+    raiz.style.setProperty('--alto-nav', Math.round(altoEncabezado()) + 'px');
+    raiz.style.setProperty('--alto-pestanas', encendido ? Math.round(barra.getBoundingClientRect().height) + 'px' : '0px');
   }
 
   function centrar(enlace, suave) {
@@ -193,9 +251,7 @@ function inicializarMenuPestanas() {
       enlace.addEventListener('click', alTocar);
       enlace.addEventListener('keydown', alTeclear);
     });
-    document.documentElement.style.setProperty('--alto-nav', altoEncabezado() + 'px');
-    // Para que los saltos con enlaces (#cat-...) también queden bajo la barra fija.
-    paneles.forEach(function (panel) { panel.style.scrollMarginTop = lineaSuperior() + 'px'; });
+    medirBarras();
     window.addEventListener('scroll', alDesplazar, { passive: true });
     activa = -1;
     marcar(categoriaVisible(), false);
@@ -211,8 +267,7 @@ function inicializarMenuPestanas() {
       enlace.removeEventListener('click', alTocar);
       enlace.removeEventListener('keydown', alTeclear);
     });
-    paneles.forEach(function (panel) { panel.style.scrollMarginTop = ''; });
-    document.documentElement.style.removeProperty('--alto-nav');
+    medirBarras();
     window.removeEventListener('scroll', alDesplazar);
     activa = -1;
   }
@@ -222,12 +277,19 @@ function inicializarMenuPestanas() {
       encender();
     } else if (!movil.matches && encendido) {
       apagar();
-    } else if (encendido) {
-      document.documentElement.style.setProperty('--alto-nav', altoEncabezado() + 'px');
+    } else {
+      medirBarras();
     }
   }
 
   sincronizar();
+
+  // Al terminar de cargar (y de alinear un enlace #cat-…) la pestaña marcada debe coincidir con lo que se ve.
+  window.addEventListener('load', function () {
+    if (encendido) {
+      marcar(categoriaVisible(), false);
+    }
+  });
   if (movil.addEventListener) {
     movil.addEventListener('change', sincronizar);
   } else if (movil.addListener) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Core\Entrada;
 use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Flash;
@@ -21,7 +22,7 @@ class LealtadController extends Controller
     {
         $this->requerirRol(1, 2);
 
-        $termino = trim((string) ($_GET['q'] ?? ''));
+        $termino = trim(Entrada::texto($_GET, 'q', ''));
 
         $this->vista('admin/lealtad/buscar', [
             'seccionActiva' => 'lealtad',
@@ -63,7 +64,7 @@ class LealtadController extends Controller
             $this->redirigir('/admin/lealtad/' . $id);
         }
         $cantidad = $lectura['valor'];
-        $motivo = trim((string) ($_POST['motivo'] ?? ''));
+        $motivo = trim(Entrada::texto($_POST, 'motivo', ''));
         $usuario = Auth::usuario();
 
         $resultado = LealtadService::registrarConsumo((int) $id, $cantidad, $usuario['id'], $motivo);
@@ -71,9 +72,7 @@ class LealtadController extends Controller
         if ($resultado['ok']) {
             $mensaje = "Se registraron {$cantidad} café(s) para {$cliente['nombre']}.";
             if ($resultado['codigos_generados'] !== []) {
-                $n = count($resultado['codigos_generados']);
-                $codigos = implode(', ', $resultado['codigos_generados']);
-                $mensaje .= " ¡Se generó" . ($n > 1 ? "ron {$n} recompensas" : " 1 recompensa") . "! Código(s): {$codigos}.";
+                $mensaje .= ' ' . LealtadService::textoRecompensasGeneradas($resultado['codigos_generados']);
             }
             Flash::exito($mensaje);
         } else {
@@ -92,14 +91,14 @@ class LealtadController extends Controller
             $this->error404();
         }
 
-        $tipo = (string) ($_POST['tipo'] ?? '');
+        $tipo = Entrada::texto($_POST, 'tipo', '');
         $lectura = LealtadService::leerCantidad($_POST['cantidad'] ?? '', LealtadService::MAX_CAFES_POR_AJUSTE, 'ajustar de una sola vez');
         if (!$lectura['ok']) {
             Flash::error($lectura['error']);
             $this->redirigir('/admin/lealtad/' . $id);
         }
         $cantidad = $lectura['valor'];
-        $motivo = trim((string) ($_POST['motivo'] ?? ''));
+        $motivo = trim(Entrada::texto($_POST, 'motivo', ''));
         $usuario = Auth::usuario();
 
         $resultado = LealtadService::registrarAjuste((int) $id, $cantidad, $tipo, $motivo, $usuario['id']);
@@ -111,7 +110,7 @@ class LealtadController extends Controller
                     . ' (aún no se había canjeado) para que el saldo cuadre.';
             }
             if ($resultado['codigos_generados'] !== []) {
-                $mensaje .= ' Se generó recompensa: ' . implode(', ', $resultado['codigos_generados']) . '.';
+                $mensaje .= ' ' . LealtadService::textoRecompensasGeneradas($resultado['codigos_generados']);
             }
             Flash::exito($mensaje);
         } else {
@@ -141,8 +140,8 @@ class LealtadController extends Controller
             return;
         }
 
-        $codigo = Recompensa::normalizarCodigo((string) ($_GET['codigo'] ?? ''));
-        $telefono = Cliente::normalizarTelefono((string) ($_GET['telefono'] ?? ''));
+        $codigo = Recompensa::normalizarCodigo(Entrada::texto($_GET, 'codigo', ''));
+        $telefono = Cliente::normalizarTelefono(Entrada::texto($_GET, 'telefono', ''));
 
         // Venir desde la ficha de un cliente ("Canjear") trae solo el teléfono: se identifica de una vez.
         if ($codigo === '' && $telefono !== '') {
@@ -182,8 +181,8 @@ class LealtadController extends Controller
     {
         $this->requerirRol(1, 2);
 
-        $entrada = (string) ($_POST['codigo'] ?? '');
-        $telefono = Cliente::normalizarTelefono((string) ($_POST['telefono'] ?? ''));
+        $entrada = Entrada::texto($_POST, 'codigo', '');
+        $telefono = Cliente::normalizarTelefono(Entrada::texto($_POST, 'telefono', ''));
         $codigo = Cliente::normalizarCodigoQr($entrada); // limpieza genérica: mayúsculas y solo A-Z0-9
 
         if ($codigo === '') {
@@ -247,7 +246,7 @@ class LealtadController extends Controller
     {
         $this->requerirRol(1, 2);
 
-        $codigoQr = Cliente::normalizarCodigoQr((string) ($_POST['codigo_qr'] ?? ''));
+        $codigoQr = Cliente::normalizarCodigoQr(Entrada::texto($_POST, 'codigo_qr', ''));
         $motivo = 'Escaneo de QR personal'; // compra normal: no se le pide motivo al cajero
         $usuario = Auth::usuario();
 
@@ -292,7 +291,7 @@ class LealtadController extends Controller
     {
         $this->requerirRol(1, 2);
 
-        $codigo = Recompensa::normalizarCodigo((string) ($_POST['codigo'] ?? ''));
+        $codigo = Recompensa::normalizarCodigo(Entrada::texto($_POST, 'codigo', ''));
         $clienteId = (int) ($_POST['cliente_id'] ?? 0);
         $productoId = (int) ($_POST['producto_id'] ?? 0);
         $usuario = Auth::usuario();
@@ -319,7 +318,7 @@ class LealtadController extends Controller
     {
         $this->requerirRol(1, 2);
 
-        $codigo = Recompensa::normalizarCodigo((string) ($_POST['codigo'] ?? ''));
+        $codigo = Recompensa::normalizarCodigo(Entrada::texto($_POST, 'codigo', ''));
         $usuario = Auth::usuario();
 
         $resultado = CuponPromocionService::validarYCanjearCupon($codigo, $usuario['id']);

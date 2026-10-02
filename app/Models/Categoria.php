@@ -32,6 +32,15 @@ class Categoria
         return $stmt->fetch() ?: null;
     }
 
+    /** ¿Ya hay otra categoría con este nombre? (sin distinguir mayúsculas/minúsculas ni acentos: la colación de la BD es _ci) */
+    public function existeNombre(string $nombre, ?int $excluirId = null): bool
+    {
+        $stmt = Database::conexion()->prepare('SELECT COUNT(*) FROM categorias WHERE nombre = :nombre AND id <> :excluir');
+        $stmt->execute(['nombre' => trim($nombre), 'excluir' => $excluirId ?? 0]);
+
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
     public function buscarPorSlug(string $slug, ?int $excluirId = null): ?array
     {
         $sql = 'SELECT * FROM categorias WHERE slug = :slug';

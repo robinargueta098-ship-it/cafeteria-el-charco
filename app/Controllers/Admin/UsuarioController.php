@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Core\Entrada;
 use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Flash;
@@ -136,9 +137,9 @@ class UsuarioController extends Controller
     private function datosDelFormulario(): array
     {
         return [
-            'nombre'   => trim((string) ($_POST['nombre'] ?? '')),
-            'usuario'  => trim((string) ($_POST['usuario'] ?? '')),
-            'password' => (string) ($_POST['password'] ?? ''),
+            'nombre'   => trim(Entrada::texto($_POST, 'nombre', '')),
+            'usuario'  => trim(Entrada::texto($_POST, 'usuario', '')),
+            'password' => Entrada::texto($_POST, 'password', ''),
             'rol_id'   => (int) ($_POST['rol_id'] ?? 0),
             'activo'   => isset($_POST['activo']),
         ];

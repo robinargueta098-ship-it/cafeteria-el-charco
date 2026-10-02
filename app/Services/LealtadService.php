@@ -64,6 +64,24 @@ class LealtadService
      *
      * @return array{ok:bool,error?:string,codigos_generados?:array<int,string>}
      */
+    /**
+     * Frase para avisar de recompensas nuevas, bien conjugada: "¡Se generó 1 recompensa! Código: X." o
+     * "¡Se generaron 3 recompensas! Códigos: X, Y, Z."
+     *
+     * @param array<int,string> $codigos
+     */
+    public static function textoRecompensasGeneradas(array $codigos): string
+    {
+        $n = count($codigos);
+        if ($n === 0) {
+            return '';
+        }
+
+        return $n === 1
+            ? '¡Se generó 1 recompensa! Código: ' . $codigos[0] . '.'
+            : "¡Se generaron {$n} recompensas! Códigos: " . implode(', ', $codigos) . '.';
+    }
+
     /** Una cafetería no vende al mayoreo: más de esto en un solo consumo casi seguro es un error de captura. */
     public const MAX_CAFES_POR_CONSUMO = 30;
     public const MAX_CAFES_POR_AJUSTE = 200;

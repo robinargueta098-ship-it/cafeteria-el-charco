@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Core\Entrada;
 use App\Core\Auth;
 use App\Core\BorradorFormulario;
 use App\Core\Controller;
@@ -27,8 +28,8 @@ class AuthController extends Controller
         // (docs/arquitectura.md §7) — no hace falta repetirlo aquí.
 
         $datos = [
-            'usuario'  => trim((string) ($_POST['usuario'] ?? '')),
-            'password' => (string) ($_POST['password'] ?? ''),
+            'usuario'  => trim(Entrada::texto($_POST, 'usuario', '')),
+            'password' => Entrada::texto($_POST, 'password', ''),
         ];
 
         $validador = new Validator($datos);

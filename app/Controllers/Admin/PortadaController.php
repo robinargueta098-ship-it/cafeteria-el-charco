@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Core\Entrada;
 use App\Core\Controller;
 use App\Core\Flash;
 use App\Core\SubidaArchivo;
@@ -96,7 +97,7 @@ class PortadaController extends Controller
     {
         $this->requerirRol(1);
 
-        $direccion = (string) ($_POST['direccion'] ?? '');
+        $direccion = Entrada::texto($_POST, 'direccion', '');
         if (!in_array($direccion, ['subir', 'bajar'], true)) {
             Flash::error('Movimiento inválido.');
             $this->redirigir(self::DESTINO);

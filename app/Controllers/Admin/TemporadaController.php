@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Core\Entrada;
 use App\Core\Controller;
 use App\Core\Flash;
 use App\Core\SubidaArchivo;
@@ -158,10 +159,10 @@ class TemporadaController extends Controller
     private function datosDelFormulario(): array
     {
         return [
-            'nombre'       => trim((string) ($_POST['nombre'] ?? '')),
-            'descripcion'  => trim((string) ($_POST['descripcion'] ?? '')) ?: null,
-            'fecha_inicio' => (string) ($_POST['fecha_inicio'] ?? ''),
-            'fecha_fin'    => (string) ($_POST['fecha_fin'] ?? ''),
+            'nombre'       => trim(Entrada::texto($_POST, 'nombre', '')),
+            'descripcion'  => trim(Entrada::texto($_POST, 'descripcion', '')) ?: null,
+            'fecha_inicio' => Entrada::texto($_POST, 'fecha_inicio', ''),
+            'fecha_fin'    => Entrada::texto($_POST, 'fecha_fin', ''),
             'activo'       => isset($_POST['activo']) ? 1 : 0,
         ];
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Core\Entrada;
 use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Flash;
@@ -38,7 +39,7 @@ class CuponPromocionController extends Controller
             $this->error404();
         }
 
-        $motivo = trim((string) ($_POST['motivo'] ?? ''));
+        $motivo = trim(Entrada::texto($_POST, 'motivo', ''));
         $usuario = Auth::usuario();
 
         $resultado = CuponPromocionService::cancelar((int) $id, $usuario['id'], $motivo);

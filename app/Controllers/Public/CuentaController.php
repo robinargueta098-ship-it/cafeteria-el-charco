@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Public;
 
+use App\Core\Entrada;
 use App\Core\ClienteAuth;
 use App\Core\Controller;
 use App\Core\Flash;
@@ -39,10 +40,10 @@ class CuentaController extends Controller
 
     public function registrar(): void
     {
-        $telefono = Cliente::normalizarTelefono((string) ($_POST['telefono'] ?? ''));
-        $nombre = trim((string) ($_POST['nombre'] ?? ''));
-        $pin = (string) ($_POST['pin'] ?? '');
-        $confirmarPin = (string) ($_POST['confirmar_pin'] ?? '');
+        $telefono = Cliente::normalizarTelefono(Entrada::texto($_POST, 'telefono', ''));
+        $nombre = trim(Entrada::texto($_POST, 'nombre', ''));
+        $pin = Entrada::texto($_POST, 'pin', '');
+        $confirmarPin = Entrada::texto($_POST, 'confirmar_pin', '');
 
         $validador = new Validator(['telefono' => $telefono, 'nombre' => $nombre]);
         $validador
@@ -117,8 +118,8 @@ class CuentaController extends Controller
 
     public function iniciarSesion(): void
     {
-        $telefono = Cliente::normalizarTelefono((string) ($_POST['telefono'] ?? ''));
-        $pin = (string) ($_POST['pin'] ?? '');
+        $telefono = Cliente::normalizarTelefono(Entrada::texto($_POST, 'telefono', ''));
+        $pin = Entrada::texto($_POST, 'pin', '');
 
         $resultado = ClienteAuth::intentar($telefono, $pin);
 

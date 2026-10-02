@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Core\Entrada;
 use App\Core\Controller;
 use App\Core\Flash;
 use App\Core\ImagenOptimizada;
@@ -103,7 +104,7 @@ class GaleriaController extends Controller
     {
         $this->requerirRol(1);
 
-        $direccion = (string) ($_POST['direccion'] ?? '');
+        $direccion = Entrada::texto($_POST, 'direccion', '');
         if (!in_array($direccion, ['subir', 'bajar'], true)) {
             Flash::error('Movimiento inválido.');
             $this->redirigir('/admin/galeria');
@@ -222,8 +223,8 @@ class GaleriaController extends Controller
     private function datosDelFormulario(): array
     {
         return [
-            'titulo'      => trim((string) ($_POST['titulo'] ?? '')) ?: null,
-            'descripcion' => trim((string) ($_POST['descripcion'] ?? '')) ?: null,
+            'titulo'      => trim(Entrada::texto($_POST, 'titulo', '')) ?: null,
+            'descripcion' => trim(Entrada::texto($_POST, 'descripcion', '')) ?: null,
             'activo'      => isset($_POST['activo']) ? 1 : 0,
         ];
     }

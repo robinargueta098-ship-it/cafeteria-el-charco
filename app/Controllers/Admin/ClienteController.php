@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Core\Entrada;
 use App\Core\Controller;
 use App\Core\Flash;
 use App\Core\Validator;
@@ -17,7 +18,7 @@ class ClienteController extends Controller
     {
         $this->requerirRol(1, 2);
 
-        $termino = trim((string) ($_GET['q'] ?? ''));
+        $termino = trim(Entrada::texto($_GET, 'q', ''));
 
         $this->vista('admin/clientes/index', [
             'seccionActiva' => 'clientes',
@@ -113,10 +114,10 @@ class ClienteController extends Controller
     private function datosDelFormulario(): array
     {
         return [
-            'nombre'   => trim((string) ($_POST['nombre'] ?? '')),
-            'telefono' => Cliente::normalizarTelefono((string) ($_POST['telefono'] ?? '')),
-            'email'    => trim((string) ($_POST['email'] ?? '')) ?: null,
-            'notas'    => trim((string) ($_POST['notas'] ?? '')) ?: null,
+            'nombre'   => trim(Entrada::texto($_POST, 'nombre', '')),
+            'telefono' => Cliente::normalizarTelefono(Entrada::texto($_POST, 'telefono', '')),
+            'email'    => trim(Entrada::texto($_POST, 'email', '')) ?: null,
+            'notas'    => trim(Entrada::texto($_POST, 'notas', '')) ?: null,
         ];
     }
 

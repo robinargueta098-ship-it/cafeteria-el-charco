@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Core\Entrada;
 use App\Core\Controller;
 use App\Core\Flash;
 use App\Core\SubidaArchivo;
@@ -169,12 +170,12 @@ class PromocionController extends Controller
     /** @return array<string,mixed> */
     private function datosDelFormulario(): array
     {
-        $alcance = (string) ($_POST['alcance'] ?? 'todo');
+        $alcance = Entrada::texto($_POST, 'alcance', 'todo');
         $categoriaId = $alcance === 'categoria' ? (int) ($_POST['categoria_id'] ?? 0) : null;
         $productoId = $alcance === 'producto' ? (int) ($_POST['producto_id'] ?? 0) : null;
 
-        $tipo = (string) ($_POST['tipo'] ?? '');
-        $valor = trim((string) ($_POST['valor'] ?? ''));
+        $tipo = Entrada::texto($_POST, 'tipo', '');
+        $valor = trim(Entrada::texto($_POST, 'valor', ''));
 
         $dias = $_POST['dias_semana'] ?? [];
         $diasSemana = is_array($dias) && $dias !== []
@@ -182,18 +183,18 @@ class PromocionController extends Controller
             : null;
 
         return [
-            'nombre'                 => trim((string) ($_POST['nombre'] ?? '')),
-            'descripcion'            => trim((string) ($_POST['descripcion'] ?? '')) ?: null,
+            'nombre'                 => trim(Entrada::texto($_POST, 'nombre', '')),
+            'descripcion'            => trim(Entrada::texto($_POST, 'descripcion', '')) ?: null,
             'tipo'                   => $tipo,
             // El valor solo aplica a descuentos; en 2x1/producto gratis se ignora aunque venga en el POST.
             'valor'                  => in_array($tipo, self::TIPOS_CON_VALOR, true) && $valor !== '' ? $valor : null,
             'categoria_id'           => $categoriaId ?: null,
             'producto_id'            => $productoId ?: null,
-            'fecha_inicio'           => (string) ($_POST['fecha_inicio'] ?? ''),
-            'fecha_fin'              => (string) ($_POST['fecha_fin'] ?? ''),
+            'fecha_inicio'           => Entrada::texto($_POST, 'fecha_inicio', ''),
+            'fecha_fin'              => Entrada::texto($_POST, 'fecha_fin', ''),
             'dias_semana'            => $diasSemana,
-            'hora_inicio'            => (string) ($_POST['hora_inicio'] ?? '') ?: null,
-            'hora_fin'               => (string) ($_POST['hora_fin'] ?? '') ?: null,
+            'hora_inicio'            => Entrada::texto($_POST, 'hora_inicio', '') ?: null,
+            'hora_fin'               => Entrada::texto($_POST, 'hora_fin', '') ?: null,
             'combinable_con_lealtad' => isset($_POST['combinable_con_lealtad']) ? 1 : 0,
             'prioridad'              => (int) ($_POST['prioridad'] ?? 0),
             'activo'                 => isset($_POST['activo']) ? 1 : 0,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Core\Entrada;
 use App\Core\Controller;
 use App\Core\Flash;
 use App\Core\Validator;
@@ -155,9 +156,9 @@ class CategoriaController extends Controller
     private function datosDelFormulario(): array
     {
         return [
-            'nombre'      => trim((string) ($_POST['nombre'] ?? '')),
-            'descripcion' => $this->nuloSiVacio($_POST['descripcion'] ?? ''),
-            'notas'       => $this->nuloSiVacio($_POST['notas'] ?? ''),
+            'nombre'      => trim(Entrada::texto($_POST, 'nombre', '')),
+            'descripcion' => $this->nuloSiVacio(Entrada::texto($_POST, 'descripcion')),
+            'notas'       => $this->nuloSiVacio(Entrada::texto($_POST, 'notas')),
             'orden'       => (int) ($_POST['orden'] ?? 0),
             'activo'      => isset($_POST['activo']) ? 1 : 0,
         ];
@@ -174,6 +175,10 @@ class CategoriaController extends Controller
             ->longitudMaxima('notas', 'Notas', 255);
 
         $errores = $validador->errores();
+
+        if ($datos['nombre'] !== '' && (new Categoria())->existeNombre($datos['nombre'], $idActual)) {
+            $errores[] = 'Ya existe una categoría con ese nombre (no importan las mayúsculas). Usa otro nombre o edita la existente.';
+        }
 
         if ($datos['orden'] < 0 || $datos['orden'] > 9999) {
             $errores[] = 'El orden debe ser un número entre 0 y 9999.';

@@ -23,10 +23,30 @@ body.sitio-body {
 /* La barra de navegación es sticky: sin este margen, saltar a un ancla
    (menú, categorías, "Ver menú"...) deja el título tapado debajo de
    la barra en vez de justo debajo de ella. */
+/*
+ * Al saltar a un ancla (#menu, #cat-cafe…) el título debe quedar visible DEBAJO de las barras fijas:
+ * el encabezado (--alto-nav) y, en el teléfono, la barra de pestañas (--alto-pestanas). sitio.js mide
+ * ambas alturas reales; los valores de aquí son un respaldo para antes de que cargue el script.
+ */
+:root {
+  --alto-nav: 85px;
+  --alto-pestanas: 0px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --alto-nav: 73px;
+    --alto-pestanas: 65px;
+  }
+}
+
 .sitio-seccion,
-.menu-categoria,
 footer.sitio-footer {
-  scroll-margin-top: 72px;
+  scroll-margin-top: calc(var(--alto-nav) + 12px);
+}
+
+.menu-categoria {
+  scroll-margin-top: calc(var(--alto-nav) + var(--alto-pestanas) + 8px);   /* 8px = misma holgura que usa el scrollspy de sitio.js */
 }
 
 /* "Inicio" (logo, título y enlace del menú) debe llevar hasta el tope de la página. El hero
@@ -128,6 +148,8 @@ img {
 
 .sitio-nav-boton-menu {
   display: block;
+  min-width: 44px;      /* tamaño mínimo cómodo para el dedo */
+  min-height: 44px;
   background: none;
   border: 2px solid var(--color-cafe-oscuro);
   border-radius: var(--radio-borde);
@@ -1295,7 +1317,7 @@ img {
 }
 
 .cantidad-agregar button {
-  width: 34px;
+  width: 44px;
   min-height: 44px;
   border: none;
   background: none;
@@ -1312,14 +1334,14 @@ img {
 }
 
 .cantidad-agregar output {
-  min-width: 24px;
+  min-width: 20px;
   text-align: center;
   font-weight: 700;
   color: var(--color-cafe-oscuro);
 }
 
 .btn-agregar {
-  flex: 1 1 110px;
+  flex: 1 1 98px;
   min-width: 0;
   min-height: 44px;
   padding: 8px 10px;
@@ -1546,8 +1568,8 @@ html.carrito-abierto body {
 }
 
 .carrito-cantidad button {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: none;
   background: none;
   font-size: 1.3rem;
@@ -1583,7 +1605,7 @@ html.carrito-abierto body {
   line-height: 1;
   cursor: pointer;
   min-width: 44px;
-  min-height: 32px;
+  min-height: 44px;
 }
 
 .carrito-pie {
@@ -1750,7 +1772,7 @@ html.carrito-abierto body {
   text-decoration: underline;
   font-size: 0.85rem;
   cursor: pointer;
-  min-height: 36px;
+  min-height: 44px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1924,7 +1946,7 @@ html.carrito-abierto body {
 }
 
 .carrito-versiones button {
-  min-height: 34px;
+  min-height: 44px;
   padding: 4px 12px;
   border: none;
   background: transparent;
@@ -1949,7 +1971,7 @@ html.carrito-abierto body {
 
 .temperatura-agregar button {
   flex: 1 1 0;
-  min-height: 40px;
+  min-height: 44px;
   border: 2px solid var(--color-cafe);
   border-radius: 999px;
   background: transparent;
