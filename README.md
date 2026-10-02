@@ -152,6 +152,12 @@ hasta que así se indique explícitamente.
       informativa, aviso fuera de horario con la **próxima apertura** (nunca bloquea el
       envío) y confirmación "¿ya enviaste tu pedido?" (§4.34-§4.36).
 - [x] Dashboard con tarjetas que llevan a su sección (§4.37).
+- [x] Ronda de corrección de bugs previa al despliegue (docs/arquitectura.md §4.39, commits
+      `909b375`, `425740f`, `1d00b69`, `47ae530`): validación de precios, cantidades y fechas, modo SQL
+      estricto, borrador de formularios si vence la sesión, cuenta eliminada con sesión abierta,
+      categorías únicas, botones táctiles de 44 px, anclas de categoría y Configuración que ya no
+      borra ajustes con un envío incompleto. **Falta aplicar** la migración
+      `database/migrations/006_columnas_precio_y_cantidad.sql` (requiere un usuario administrador de MySQL).
 - [ ] Pendiente: fotos reales, revisar precios/datos del menú (§4.38), subir el
       repositorio a un remoto de Git y el despliegue en Hostinger (HTTPS): ver el plan
       en docs/arquitectura.md §9.

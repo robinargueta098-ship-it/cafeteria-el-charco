@@ -1381,6 +1381,102 @@ las dos primeras (las otras son de Administrador). Flecha en la esquina en lugar
 - Las descripciones y la temperatura de los productos se cargaron desde fotos del menú físico: revisar
   contra la carta vigente.
 - Respaldo: el proyecto vive solo en esta computadora; falta un remoto de Git o copia externa.
+- Aplicar `database/migrations/006_columnas_precio_y_cantidad.sql` con un usuario administrador de MySQL (ver §4.39).
+- Reiniciar MySQL para que tome efecto el `sql_mode` estricto de `my.ini` (la aplicación ya lo fuerza por conexión, ver §4.39).
+
+### 4.39 Ronda de corrección de bugs previa al despliegue (QA, 2 de octubre de 2026)
+
+Revisión completa (sitio público + panel) con usuarios de prueba temporales, que se borraron al terminar.
+Se encontraron 10 problemas, más uno extra descubierto durante las pruebas; se corrigieron en cuatro commits:
+**Bloque 1 `909b375`**, **Bloque 2 `425740f`**, **Bloque 3 `1d00b69`** y **Configuración `47ae530`**.
+
+**Bloque 1 — críticos (`909b375`)**
+
+- **Precios** (`Validator::precio()`; `ProductoController`, `PromocionController`): solo números con hasta
+  2 decimales, sin notación científica ni comas, entre Q0.01 y `Producto::PRECIO_MAXIMO` (Q500). Aplica al
+  precio, al precio alterno y al valor de los descuentos (el porcentual, máximo 100). Antes MariaDB redondeaba
+  o recortaba en silencio (`99999999` → `9999.99`, `12.34567` → `12.35`, `1e3` aceptado como 1000).
+- **Cantidades de lealtad** (`LealtadService::leerCantidad()`): entero (rechaza `2.5` en vez de truncarlo),
+  máximo `MAX_CAFES_POR_CONSUMO` = 30 por consumo y `MAX_CAFES_POR_AJUSTE` = 200 por ajuste. Se valida en el
+  servidor (ficha, escáner y ajuste); los `max` del HTML son solo ayuda visual. Antes un consumo de 40000 se
+  guardaba como 32767 (límite del `SMALLINT`) mientras el saldo se calculaba con 40000, y el historial quedaba
+  descuadrado (suma −7233 contra saldo 0). No había registros reales afectados.
+- **Fechas** (`Validator::fecha()`; promociones y temporadas): calendario real (rechaza `2026-02-30`, `ayer`
+  y `0000-00-00`) y el inicio no puede ser anterior a hoy. Al **editar** una que ya empezó, si su inicio no
+  cambia no se exige que sea futuro (si no, no se podría ni renombrar una promoción vigente).
+- **Modo SQL estricto**: `Database.php` ejecuta `SET SESSION sql_mode='STRICT_TRANS_TABLES,…'` en cada
+  conexión (desarrollo y producción se comportan igual, aunque el servidor esté configurado distinto) y se
+  puso también en `C:\xamppn\mysql\bin\my.ini` (requiere reiniciar MySQL). Con el modo estricto salieron
+  validaciones que faltaban y que daban error 500: etiqueta del precio alterno (40), descripciones de
+  promociones y temporadas (255), correo (150) y notas (255) de clientes, motivo de lealtad (255), `orden`
+  (0–9999), `prioridad` (−100–100), umbral de lealtad (entero 1–100), coordenadas y enlace del mapa. Además,
+  `ClienteController` y `UsuarioController` mostraban **cualquier** error de BD como "ya existe ese teléfono/
+  usuario"; ahora solo el error 1062 (llave duplicada) lo es y los demás no se disfrazan.
+- **Columnas** (`database/migrations/006_columnas_precio_y_cantidad.sql`, `schema.sql` ya actualizado):
+  `productos.precio/precio_alt` → `DECIMAL(10,2)` y `lealtad_movimientos.cantidad` → `INT`. **Pendiente de
+  aplicar** con un usuario administrador de MySQL (la cuenta `elcharco_app` no tiene `ALTER`); mientras tanto la
+  validación impide valores que no caben en las columnas actuales.
+- **Tarjetas de producto** (`sitio.css`): la fila "cantidad + Agregar" ya no se sale de la tarjeta (en 320 px y
+  a 768 px afectaba a 52 de 53). Carrusel móvil al 82 % del ancho, la fila baja el botón si no cabe
+  (`flex-wrap`) y la cuadrícula pasa a 3 columnas desde 900 px (2 columnas de 480 a 899 px).
+
+**Bloque 2 — importantes (`425740f`)**
+
+- **Cuenta fantasma** (`ClienteAuthMiddleware`, `ClienteAuth::clienteExiste()`/`expulsarPorCuentaInexistente()`,
+  `CuentaController::panel`): si el Administrador elimina a un cliente que tiene la sesión abierta, se cierra
+  su sesión y va al login con "Tu cuenta ya no está disponible". Antes `/cuenta` mostraba una cuenta vacía y
+  escribía 3 warnings por visita (`panel.php:18`, `Cliente.php:29`, `panel.php:46`).
+- **Borrador de formularios** (`App\Core\BorradorFormulario`, `CsrfMiddleware`, `AuthController`,
+  `panel_footer.php`, `admin.js::restaurarBorrador()`): cuando un envío del panel se rechaza por **token
+  vencido** o por **sesión expirada**, lo escrito se guarda 30 minutos en la sesión y el usuario vuelve a la
+  **misma pantalla** (el `Referer` si es de este sitio y del panel; si no, la propia pantalla en formularios de
+  alta/edición/configuración) con los campos rellenados. Si la sesión expiró, tras volver a iniciar sesión
+  regresa a ese formulario y no al Dashboard. El borrador se entrega una sola vez; `admin.js` solo rellena el
+  formulario cuyo `action` coincide con el envío rechazado (la ficha de Lealtad tiene dos formularios con
+  campos del mismo nombre). Nunca se guardan contraseñas, PIN ni tokens, y el login no genera borrador. Los
+  archivos no se pueden conservar: el aviso pide elegirlos otra vez.
+
+**Bloque 3 — menores (`1d00b69`)**
+
+- **`App\Core\Entrada::texto()`**: lee un parámetro como texto; si llega como arreglo (`?q[]=a`) se trata como
+  entrada inválida (valor por defecto) y cada formulario lo rechaza con su mensaje, en vez de "Array to string
+  conversion". 55 usos en 13 controladores (también el horario de Configuración, que llega anidado).
+- **Redacción**: `LealtadService::textoRecompensasGeneradas()` → "¡Se generó 1 recompensa! Código: X." o "¡Se
+  generaron N recompensas! Códigos: …" (antes "Se generóron"), también en los ajustes.
+- **Categorías únicas**: `Categoria::existeNombre()` (sin distinguir mayúsculas ni acentos: colación `_ci`) al
+  crear y al editar; guardar una categoría con su propio nombre sí se permite.
+- **Botones táctiles de al menos 44 px**: menú hamburguesa, − / + de las tarjetas y del carrito,
+  Frappé/Batido, Caliente/Frío, quitar y vaciar. La fila cantidad + Agregar queda en una línea desde 360 px
+  (`flex: 1 1 98px`) y baja el botón en pantallas más angostas.
+- **Anclas de categoría** (`#cat-cafe`, `#menu`…): `sitio.css` usa `scroll-margin-top: calc(var(--alto-nav) +
+  var(--alto-pestanas) + 8px)` (valores de respaldo en `:root`) y `sitio.js` mide las alturas reales de las
+  barras fijas (`inicializarAnclas()`, `medirBarras()`). El navegador salta antes de que carguen imágenes y
+  fuentes y el destino quedaba desfasado ("a veces el desplazamiento no ocurre del todo"): al terminar de cargar
+  se vuelve a alinear una vez (solo si la persona no se ha movido) y la pestaña activa se pone al día. Los 8 px
+  son la misma holgura del scrollspy, para que el título del destino no quede marcado como la categoría anterior.
+
+**Configuración — un envío incompleto ya no borra los ajustes (`47ae530`)**
+
+Bug descubierto durante las pruebas: `ConfiguracionController::actualizar()` tomaba cada ajuste que no venía
+en el envío como "vacío" y lo guardaba así (nombre, WhatsApp, dirección, mapa, redes y los 7 horarios).
+Ahora solo se actualiza **lo que realmente llega**:
+
+- Un ajuste de texto ausente del envío (`array_key_exists`) no se toca; un día de horario ausente tampoco
+  (`leerHorarioDesdePost()` solo devuelve los días presentes; un día enviado sin la casilla "abierto" cuenta
+  como cerrado, que es como lo manda el formulario real).
+- Un envío sin ningún dato se rechaza ("no se cambió nada"); con **cualquier** error de validación no se guarda
+  nada, ni lo válido del mismo envío. Nombre del sitio y umbral de lealtad no pueden ir vacíos; un campo con
+  formato inválido (arreglo) rechaza el envío completo.
+- Al rechazar, la pantalla vuelve a mostrar lo guardado (más lo recién escrito), no campos en blanco.
+- Si el envío no traía algunos ajustes, el aviso de éxito los lista ("se dejaron como estaban").
+- Se probó con un formulario al que se le quitaron 12 campos y todo el horario, con envío vacío, campos
+  obligatorios vacíos, arreglos, horario parcial y el formulario completo: la configuración y los horarios
+  quedaron idénticos (huella comparada antes y después). Se hizo un respaldo previo de ambas tablas.
+
+**Cómo se probó la ronda**: scripts HTTP contra el sitio local (sesión, CSRF, formularios y subidas de archivo)
+y mediciones en el navegador a 320–1440 px. Hubo un incidente: una prueba de Configuración con un formulario
+incompleto vació los ajustes (era el bug de arriba); se restauraron al instante desde el respaldo completo hecho
+antes de empezar y se corrigió de raíz en `47ae530`.
 
 ## 5. Modelo de datos (entidades y relaciones)
 
