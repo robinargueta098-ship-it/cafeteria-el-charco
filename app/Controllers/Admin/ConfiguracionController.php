@@ -78,22 +78,39 @@ class ConfiguracionController extends Controller
         $configModelo = new Configuracion();
         $configActual = $configModelo->obtenerTodas();
 
+        // SOLO se actualiza lo que realmente llega en la petición. Un ajuste que no viene en el envío
+        // (formulario incompleto, petición manipulada, pestaña vieja…) se deja exactamente como estaba:
+        // antes se tomaba como "vacío" y se borraba (nombre, WhatsApp, mapa, redes, horarios…).
         $datos = [];
+        $errores = [];
+        $omitidos = [];
         foreach (self::CLAVES_EDITABLES as $clave) {
             if (in_array($clave, self::CLAVES_ARCHIVO, true)) {
                 continue; // se resuelven abajo: o hay archivo nuevo, o se conserva el actual
             }
-            $datos[$clave] = trim(Entrada::texto($_POST, $clave, ''));
+            if (!array_key_exists($clave, $_POST)) {
+                $omitidos[] = $clave;
+                continue;
+            }
+            if (!is_string($_POST[$clave])) {
+                $errores[] = "El campo «{$clave}» no tiene un formato válido; no se guardó nada.";
+                continue;
+            }
+            $datos[$clave] = trim($_POST[$clave]);
         }
 
-        $horarioPost = $this->leerHorarioDesdePost();
+        $horarioPost = $this->leerHorarioDesdePost();   // solo los días que vienen en el envío
 
-        $errores = $this->validar($datos);
-        $errores = array_merge($errores, $this->validarHorario($horarioPost));
+        $subeLogo = ($_FILES['logo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        if ($datos === [] && $horarioPost === [] && !$subeLogo && $errores === []) {
+            $errores[] = 'El envío no traía ningún dato de configuración; no se cambió nada.';
+        }
+
+        $errores = array_merge($errores, $this->validar($datos), $this->validarHorario($horarioPost));
 
         if ($errores !== []) {
             $this->vistaFormulario(
-                $datos + array_intersect_key($configActual, array_flip(self::CLAVES_ARCHIVO)),
+                array_merge($configActual, $datos),
                 $errores,
                 $this->horarioPostComoFilas($horarioPost)
             );
@@ -122,8 +139,8 @@ class ConfiguracionController extends Controller
         // coordenadas se sacan solas de él (salvo que el Administrador haya escrito otras a mano
         // en esta misma edición). Si no se pudieran leer, se conservan las que ya había.
         $avisoMapa = null;
-        $enlaceCambio = $datos['google_maps_embed'] !== '' && $datos['google_maps_embed'] !== ($configActual['google_maps_embed'] ?? '');
-        $coordenadasManuales = $datos['mapa_coordenadas'] !== ($configActual['mapa_coordenadas'] ?? '');
+        $enlaceCambio = ($datos['google_maps_embed'] ?? '') !== '' && $datos['google_maps_embed'] !== ($configActual['google_maps_embed'] ?? '');
+        $coordenadasManuales = isset($datos['mapa_coordenadas']) && $datos['mapa_coordenadas'] !== ($configActual['mapa_coordenadas'] ?? '');
         if ($coordenadasManuales) {
             // Coordenadas escritas a mano: el mapa vuelve a ser un pin en ese punto, sin ficha del lugar.
             $datos['mapa_lugar_id'] = '';
@@ -150,7 +167,12 @@ class ConfiguracionController extends Controller
             $this->redirigir('/admin/configuracion');
         }
 
-        Flash::exito('Configuración actualizada correctamente.');
+        $aviso = '';
+        if ($omitidos !== []) {
+            $aviso = ' Estos ajustes no venían en el envío y se dejaron como estaban: ' . implode(', ', array_slice($omitidos, 0, 6)) . (count($omitidos) > 6 ? '…' : '') . '.';
+        }
+
+        Flash::exito('Configuración actualizada correctamente.' . $aviso);
         $this->redirigir('/admin/configuracion');
     }
 
@@ -182,6 +204,9 @@ class ConfiguracionController extends Controller
      * (apertura2/cierre2) para el día que tiene pausa (ej. 9:00-14:00 y
      * luego 16:00-21:00). Nombres de campo: horario[{dia}][apertura|cierre|apertura2|cierre2|abierto].
      *
+     * Solo incluye los días que vienen en la petición; los demás se dejan como están. (Un día enviado sin la
+     * casilla "abierto" cuenta como cerrado: así es como el formulario real marca un día cerrado.)
+     *
      * @return array<int,array{cerrado:bool,apertura:?string,cierre:?string,apertura2:?string,cierre2:?string}>
      */
     private function leerHorarioDesdePost(): array
@@ -191,6 +216,10 @@ class ConfiguracionController extends Controller
         $horarioPost = is_array($_POST['horario'] ?? null) ? $_POST['horario'] : [];
 
         for ($dia = 0; $dia <= 6; $dia++) {
+            if (!is_array($horarioPost[$dia] ?? null)) {
+                continue; // este día no vino en el envío: su horario guardado no se toca
+            }
+
             // substr(...,0,5): defensa en el servidor, además del recorte ya
             // hecho al imprimir el value= del <input type="time"> (formulario.php)
             // — un navegador que reciba un value con segundos (como venían los
@@ -289,10 +318,14 @@ class ConfiguracionController extends Controller
      */
     private function horarioPostComoFilas(array $dias): array
     {
+        // Base: lo guardado. Encima, los días que vinieron en el envío (con lo que el usuario acababa de escribir).
         $filas = [];
+        foreach ((new HorarioAtencion())->listarTodos() as $fila) {
+            $filas[(int) $fila['dia_semana']] = $fila;
+        }
 
         foreach ($dias as $dia => $d) {
-            $filas[] = [
+            $filas[$dia] = [
                 'dia_semana'      => $dia,
                 'hora_apertura'   => $d['apertura'],
                 'hora_cierre'     => $d['cierre'],
@@ -302,7 +335,9 @@ class ConfiguracionController extends Controller
             ];
         }
 
-        return $filas;
+        ksort($filas);
+
+        return array_values($filas);
     }
 
     /** @return array<int,string> */
@@ -323,10 +358,19 @@ class ConfiguracionController extends Controller
 
         $errores = $validador->errores();
 
+        // Obligatorios: si vienen en el envío no pueden ir vacíos (un sitio sin nombre o sin umbral no funciona).
+        if (array_key_exists('nombre_sitio', $datos) && $datos['nombre_sitio'] === '') {
+            $errores[] = 'El nombre del sitio es obligatorio.';
+        }
+        if (array_key_exists('umbral_lealtad', $datos) && $datos['umbral_lealtad'] === '') {
+            $errores[] = 'El umbral de lealtad es obligatorio (cuántos cafés dan 1 gratis).';
+        }
+
         // Umbral de lealtad: entero entre 1 y 100 (sin decimales ni notación científica).
-        if ($datos['umbral_lealtad'] !== '' && preg_match('/^\d{1,3}$/', $datos['umbral_lealtad']) !== 1) {
+        $umbral = $datos['umbral_lealtad'] ?? '';
+        if ($umbral !== '' && preg_match('/^\d{1,3}$/', $umbral) !== 1) {
             $errores[] = 'El umbral de lealtad debe ser un número entero (ej. 10), sin decimales.';
-        } elseif ($datos['umbral_lealtad'] !== '' && ((int) $datos['umbral_lealtad'] < 1 || (int) $datos['umbral_lealtad'] > 100)) {
+        } elseif ($umbral !== '' && ((int) $umbral < 1 || (int) $umbral > 100)) {
             $errores[] = 'El umbral de lealtad debe estar entre 1 y 100 cafés.';
         }
 
