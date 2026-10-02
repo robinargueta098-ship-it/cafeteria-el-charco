@@ -45,7 +45,13 @@
     nombre: document.getElementById('carrito-nombre'),
     direccion: document.getElementById('carrito-direccion'),
     detalles: document.getElementById('carrito-detalles'),
-    vaciar: document.getElementById('carrito-vaciar')
+    vaciar: document.getElementById('carrito-vaciar'),
+    cuerpo: document.querySelector('.carrito-cuerpo'),
+    confirmar: document.getElementById('carrito-confirmar'),
+    gracias: document.getElementById('carrito-gracias'),
+    yaEnvie: document.getElementById('carrito-ya-envie'),
+    volver: document.getElementById('carrito-volver'),
+    cerrarGracias: document.getElementById('carrito-cerrar-gracias')
   };
 
   // ---- Catálogo: lo que hay en la página (precio y nombre siempre actuales) ----
@@ -90,6 +96,10 @@
   var orden = [];     // claves en el orden en que se agregaron (así se ve y así sale en el mensaje)
   var pago = '';
   var cliente = { nombre: '', direccion: '', detalles: '' };
+  var modoActual = 'pedido';   // 'pedido' | 'confirmar' | 'gracias'
+  var enviado = false;     // se tocó "Enviar" y falta saber si el mensaje realmente salió
+  var ultimaActividad = 0; // para vaciar un carrito olvidado
+  var CADUCA_MS = 12 * 60 * 60 * 1000;   // 12 horas sin tocarlo
 
   function leer() {
     try {
@@ -107,12 +117,23 @@
       cliente.nombre = typeof c.nombre === 'string' ? c.nombre : '';
       cliente.direccion = typeof c.direccion === 'string' ? c.direccion : '';
       cliente.detalles = typeof c.detalles === 'string' ? c.detalles : '';
+      enviado = guardado.enviado === true;
+      ultimaActividad = parseInt(guardado.ultimaActividad, 10) || 0;
+
+      // Un carrito olvidado por más de 12 horas se vacía solo (se conservan nombre y dirección).
+      if (ultimaActividad > 0 && Date.now() - ultimaActividad > CADUCA_MS) {
+        items = {};
+        orden = [];
+        pago = '';
+        cliente.detalles = '';
+        enviado = false;
+      }
     } catch (e) { /* sin almacenamiento: el carrito vive solo en esta visita */ }
   }
 
   function guardar() {
     try {
-      window.localStorage.setItem(CLAVE_ALMACEN, JSON.stringify({ items: items, orden: orden, pago: pago, cliente: cliente }));
+      window.localStorage.setItem(CLAVE_ALMACEN, JSON.stringify({ items: items, orden: orden, pago: pago, cliente: cliente, enviado: enviado, ultimaActividad: Date.now() }));
     } catch (e) { /* ignorar */ }
   }
 
@@ -346,7 +367,7 @@
 
     var hayItems = articulos > 0;
     el.vacio.hidden = hayItems;
-    el.pie.hidden = !hayItems;
+    el.pie.hidden = !hayItems || modoActual !== 'pedido';
     el.formulario.hidden = !hayItems;
     el.total.textContent = dinero(totalPedido());
 
@@ -370,6 +391,7 @@
   }
 
   function cambiar(clave, delta) {
+    enviado = false;
     var nueva = (items[clave] || 0) + delta;
     if (nueva <= 0) {
       delete items[clave];
@@ -405,9 +427,28 @@
   // ---- Panel ----
   var ultimoFoco = null;
 
+  // Qué se ve dentro del panel: el pedido, la pregunta "¿ya lo enviaste?" o el agradecimiento.
+  function mostrarModo(modo) {
+    modoActual = modo;
+    var pedido = modo === 'pedido';
+    el.cuerpo.hidden = !pedido;
+    el.confirmar.hidden = modo !== 'confirmar';
+    el.gracias.hidden = modo !== 'gracias';
+    if (!pedido) {
+      el.pie.hidden = true;
+    } else {
+      el.pie.hidden = totalArticulos() === 0;
+    }
+  }
+
+  function modoInicial() {
+    return enviado && totalArticulos() > 0 ? 'confirmar' : 'pedido';
+  }
+
   function abrirPanel() {
     ultimoFoco = document.activeElement;
     pintar();
+    mostrarModo(modoInicial());
     el.fondo.hidden = false;
     el.panel.hidden = false;
     document.documentElement.classList.add('carrito-abierto');
@@ -544,6 +585,38 @@
     });
   });
 
+  el.yaEnvie.addEventListener('click', function () {
+    items = {};
+    orden = [];
+    pago = '';
+    cliente.detalles = '';      // nombre y dirección se conservan para el próximo pedido
+    enviado = false;
+    guardar();
+    pintar();
+    mostrarModo('gracias');
+    el.cerrarGracias.focus();
+  });
+
+  el.volver.addEventListener('click', function () {
+    enviado = false;
+    guardar();
+    pintar();
+    mostrarModo('pedido');
+  });
+
+  el.cerrarGracias.addEventListener('click', cerrarPanel);
+
+  // Si el cliente regresa a esta pestaña después de ir a WhatsApp, se le pregunta de inmediato.
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && enviado && totalArticulos() > 0) {
+      if (el.panel.hidden) {
+        abrirPanel();
+      } else {
+        mostrarModo('confirmar');
+      }
+    }
+  });
+
   el.vaciar.addEventListener('click', function () {
     items = {};
     orden = [];
@@ -570,6 +643,10 @@
         return;
       }
       el.enviar.href = enlaceWhatsapp();   // mensaje con la hora de este instante; el enlace sigue su curso
+      enviado = true;
+      guardar();
+      // Se pregunta después de que el navegador abra WhatsApp (no antes, o el clic se perdería).
+      window.setTimeout(function () { mostrarModo('confirmar'); }, 0);
     });
   }
 

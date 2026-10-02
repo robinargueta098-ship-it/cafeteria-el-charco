@@ -88,6 +88,21 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 
             <button type="button" class="carrito-vaciar" id="carrito-vaciar">Vaciar carrito</button>
         </footer>
+
+        <?php /* Después de tocar "Enviar": se pregunta si el mensaje realmente salió (el sitio no puede saberlo). */ ?>
+        <section class="carrito-estado" id="carrito-confirmar" hidden aria-live="polite">
+            <h3>¿Ya enviaste tu pedido?</h3>
+            <p>Se abrió WhatsApp con tu pedido listo. Cuando lo hayas enviado, avísanos aquí para vaciar el carrito.</p>
+            <button type="button" class="btn carrito-estado-boton" id="carrito-ya-envie">Sí, ya lo envié</button>
+            <button type="button" class="btn btn-secundario carrito-estado-boton" id="carrito-volver">No, volver a mi pedido</button>
+        </section>
+
+        <section class="carrito-estado" id="carrito-gracias" hidden aria-live="polite">
+            <div class="carrito-gracias-icono" aria-hidden="true">&#10003;</div>
+            <h3>¡Gracias por tu pedido!</h3>
+            <p>Ya lo tenemos en WhatsApp. Te responderemos por ahí para confirmártelo. Guardamos tu nombre y dirección para tu próximo pedido.</p>
+            <button type="button" class="btn carrito-estado-boton" id="carrito-cerrar-gracias">Cerrar</button>
+        </section>
     </aside>
 </div>
 
