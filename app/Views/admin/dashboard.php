@@ -14,23 +14,23 @@ require APP_PATH . '/Views/layouts/panel_header.php';
     <a class="tarjeta tarjeta-enlace" href="/admin/clientes" style="flex:1;min-width:180px;">
         <div style="font-size:2rem;font-weight:700;"><?= $clientesTotal ?></div>
         <div>Clientes registrados</div>
-        <span class="tarjeta-enlace-ver" aria-hidden="true">Ver &rarr;</span>
+        <span class="tarjeta-enlace-flecha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 17 17 7M8 7h9v9"/></svg></span>
     </a>
     <a class="tarjeta tarjeta-enlace" href="/admin/recompensas?estado=disponible" style="flex:1;min-width:180px;">
         <div style="font-size:2rem;font-weight:700;"><?= $recompensasDisponibles ?></div>
         <div>Con recompensa disponible</div>
-        <span class="tarjeta-enlace-ver" aria-hidden="true">Ver &rarr;</span>
+        <span class="tarjeta-enlace-flecha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 17 17 7M8 7h9v9"/></svg></span>
     </a>
     <?php if ($esAdmin): ?>
         <a class="tarjeta tarjeta-enlace" href="/admin/productos" style="flex:1;min-width:180px;">
             <div style="font-size:2rem;font-weight:700;"><?= $productosActivos ?></div>
             <div>Productos activos</div>
-            <span class="tarjeta-enlace-ver" aria-hidden="true">Ver &rarr;</span>
+            <span class="tarjeta-enlace-flecha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 17 17 7M8 7h9v9"/></svg></span>
         </a>
         <a class="tarjeta tarjeta-enlace" href="/admin/promociones" style="flex:1;min-width:180px;">
             <div style="font-size:2rem;font-weight:700;"><?= $promocionesVigentes ?></div>
             <div>Promociones vigentes hoy</div>
-            <span class="tarjeta-enlace-ver" aria-hidden="true">Ver &rarr;</span>
+            <span class="tarjeta-enlace-flecha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 17 17 7M8 7h9v9"/></svg></span>
         </a>
     <?php endif; ?>
 </div>

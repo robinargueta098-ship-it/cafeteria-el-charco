@@ -781,14 +781,34 @@ table.tabla th {
   outline-offset: 2px;
 }
 
-.tarjeta-enlace-ver {
-  display: inline-block;
-  margin-top: 8px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-verde);
+/* Flecha en la esquina: indica que la tarjeta es un acceso directo, sin texto de más. */
+.tarjeta-enlace-flecha {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--color-beige);
+  color: var(--color-cafe);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.tarjeta-enlace-flecha svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tarjeta-enlace:hover .tarjeta-enlace-flecha,
+.tarjeta-enlace:focus-visible .tarjeta-enlace-flecha {
+  background: var(--color-verde);
+  color: var(--color-blanco);
+  transform: translate(2px, -2px);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tarjeta-enlace { transition: none; }
+  .tarjeta-enlace,
+  .tarjeta-enlace-flecha { transition: none; }
 }
