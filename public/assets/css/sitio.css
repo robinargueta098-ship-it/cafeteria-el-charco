@@ -196,7 +196,41 @@ img {
   border-bottom: none;
 }
 
+/* Sección actual (la marca sitio.js según el desplazamiento). */
+.sitio-nav-enlaces a:not(.btn).activo {
+  color: var(--color-verde);
+  font-weight: 700;
+  border-bottom-color: var(--color-verde);
+}
+
 @media (min-width: 1024px) {
+  .sitio-nav-enlaces a:not(.btn) {
+    position: relative;
+    white-space: nowrap;
+  }
+
+  .sitio-nav-enlaces a:not(.btn)::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--color-verde);
+    transform: scaleX(0);
+    transition: transform 0.25s ease;
+  }
+
+  .sitio-nav-enlaces a:not(.btn).activo::after,
+  .sitio-nav-enlaces a:not(.btn):hover::after {
+    transform: scaleX(1);
+  }
+
+  .sitio-nav-enlaces a:not(.btn):hover:not(.activo)::after {
+    background: var(--color-cafe);
+  }
+
   .sitio-nav-boton-menu {
     display: none;
   }

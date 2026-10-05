@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   inicializarMenuMovil();
   inicializarAnclas();
+  inicializarNavActiva();
   inicializarHeroFondo();
   inicializarRevelado();
   inicializarRevelaDescripciones();
@@ -691,5 +692,75 @@ function inicializarCarrusel(carrusel) {
     }, 5000);
   }
 
+  actualizar();
+}
+
+/**
+ * Marca en la barra de navegación la sección en la que está la persona (Inicio, Menú, Nosotros…),
+ * y "Mi cuenta" cuando está dentro de /cuenta. Se actualiza al desplazarse, sin recargar.
+ */
+function inicializarNavActiva() {
+  var barra = document.querySelector('.sitio-nav');
+  var enlaces = Array.prototype.slice.call(document.querySelectorAll('.sitio-nav-enlaces a'));
+  if (!barra || enlaces.length === 0) {
+    return;
+  }
+
+  function marcarSolo(elegido) {
+    enlaces.forEach(function (e) {
+      var esElegido = e === elegido;
+      e.classList.toggle('activo', esElegido);
+      if (esElegido) {
+        e.setAttribute('aria-current', 'location');
+      } else {
+        e.removeAttribute('aria-current');
+      }
+    });
+  }
+
+  // Fuera de la portada (ej. /cuenta): se marca "Mi cuenta" y no hay nada que seguir al desplazarse.
+  if (window.location.pathname.indexOf('/cuenta') === 0) {
+    marcarSolo(enlaces.filter(function (e) { return e.getAttribute('href') === '/cuenta'; })[0] || null);
+    return;
+  }
+
+  var secciones = [];
+  enlaces.forEach(function (e) {
+    var ancla = (e.getAttribute('href') || '').split('#')[1];
+    var destino = ancla ? document.getElementById(ancla) : null;
+    if (destino) {
+      secciones.push({ enlace: e, destino: destino });
+    }
+  });
+  if (secciones.length === 0) {
+    return;
+  }
+
+  var esperando = false;
+  function actualizar() {
+    esperando = false;
+    var linea = barra.getBoundingClientRect().height + 120;   // la sección "actual" es la última que ya pasó esta línea
+    var elegido = secciones[0];
+    secciones.forEach(function (s) {
+      if (s.destino.getBoundingClientRect().top <= linea) {
+        elegido = s;
+      }
+    });
+    // Al llegar al final de la página, el pie (Contacto) puede no alcanzar la línea: se marca igual.
+    if (window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight - 4) {
+      elegido = secciones[secciones.length - 1];
+    }
+    marcarSolo(elegido.enlace);
+  }
+  function pedir() {
+    if (!esperando) {
+      esperando = true;
+      window.setTimeout(actualizar, 60);
+    }
+  }
+
+  window.addEventListener('scroll', pedir, { passive: true });
+  window.addEventListener('resize', pedir);
+  window.addEventListener('load', pedir);
   actualizar();
 }
