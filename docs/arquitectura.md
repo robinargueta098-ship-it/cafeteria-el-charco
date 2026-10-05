@@ -1478,6 +1478,58 @@ y mediciones en el navegador a 320–1440 px. Hubo un incidente: una prueba de C
 incompleto vació los ajustes (era el bug de arriba); se restauraron al instante desde el respaldo completo hecho
 antes de empezar y se corrigió de raíz en `47ae530`.
 
+### 4.40 Pedido por WhatsApp: aviso de ubicación (`73080b0`)
+
+- Antes del botón de enviar, el carrito muestra un aviso (por defecto: «Después de enviar tu pedido,
+  mándanos tu ubicación por WhatsApp para poder enviarlo.») y una casilla obligatoria **Entendido**.
+  Mientras no esté marcada el botón queda deshabilitado (`aria-disabled`, aspecto apagado, y el clic
+  explica por qué). La casilla **no se guarda**: se reinicia al enviar, al confirmar «ya lo envié» y al
+  vaciar el carrito. El horario sigue siendo solo informativo y nunca bloquea el envío.
+- El mensaje de WhatsApp termina con la línea «Te enviaré mi ubicación a continuación.».
+- El texto del aviso se edita en Configuración → «Carrito de pedidos» (clave `carrito_aviso_ubicacion`,
+  máximo 300 caracteres; vacío = texto por defecto, `Configuracion::AVISO_UBICACION_DEFECTO`). Si la fila no
+  existe se crea al guardar. `database/migrations/007_carrito_aviso_ubicacion.sql` solo hace un `INSERT IGNORE`
+  (no necesita `ALTER`) y ya está aplicada en esta base.
+
+### 4.41 PIN del cliente: restablecer en persona y bloqueo por intentos (`edf136b`)
+
+**Restablecer PIN** (`LealtadController::restablecerPin`, ruta `POST /admin/lealtad/{id}/restablecer-pin`,
+Administrador y Cajero). Solo en persona: no hay ninguna ruta pública de recuperación, ni correo ni WhatsApp.
+
+- Genera un PIN temporal aleatorio de 4 dígitos (`random_int`) y lo muestra **una sola vez**, en la respuesta
+  directa al POST con `Cache-Control: no-store`. No se guarda en sesión ni en base en claro (solo el hash), y ni el
+  log ni Auditoría lo reciben. La ficha trae el recordatorio «Confirma la identidad del cliente (nombre y
+  teléfono) antes de restablecer.» y un `confirm()`. Un cliente sin cuenta (sin PIN) no se puede restablecer.
+- **Cómo se marca como temporal sin agregar columnas** (la cuenta `elcharco_app` no tiene `ALTER`): el hash va en
+  la misma columna `pin_hash` con el prefijo `temporal:` (`Cliente::pinEsTemporal/hashDelPin`). Al fijar el PIN
+  nuevo la columna vuelve a un hash normal y el temporal deja de existir. Si más adelante se quiere una columna
+  `pin_temporal` propia, basta migrar esos valores.
+- **Cierre de sesiones**: al entrar, la sesión del cliente guarda una huella del `pin_hash` vigente
+  (`Cliente::huellaPin`, `$_SESSION['cliente_huella']`). `ClienteAuth::validarSesion()` (en
+  `ClienteAuthMiddleware`) la compara en cada página: si el PIN cambió, esa sesión se cierra con el aviso «Por
+  seguridad cerramos tu sesión porque tu PIN cambió». Las sesiones abiertas antes de este cambio no traen huella y
+  se cierran una sola vez.
+- **Cambio obligatorio**: iniciar sesión con el temporal no abre la cuenta; deja un estado pendiente
+  (`$_SESSION['cliente_cambio_pin']`, también con huella) y redirige a `/cuenta/cambiar-pin`: 4 dígitos, con
+  confirmación y distinto del temporal. Si el PIN se restablece otra vez o ya se cambió, la pantalla pendiente
+  deja de valer. Un temporal ya cambiado no vuelve a entrar.
+- **Auditoría**: fila `tabla_afectada = 'clientes'`, `accion = 'editar'`, `valores_despues = {"accion":
+  "restablecer_pin"}`; quién = `usuario_id`, a qué cliente = `registro_id`, cuándo = `creado_en`. (El `ENUM` de
+  `accion` no permite un valor nuevo sin `ALTER`.) La pantalla de Auditoría lo muestra como «Restableció el PIN…»
+  y ahora también resuelve el nombre del cliente para `clientes`.
+- `/cuenta/login` dice «¿Olvidaste tu PIN? Acércate a la cafetería y te ayudamos a restablecerlo.» sin enlaces.
+
+**Bloqueo por intentos fallidos** (`ClienteAuth::segundosDeBloqueo`, `IntentoLogin::rachaDeFallos`). Ya existía un
+bloqueo de 15 minutos por cuenta tras 5 fallos; se reemplazó por uno escalonado por **teléfono + IP**:
+
+- 5 fallidos seguidos → 20 s; otros 5 (y los siguientes) → 60 s (el máximo). Se deduce del historial de
+  `intentos_login`, sin columnas nuevas. Mientras dura el bloqueo los intentos se rechazan sin registrarse (ni
+  siquiera con el PIN correcto), así que el conteo no se desplaza.
+- La racha se reinicia al entrar bien o tras 30 minutos sin fallidos. El mensaje muestra los segundos reales que
+  faltan. Un teléfono que no existe se bloquea igual (no revela si hay cuenta).
+- Se conserva el límite general existente de 20 fallidos por IP en 15 minutos (protege contra rotar teléfonos);
+  puede devolver «Espera unos minutos» después de unas 4 rondas de bloqueo desde la misma IP.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```
