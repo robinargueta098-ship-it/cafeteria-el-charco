@@ -42,7 +42,7 @@ class BitacoraAuditoria
             "SELECT b.*, u.nombre AS usuario_nombre, c.nombre AS cliente_nombre
              FROM bitacora_auditoria b
              LEFT JOIN usuarios u ON u.id = b.usuario_id
-             LEFT JOIN clientes c ON b.tabla_afectada = 'lealtad_movimientos' AND c.id = b.registro_id
+             LEFT JOIN clientes c ON b.tabla_afectada IN ('lealtad_movimientos', 'clientes') AND c.id = b.registro_id
              {$where}
              ORDER BY b.creado_en DESC
              LIMIT " . self::POR_PAGINA . " OFFSET {$offset}"

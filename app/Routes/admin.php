@@ -96,6 +96,7 @@ $router->post('/admin/lealtad/canjear/confirmar-cupon', [LealtadController::clas
 $router->get('/admin/lealtad/{id}', [LealtadController::class, 'mostrarCliente']);
 $router->post('/admin/lealtad/{id}/consumo', [LealtadController::class, 'registrarConsumo']);
 $router->post('/admin/lealtad/{id}/ajuste', [LealtadController::class, 'registrarAjuste']);
+$router->post('/admin/lealtad/{id}/restablecer-pin', [LealtadController::class, 'restablecerPin']);
 
 // --- Recompensas ---
 $router->get('/admin/recompensas', [RecompensaController::class, 'index']);

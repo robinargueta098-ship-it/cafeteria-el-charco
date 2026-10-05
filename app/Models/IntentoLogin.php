@@ -28,6 +28,48 @@ class IntentoLogin
         ]);
     }
 
+    /**
+     * Racha actual de intentos fallidos de un teléfono desde una IP: los fallidos seguidos desde
+     * el último inicio de sesión correcto, cortada si entre dos fallidos pasaron más de
+     * $reinicioSegundos (o si el último ya es más viejo que eso). Todo se calcula con la hora
+     * de la base de datos, la misma que escribió `creado_en`.
+     *
+     * @return array{fallos:int,hace_segundos:int} hace_segundos = cuánto pasó desde el último fallido
+     */
+    public function rachaDeFallos(string $telefono, string $ip, int $reinicioSegundos): array
+    {
+        $stmt = Database::conexion()->prepare(
+            'SELECT exitoso, UNIX_TIMESTAMP(creado_en) AS ts, UNIX_TIMESTAMP() AS ahora
+             FROM intentos_login
+             WHERE usuario_o_ip = :telefono AND ip = :ip
+             ORDER BY id DESC LIMIT 500'
+        );
+        $stmt->execute(['telefono' => $telefono, 'ip' => $ip]);
+
+        $fallos = 0;
+        $ultimo = null;   // marca de tiempo del fallido más reciente
+        $previo = null;
+        $ahora = 0;
+        foreach ($stmt->fetchAll() as $fila) {
+            $ahora = (int) $fila['ahora'];
+            $ts = (int) $fila['ts'];
+            if ((int) $fila['exitoso'] === 1) {
+                break;                                   // entró bien: la racha empieza de cero
+            }
+            if ($previo === null && $ahora - $ts > $reinicioSegundos) {
+                break;                                   // el último fallido ya es muy viejo
+            }
+            if ($previo !== null && $previo - $ts > $reinicioSegundos) {
+                break;                                   // hubo una pausa larga entre fallidos
+            }
+            $fallos++;
+            $ultimo ??= $ts;
+            $previo = $ts;
+        }
+
+        return ['fallos' => $fallos, 'hace_segundos' => $ultimo === null ? 0 : max(0, $ahora - $ultimo)];
+    }
+
     public function contarFallidosRecientesPorIp(string $ip, int $minutos): int
     {
         $stmt = Database::conexion()->prepare(

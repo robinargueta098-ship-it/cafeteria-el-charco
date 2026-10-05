@@ -90,6 +90,20 @@ $etiquetasEstadoRecompensa = ['disponible' => 'Disponible', 'canjeada' => 'Canje
     <?php endif; ?>
 </div>
 
+<div class="tarjeta" style="margin:16px 0;">
+    <h2 style="margin-top:0;">PIN de la cuenta</h2>
+    <?php if (empty($cliente['pin_hash'])): ?>
+        <p style="margin:0;">Este cliente todavía no tiene cuenta en el sitio, así que no tiene PIN.</p>
+    <?php else: ?>
+        <p class="campo-ayuda" style="margin-top:0;">Confirma la identidad del cliente (nombre y teléfono) antes de restablecer.</p>
+        <form method="post" action="/admin/lealtad/<?= (int) $cliente['id'] ?>/restablecer-pin"
+              onsubmit="return confirm('¿Restablecer el PIN de este cliente? Se generará un PIN temporal y se cerrarán sus sesiones abiertas.');">
+            <?= Csrf::campo() ?>
+            <button type="submit" class="btn btn-secundario">Restablecer PIN</button>
+        </form>
+    <?php endif; ?>
+</div>
+
 <h2>Recompensas</h2>
 <div class="tarjeta tabla-contenedor">
     <?php if ($recompensas === []): ?>

@@ -19,6 +19,8 @@ $router->get('/cuenta/registro', [CuentaController::class, 'mostrarRegistro']);
 $router->post('/cuenta/registro', [CuentaController::class, 'registrar']);
 $router->get('/cuenta/login', [CuentaController::class, 'mostrarLogin']);
 $router->post('/cuenta/login', [CuentaController::class, 'iniciarSesion']);
+$router->get('/cuenta/cambiar-pin', [CuentaController::class, 'mostrarCambiarPin']);
+$router->post('/cuenta/cambiar-pin', [CuentaController::class, 'cambiarPin']);
 $router->post('/cuenta/logout', [CuentaController::class, 'cerrarSesion']);
 $router->get('/cuenta', [CuentaController::class, 'panel']);
 $router->post('/cuenta/promociones/{id}/reclamar', [CuentaController::class, 'reclamarCupon']);

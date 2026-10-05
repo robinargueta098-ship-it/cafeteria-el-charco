@@ -20,10 +20,8 @@ class ClienteAuthMiddleware
             exit;
         }
 
-        // Si el Administrador eliminó a este cliente mientras tenía la sesión abierta, no se muestra una
-        // cuenta vacía: se cierra la sesión y se le avisa.
-        if (!ClienteAuth::clienteExiste()) {
-            ClienteAuth::expulsarPorCuentaInexistente();
-        }
+        // Si el Administrador eliminó a este cliente, o su PIN se restableció/cambió mientras tenía la
+        // sesión abierta, no se muestra la cuenta: se cierra la sesión y se le avisa.
+        ClienteAuth::validarSesion();
     }
 }

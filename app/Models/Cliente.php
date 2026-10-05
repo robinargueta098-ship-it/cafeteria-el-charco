@@ -298,6 +298,41 @@ class Cliente
 
     // --- Cuenta simple del cliente (teléfono + PIN de 4 dígitos) ---
 
+    /**
+     * Un PIN temporal (restablecido por el personal, en persona) se guarda en la misma columna
+     * `pin_hash`, también hasheado, con este prefijo delante. Así "es temporal" y "cuál es el
+     * hash" viajan en un solo valor que se cambia de forma atómica, sin agregar columnas.
+     */
+    private const PREFIJO_PIN_TEMPORAL = 'temporal:';
+
+    public static function pinEsTemporal(array $registro): bool
+    {
+        return str_starts_with((string) ($registro['pin_hash'] ?? ''), self::PREFIJO_PIN_TEMPORAL);
+    }
+
+    /** El hash bcrypt a comparar con password_verify(), sin la marca de "temporal". */
+    public static function hashDelPin(array $registro): string
+    {
+        $valor = (string) ($registro['pin_hash'] ?? '');
+
+        return self::pinEsTemporal($registro) ? substr($valor, strlen(self::PREFIJO_PIN_TEMPORAL)) : $valor;
+    }
+
+    /**
+     * Huella del PIN vigente. Se guarda en la sesión del cliente al entrar; si el PIN cambia
+     * (restablecimiento o cambio forzado), la huella ya no coincide y esas sesiones dejan de valer.
+     */
+    public static function huellaPin(array $registro): string
+    {
+        return substr(hash('sha256', (string) ($registro['pin_hash'] ?? '')), 0, 32);
+    }
+
+    /** Deja un PIN temporal (ya hasheado) y limpia los contadores de intentos. */
+    public function establecerPinTemporal(int $id, string $pinHash): void
+    {
+        $this->establecerPin($id, self::PREFIJO_PIN_TEMPORAL . $pinHash);
+    }
+
     public function establecerPin(int $id, string $pinHash): void
     {
         Database::conexion()->prepare(
@@ -305,25 +340,6 @@ class Cliente
              SET pin_hash = :hash, pin_intentos_fallidos = 0, pin_bloqueado_hasta = NULL
              WHERE id = :id'
         )->execute(['hash' => $pinHash, 'id' => $id]);
-    }
-
-    public function registrarIntentoPinFallido(int $id, int $maxIntentos, int $minutosBloqueo): void
-    {
-        $pdo = Database::conexion();
-
-        $pdo->prepare(
-            'UPDATE clientes SET pin_intentos_fallidos = pin_intentos_fallidos + 1 WHERE id = :id'
-        )->execute(['id' => $id]);
-
-        $stmt = $pdo->prepare('SELECT pin_intentos_fallidos FROM clientes WHERE id = :id');
-        $stmt->execute(['id' => $id]);
-        $intentos = (int) $stmt->fetchColumn();
-
-        if ($intentos >= $maxIntentos) {
-            $pdo->prepare(
-                'UPDATE clientes SET pin_bloqueado_hasta = DATE_ADD(NOW(), INTERVAL :minutos MINUTE) WHERE id = :id'
-            )->execute(['minutos' => $minutosBloqueo, 'id' => $id]);
-        }
     }
 
     public function registrarAccesoClienteExitoso(int $id): void

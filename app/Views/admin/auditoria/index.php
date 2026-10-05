@@ -68,6 +68,12 @@ $etiquetasAccion = [
                         if (!empty($d['motivo'])) {
                             $partes[] = 'Motivo: ' . $d['motivo'];
                         }
+                        if ($r['tabla_afectada'] === 'clientes' && $r['valores_despues'] !== null) {
+                            $dc = json_decode((string) $r['valores_despues'], true) ?: [];
+                            if (($dc['accion'] ?? '') === 'restablecer_pin') {
+                                $partes[] = 'Restableció el PIN (PIN temporal entregado en persona)';
+                            }
+                        }
                         ?>
                         <td><?= htmlspecialchars($partes !== [] ? implode(' · ', $partes) : '—', ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string) ($r['usuario_nombre'] ?? 'Sistema'), ENT_QUOTES, 'UTF-8') ?></td>

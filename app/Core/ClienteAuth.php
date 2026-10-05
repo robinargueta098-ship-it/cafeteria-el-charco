@@ -13,22 +13,56 @@ use App\Models\IntentoLogin;
  * clave en $_SESSION y nunca se cruza con usuario_id/usuario_rol.
  *
  * Un PIN de 4 dígitos tiene muy poca entropía (10 000 combinaciones),
- * así que aplica exactamente el mismo endurecimiento que Auth::
- * intentar() — bloqueo por cuenta, límite por IP, comparación de
- * tiempo constante — porque aquí el riesgo de fuerza bruta es mayor,
- * no menor.
+ * así que aquí el riesgo de fuerza bruta es mayor que en el panel:
+ *  - bloqueo escalonado por teléfono + IP (ver segundosDeBloqueo()),
+ *  - límite general de fallidos por IP,
+ *  - comparación de tiempo constante (se verifica un hash aunque el teléfono no exista).
+ *
+ * PIN temporal: lo genera el personal en persona (LealtadController::restablecerPin()). Quien
+ * entra con él no llega a su cuenta: queda en un estado "pendiente" y debe crear un PIN nuevo
+ * (CuentaController::cambiarPin). Las sesiones abiertas guardan una huella del PIN vigente; al
+ * cambiar el PIN, todas las anteriores dejan de valer.
  */
 class ClienteAuth
 {
-    private const MAX_INTENTOS_CUENTA = 5;
-    private const BLOQUEO_MINUTOS = 15;
+    /** Cada 5 fallidos seguidos hay un bloqueo: 20 s el primero, 60 s (el máximo) los siguientes. */
+    private const FALLOS_POR_BLOQUEO = 5;
+    private const BLOQUEO_PRIMERO_SEGUNDOS = 20;
+    private const BLOQUEO_MAXIMO_SEGUNDOS = 60;
+    /** Sin fallidos durante este tiempo, la racha y el nivel de bloqueo vuelven a cero. */
+    private const REINICIO_SEGUNDOS = 30 * 60;
 
     private const MAX_INTENTOS_IP = 20;
     private const VENTANA_IP_MINUTOS = 15;
 
     private const HASH_FICTICIO = '$2y$10$Ldk/pjo2TTJuHMgYMjS/feP6CrMWdTyM8VMXO9mIj6wag3v.7iOMW';
 
-    /** @return array{ok:bool,error?:string} */
+    /**
+     * Segundos que faltan para poder volver a intentar con ese teléfono desde esa IP (0 = libre).
+     * El bloqueo se deduce del historial de `intentos_login`: tras el fallido 5 → 20 s; tras el 10,
+     * 15, 20… → 60 s. Mientras dura el bloqueo los intentos se rechazan sin registrarse ni
+     * verificarse (ni con el PIN correcto), así que el conteo no se desplaza.
+     */
+    public static function segundosDeBloqueo(string $telefono, string $ip): int
+    {
+        $racha = (new IntentoLogin())->rachaDeFallos($telefono, $ip, self::REINICIO_SEGUNDOS);
+        $fallos = $racha['fallos'];
+
+        if ($fallos === 0 || $fallos % self::FALLOS_POR_BLOQUEO !== 0) {
+            return 0;
+        }
+
+        $duracion = $fallos === self::FALLOS_POR_BLOQUEO ? self::BLOQUEO_PRIMERO_SEGUNDOS : self::BLOQUEO_MAXIMO_SEGUNDOS;
+
+        return max(0, $duracion - $racha['hace_segundos']);
+    }
+
+    public static function mensajeBloqueo(int $segundos): string
+    {
+        return "Demasiados intentos fallidos. Intenta de nuevo en {$segundos} segundos o acércate a la cafetería para que te ayudemos.";
+    }
+
+    /** @return array{ok:bool,error?:string,cambiar_pin?:bool} */
     public static function intentar(string $telefono, string $pin): array
     {
         $ip = self::ipCliente();
@@ -39,35 +73,76 @@ class ClienteAuth
             return ['ok' => false, 'error' => 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.'];
         }
 
+        $espera = self::segundosDeBloqueo($telefono, $ip);
+        if ($espera > 0) {
+            return ['ok' => false, 'error' => self::mensajeBloqueo($espera)];
+        }
+
         $modelo = new Cliente();
         $registro = $modelo->buscarPorTelefono($telefono);
 
-        $puedeIntentar = $registro !== null
-            && !empty($registro['pin_hash'])
-            && !self::estaBloqueado($registro);
+        $puedeIntentar = $registro !== null && !empty($registro['pin_hash']);
 
-        $hashContraComparar = $puedeIntentar ? $registro['pin_hash'] : self::HASH_FICTICIO;
+        $hashContraComparar = $puedeIntentar ? Cliente::hashDelPin($registro) : self::HASH_FICTICIO;
         $valido = password_verify($pin, $hashContraComparar) && $puedeIntentar;
 
         $intentos->registrar($telefono, $valido, $ip, self::agenteUsuario());
 
         if (!$valido) {
-            if ($registro !== null && !empty($registro['pin_hash'])) {
-                $modelo->registrarIntentoPinFallido((int) $registro['id'], self::MAX_INTENTOS_CUENTA, self::BLOQUEO_MINUTOS);
-            }
-            return ['ok' => false, 'error' => 'Teléfono o PIN incorrectos.'];
+            // Si este fallido completa un grupo de 5, se avisa ya del bloqueo (con los segundos reales).
+            $espera = self::segundosDeBloqueo($telefono, $ip);
+            return ['ok' => false, 'error' => $espera > 0 ? self::mensajeBloqueo($espera) : 'Teléfono o PIN incorrectos.'];
         }
 
+        if (Cliente::pinEsTemporal($registro)) {
+            // PIN temporal: todavía no entra a su cuenta; primero debe crear un PIN nuevo.
+            Session::regenerar();
+            unset($_SESSION['csrf_token'], $_SESSION['cliente_id'], $_SESSION['cliente_nombre'], $_SESSION['cliente_huella']);
+            $_SESSION['cliente_cambio_pin'] = ['id' => (int) $registro['id'], 'huella' => Cliente::huellaPin($registro)];
+
+            return ['ok' => true, 'cambiar_pin' => true];
+        }
+
+        self::abrirSesion((int) $registro['id'], (string) $registro['nombre'], (string) $registro['pin_hash']);
+
+        return ['ok' => true];
+    }
+
+    /** Abre la sesión del cliente ya autenticado (cuenta completa), atada al PIN vigente. */
+    public static function abrirSesion(int $clienteId, string $nombre, string $pinHash): void
+    {
         Session::regenerar();
         // Token CSRF nuevo para la sesión ya autenticada: el del formulario de
         // login (anónimo) no debe seguir valiendo dentro de la cuenta.
-        unset($_SESSION['csrf_token']);
-        $_SESSION['cliente_id']     = (int) $registro['id'];
-        $_SESSION['cliente_nombre'] = $registro['nombre'];
+        unset($_SESSION['csrf_token'], $_SESSION['cliente_cambio_pin']);
+        $_SESSION['cliente_id']     = $clienteId;
+        $_SESSION['cliente_nombre'] = $nombre;
+        $_SESSION['cliente_huella'] = Cliente::huellaPin(['pin_hash' => $pinHash]);
 
-        $modelo->registrarAccesoClienteExitoso((int) $registro['id']);
+        (new Cliente())->registrarAccesoClienteExitoso($clienteId);
+    }
 
-        return ['ok' => true];
+    /**
+     * Cliente que entró con un PIN temporal y todavía debe crear el nuevo, o null si no hay un
+     * cambio pendiente válido (sesión vencida, PIN restablecido otra vez, o ya lo cambió).
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function pendienteDeCambiarPin(): ?array
+    {
+        $pendiente = $_SESSION['cliente_cambio_pin'] ?? null;
+        if (!is_array($pendiente) || !isset($pendiente['id'], $pendiente['huella'])) {
+            return null;
+        }
+
+        $registro = (new Cliente())->buscarPorId((int) $pendiente['id']);
+        if ($registro === null || !Cliente::pinEsTemporal($registro)
+            || !hash_equals(Cliente::huellaPin($registro), (string) $pendiente['huella'])) {
+            unset($_SESSION['cliente_cambio_pin']);
+            return null;
+        }
+
+        return $registro;
     }
 
     public static function verificado(): bool
@@ -75,21 +150,31 @@ class ClienteAuth
         return !empty($_SESSION['cliente_id']);
     }
 
-    /** La sesión apunta a un cliente que todavía existe (puede haber sido eliminado desde el panel). */
-    public static function clienteExiste(): bool
+    /**
+     * Comprueba que la sesión abierta siga valiendo: el cliente existe (el Administrador pudo
+     * eliminarlo) y su PIN no cambió desde que entró (un restablecimiento cierra todas sus sesiones).
+     * Si no, la cierra y lo manda al login con un aviso claro.
+     */
+    public static function validarSesion(): void
     {
-        return self::verificado() && (new Cliente())->buscarPorId((int) $_SESSION['cliente_id']) !== null;
+        $registro = (new Cliente())->buscarPorId((int) $_SESSION['cliente_id']);
+
+        if ($registro === null) {
+            self::expulsar('Tu cuenta ya no está disponible. Si crees que es un error, pregunta en la cafetería.');
+        }
+
+        if (Cliente::pinEsTemporal($registro)
+            || !hash_equals(Cliente::huellaPin($registro), (string) ($_SESSION['cliente_huella'] ?? ''))) {
+            self::expulsar('Por seguridad cerramos tu sesión porque tu PIN cambió. Inicia sesión de nuevo.');
+        }
     }
 
-    /**
-     * Cierra la sesión de un cliente que ya no existe y lo manda al login con un aviso claro.
-     * (El aviso se pone DESPUÉS de destruir la sesión vieja, en una sesión nueva.)
-     */
-    public static function expulsarPorCuentaInexistente(): never
+    /** Cierra la sesión del cliente y lo manda al login con un aviso (puesto DESPUÉS de destruir la sesión vieja). */
+    public static function expulsar(string $mensaje): never
     {
         self::cerrarSesion();
         Session::iniciar();
-        Flash::error('Tu cuenta ya no está disponible. Si crees que es un error, pregunta en la cafetería.');
+        Flash::error($mensaje);
         header('Location: /cuenta/login');
         exit;
     }
@@ -109,13 +194,8 @@ class ClienteAuth
 
     public static function cerrarSesion(): void
     {
-        unset($_SESSION['cliente_id'], $_SESSION['cliente_nombre']);
+        unset($_SESSION['cliente_id'], $_SESSION['cliente_nombre'], $_SESSION['cliente_huella'], $_SESSION['cliente_cambio_pin']);
         Session::destruir();
-    }
-
-    private static function estaBloqueado(array $registro): bool
-    {
-        return !empty($registro['pin_bloqueado_hasta']) && strtotime($registro['pin_bloqueado_hasta']) > time();
     }
 
     private static function ipCliente(): string

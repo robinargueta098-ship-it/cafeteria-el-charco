@@ -95,13 +95,7 @@ class CuentaController extends Controller
             $nombreCliente = $nombre;
         }
 
-        Session::regenerar();
-        // Token CSRF nuevo para la sesión ya autenticada: el del formulario de
-        // registro (anónimo) no debe seguir valiendo dentro de la cuenta.
-        unset($_SESSION['csrf_token']);
-        $_SESSION['cliente_id'] = $clienteId;
-        $_SESSION['cliente_nombre'] = $nombreCliente;
-        $modelo->registrarAccesoClienteExitoso($clienteId);
+        ClienteAuth::abrirSesion($clienteId, (string) $nombreCliente, $pinHash);
 
         $this->redirigir('/cuenta');
     }
@@ -128,6 +122,50 @@ class CuentaController extends Controller
             return;
         }
 
+        // Entró con un PIN temporal (restablecido en persona): antes de ver su cuenta crea uno nuevo.
+        $this->redirigir(!empty($resultado['cambiar_pin']) ? '/cuenta/cambiar-pin' : '/cuenta');
+    }
+
+    public function mostrarCambiarPin(): void
+    {
+        if (ClienteAuth::pendienteDeCambiarPin() === null) {
+            $this->redirigir('/cuenta/login');
+        }
+
+        $this->vistaCuenta('public/cuenta/cambiar_pin', ['error' => null]);
+    }
+
+    public function cambiarPin(): void
+    {
+        $registro = ClienteAuth::pendienteDeCambiarPin();
+        if ($registro === null) {
+            Flash::error('Esta pantalla ya no es válida. Inicia sesión de nuevo.');
+            $this->redirigir('/cuenta/login');
+        }
+
+        $pin = Entrada::texto($_POST, 'pin', '');
+        $confirmarPin = Entrada::texto($_POST, 'confirmar_pin', '');
+
+        $error = null;
+        if (!preg_match('/^\d{4}$/', $pin)) {
+            $error = 'El PIN debe ser exactamente de 4 dígitos.';
+        } elseif ($pin !== $confirmarPin) {
+            $error = 'El PIN y su confirmación no coinciden.';
+        } elseif (password_verify($pin, Cliente::hashDelPin($registro))) {
+            $error = 'Tu PIN nuevo debe ser distinto al PIN temporal que te dieron.';
+        }
+
+        if ($error !== null) {
+            $this->vistaCuenta('public/cuenta/cambiar_pin', ['error' => $error]);
+            return;
+        }
+
+        // El PIN temporal deja de existir: la columna queda con el hash del PIN nuevo (sin marca de temporal).
+        $nuevoHash = password_hash($pin, PASSWORD_DEFAULT);
+        (new Cliente())->establecerPin((int) $registro['id'], $nuevoHash);
+        ClienteAuth::abrirSesion((int) $registro['id'], (string) $registro['nombre'], $nuevoHash);
+
+        Flash::exito('¡Listo! Ya tienes tu PIN nuevo.');
         $this->redirigir('/cuenta');
     }
 
@@ -147,7 +185,7 @@ class CuentaController extends Controller
 
         $cliente = (new Cliente())->buscarPorId($clienteId);
         if ($cliente === null) {
-            ClienteAuth::expulsarPorCuentaInexistente(); // defensa extra: el cliente se borró entre la verificación y aquí
+            ClienteAuth::expulsar('Tu cuenta ya no está disponible. Si crees que es un error, pregunta en la cafetería.'); // defensa extra: el cliente se borró entre la verificación y aquí
         }
         $umbral = LealtadService::obtenerUmbral();
 

@@ -13,6 +13,7 @@ use App\Models\CuponPromocion;
 use App\Models\LealtadMovimiento;
 use App\Models\Producto;
 use App\Models\Recompensa;
+use App\Services\AuditoriaService;
 use App\Services\CuponPromocionService;
 use App\Services\LealtadService;
 
@@ -118,6 +119,41 @@ class LealtadController extends Controller
         }
 
         $this->redirigir('/admin/lealtad/' . $id);
+    }
+
+    /**
+     * Restablece el PIN de la cuenta de un cliente, solo en persona: genera un PIN temporal
+     * aleatorio de 4 dígitos y se lo muestra UNA vez a quien lo restablece. Administrador y Cajero.
+     *
+     * El PIN temporal vive en claro solo en esta petición: se guarda hasheado, la pantalla se
+     * entrega sin caché y ni el log ni Auditoría lo reciben (Auditoría solo anota quién, a qué
+     * cliente y cuándo). Al cambiar el hash, todas las sesiones abiertas del cliente dejan de valer
+     * (ClienteAuth::validarSesion), y el siguiente inicio de sesión lo obliga a crear un PIN nuevo.
+     */
+    public function restablecerPin(string $id): void
+    {
+        $this->requerirRol(1, 2);
+
+        $modelo = new Cliente();
+        $cliente = $modelo->buscarPorId((int) $id);
+        if ($cliente === null) {
+            $this->error404();
+        }
+
+        if (empty($cliente['pin_hash'])) {
+            Flash::error('Este cliente todavía no tiene cuenta en el sitio, así que no hay PIN que restablecer.');
+            $this->redirigir('/admin/lealtad/' . $id);
+        }
+
+        $pin = str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+        $modelo->establecerPinTemporal((int) $id, password_hash($pin, PASSWORD_DEFAULT));
+
+        // Sin el PIN: solo la acción. Quién (usuario_id), a qué cliente (registro_id) y cuándo (creado_en) los pone el servicio.
+        AuditoriaService::registrar('clientes', (int) $id, 'editar', null, ['accion' => 'restablecer_pin']);
+
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        header('Pragma: no-cache');
+        $this->vista('admin/lealtad/pin_temporal', ['cliente' => $cliente, 'pin' => $pin]);
     }
 
     /**

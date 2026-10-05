@@ -38,6 +38,10 @@ require APP_PATH . '/Views/layouts/header_publico.php';
             </form>
 
             <p style="text-align:center;margin-top:16px;">
+                ¿Olvidaste tu PIN? Acércate a la cafetería y te ayudamos a restablecerlo.
+            </p>
+
+            <p style="text-align:center;margin-top:16px;">
                 ¿Todavía no tienes cuenta? <a href="/cuenta/registro">Créala aquí</a>
             </p>
         </div>
