@@ -45,16 +45,22 @@ class ClienteAuth
      */
     public static function segundosDeBloqueo(string $telefono, string $ip): int
     {
+        return self::estadoDeBloqueo($telefono, $ip)['segundos'];
+    }
+
+    /** @return array{fallos:int,segundos:int} fallidos seguidos de la racha actual y segundos de bloqueo que faltan */
+    private static function estadoDeBloqueo(string $telefono, string $ip): array
+    {
         $racha = (new IntentoLogin())->rachaDeFallos($telefono, $ip, self::REINICIO_SEGUNDOS);
         $fallos = $racha['fallos'];
 
         if ($fallos === 0 || $fallos % self::FALLOS_POR_BLOQUEO !== 0) {
-            return 0;
+            return ['fallos' => $fallos, 'segundos' => 0];
         }
 
         $duracion = $fallos === self::FALLOS_POR_BLOQUEO ? self::BLOQUEO_PRIMERO_SEGUNDOS : self::BLOQUEO_MAXIMO_SEGUNDOS;
 
-        return max(0, $duracion - $racha['hace_segundos']);
+        return ['fallos' => $fallos, 'segundos' => max(0, $duracion - $racha['hace_segundos'])];
     }
 
     public static function mensajeBloqueo(int $segundos): string
@@ -62,7 +68,7 @@ class ClienteAuth
         return "Demasiados intentos fallidos. Intenta de nuevo en {$segundos} segundos o acércate a la cafetería para que te ayudemos.";
     }
 
-    /** @return array{ok:bool,error?:string,cambiar_pin?:bool} */
+    /** @return array{ok:bool,error?:string,cambiar_pin?:bool,segundos?:int} segundos = bloqueo vigente (la pantalla lo va descontando) */
     public static function intentar(string $telefono, string $pin): array
     {
         $ip = self::ipCliente();
@@ -73,9 +79,9 @@ class ClienteAuth
             return ['ok' => false, 'error' => 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.'];
         }
 
-        $espera = self::segundosDeBloqueo($telefono, $ip);
-        if ($espera > 0) {
-            return ['ok' => false, 'error' => self::mensajeBloqueo($espera)];
+        $estado = self::estadoDeBloqueo($telefono, $ip);
+        if ($estado['segundos'] > 0) {
+            return ['ok' => false, 'error' => self::mensajeBloqueo($estado['segundos']), 'segundos' => $estado['segundos']];
         }
 
         $modelo = new Cliente();
@@ -90,8 +96,14 @@ class ClienteAuth
 
         if (!$valido) {
             // Si este fallido completa un grupo de 5, se avisa ya del bloqueo (con los segundos reales).
-            $espera = self::segundosDeBloqueo($telefono, $ip);
-            return ['ok' => false, 'error' => $espera > 0 ? self::mensajeBloqueo($espera) : 'Teléfono o PIN incorrectos.'];
+            $estado = self::estadoDeBloqueo($telefono, $ip);
+            // Pasados los 5 primeros fallidos se muestra el aviso "acércate a la cafetería" (se recuerda en la sesión).
+            if ($estado['fallos'] > self::FALLOS_POR_BLOQUEO) {
+                $_SESSION['cliente_login_ayuda'] = true;
+            }
+            return $estado['segundos'] > 0
+                ? ['ok' => false, 'error' => self::mensajeBloqueo($estado['segundos']), 'segundos' => $estado['segundos']]
+                : ['ok' => false, 'error' => 'Teléfono o PIN incorrectos.'];
         }
 
         if (Cliente::pinEsTemporal($registro)) {
@@ -114,7 +126,7 @@ class ClienteAuth
         Session::regenerar();
         // Token CSRF nuevo para la sesión ya autenticada: el del formulario de
         // login (anónimo) no debe seguir valiendo dentro de la cuenta.
-        unset($_SESSION['csrf_token'], $_SESSION['cliente_cambio_pin']);
+        unset($_SESSION['csrf_token'], $_SESSION['cliente_cambio_pin'], $_SESSION['cliente_login_ayuda']);
         $_SESSION['cliente_id']     = $clienteId;
         $_SESSION['cliente_nombre'] = $nombre;
         $_SESSION['cliente_huella'] = Cliente::huellaPin(['pin_hash' => $pinHash]);

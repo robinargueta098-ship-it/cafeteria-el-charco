@@ -107,7 +107,7 @@ class CuentaController extends Controller
         }
 
         // Aviso de una sola lectura (ej. "Tu sesión expiró"), puesto por CsrfMiddleware.
-        $this->vistaCuenta('public/cuenta/login', ['error' => Flash::tomar()['mensaje'] ?? null]);
+        $this->vistaCuenta('public/cuenta/login', ['error' => Flash::tomar()['mensaje'] ?? null, 'segundos' => 0]);
     }
 
     public function iniciarSesion(): void
@@ -118,7 +118,7 @@ class CuentaController extends Controller
         $resultado = ClienteAuth::intentar($telefono, $pin);
 
         if (!$resultado['ok']) {
-            $this->vistaCuenta('public/cuenta/login', ['error' => $resultado['error']]);
+            $this->vistaCuenta('public/cuenta/login', ['error' => $resultado['error'], 'segundos' => (int) ($resultado['segundos'] ?? 0)]);
             return;
         }
 

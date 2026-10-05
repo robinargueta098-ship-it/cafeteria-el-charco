@@ -1517,7 +1517,10 @@ Administrador y Cajero). Solo en persona: no hay ninguna ruta pública de recupe
   "restablecer_pin"}`; quién = `usuario_id`, a qué cliente = `registro_id`, cuándo = `creado_en`. (El `ENUM` de
   `accion` no permite un valor nuevo sin `ALTER`.) La pantalla de Auditoría lo muestra como «Restableció el PIN…»
   y ahora también resuelve el nombre del cliente para `clientes`.
-- `/cuenta/login` dice «¿Olvidaste tu PIN? Acércate a la cafetería y te ayudamos a restablecerlo.» sin enlaces.
+- `/cuenta/login` dice «¿Olvidaste tu PIN? Acércate a la cafetería y te ayudamos a restablecerlo.» sin enlaces, pero
+  **solo después de más de 5 fallidos seguidos** (`$_SESSION['cliente_login_ayuda']`, se borra al entrar bien).
+  Mientras hay bloqueo, el aviso descuenta los segundos en vivo (JS con el reloj, no resta de uno en uno), deshabilita
+  «Entrar» y al llegar a 0 muestra «Ya puedes intentar de nuevo.».
 
 **Bloqueo por intentos fallidos** (`ClienteAuth::segundosDeBloqueo`, `IntentoLogin::rachaDeFallos`). Ya existía un
 bloqueo de 15 minutos por cuenta tras 5 fallos; se reemplazó por uno escalonado por **teléfono + IP**:
