@@ -61,7 +61,8 @@ $etiquetasEstado = [
                      contador está en 0 — no se ve como que el cliente perdió su progreso,
                      se ve como que ya lo cambió por un café gratis. */ ?>
             <div class="tarjeta lealtad-recompensa-lista" style="text-align:center;margin-bottom:16px;border-color:var(--color-verde);border-width:2px;">
-                <h2 style="margin-top:0;">🎉 ¡Tienes <?= count($disponibles) === 1 ? 'un café gratis listo' : (count($disponibles) . ' cafés gratis listos') ?> para reclamar!</h2>
+                <?= Vista::ICONO_TAZA_TITULO ?>
+                <h2 style="margin-top:0;">¡Tienes <?= count($disponibles) === 1 ? 'un café gratis listo' : (count($disponibles) . ' cafés gratis listos') ?> para reclamar!</h2>
                 <p class="sitio-seccion-intro">Muestra este código QR en el mostrador, o díctale el código al cajero.</p>
                 <?php foreach ($disponibles as $r): ?>
                     <?php $qr = CodigoQr::dataUri($r['codigo']); ?>
@@ -105,7 +106,7 @@ $etiquetasEstado = [
             <?php $cupon = $cuponesPorPromocion[(int) $promo['id']] ?? null; ?>
             <div class="tarjeta" style="margin-bottom:24px;border-color:var(--color-verde);<?= $cupon !== null && $cupon['estado'] === 'disponible' ? 'text-align:center;' : '' ?>">
                 <p style="margin:0;">
-                    🎁 <strong>Promoción especial:</strong>
+                    <strong>Promoción especial:</strong>
                     <?= htmlspecialchars($promo['nombre'], ENT_QUOTES, 'UTF-8') ?>
                     <?php if (($etiqueta = Vista::etiquetaPromocion($promo)) !== ''): ?>
                         — <span style="color:var(--color-verde);font-weight:700;"><?= htmlspecialchars($etiqueta, ENT_QUOTES, 'UTF-8') ?></span>

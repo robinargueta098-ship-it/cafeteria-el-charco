@@ -35,8 +35,18 @@ class Vista
      * foto de portada). Deliberadamente llamativa: es una tarea
      * pendiente para el dueño del negocio, no un detalle de diseño.
      */
+    /** Taza de café sencilla (trazo, hereda el color): relleno de las fotos que aún no hay y adorno de avisos. */
+    public const ICONO_TAZA = '<svg class="icono-taza" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.8 1 .8 1.6 0 2.8M12 3.5c-.8 1 .8 1.6 0 2.8"/></svg>';
+
+    public const ICONO_TAZA_TITULO = '<svg class="icono-taza icono-taza-titulo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.8 1 .8 1.6 0 2.8M12 3.5c-.8 1 .8 1.6 0 2.8"/></svg>';
+
     public static function pendiente(string $etiqueta): string
     {
+        // Solo lo ve quien tiene sesión en el panel: el cliente no debe ver avisos internos.
+        if (empty($_SESSION['usuario_id'])) {
+            return '';
+        }
+
         return '<span class="marcador-pendiente">[PENDIENTE: '
             . htmlspecialchars($etiqueta, ENT_QUOTES, 'UTF-8')
             . ']</span>';
@@ -58,7 +68,7 @@ class Vista
             return "<img src=\"{$ruta}\" alt=\"{$altEscapado}\" loading=\"lazy\" decoding=\"async\">";
         }
 
-        return '<div class="foto-pendiente" aria-hidden="true"><span>📷 Foto pendiente</span></div>';
+        return '<div class="foto-pendiente" aria-hidden="true">' . self::ICONO_TAZA . '</div>';
     }
 
     private const MESES_ES = [

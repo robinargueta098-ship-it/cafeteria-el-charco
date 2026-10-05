@@ -84,17 +84,26 @@ img {
 .foto-pendiente {
   width: 100%;
   aspect-ratio: 4 / 3;
-  background: repeating-linear-gradient(
-    45deg, var(--color-beige), var(--color-beige) 10px, var(--color-beige-claro) 10px, var(--color-beige-claro) 20px
-  );
-  border: 1px dashed var(--color-cafe);
+  background: var(--color-beige-claro);
   border-radius: var(--radio-borde);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-cafe);
-  font-size: 0.85rem;
-  text-align: center;
+  opacity: 0.55;
+}
+
+.foto-pendiente .icono-taza {
+  width: 42px;
+  height: 42px;
+}
+
+.icono-taza-titulo {
+  display: block;
+  margin: 0 auto 6px;
+  width: 44px;
+  height: 44px;
+  color: var(--color-verde);
 }
 
 /* ---------- Barra de navegación ---------- */

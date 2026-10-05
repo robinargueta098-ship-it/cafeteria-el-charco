@@ -91,7 +91,7 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
                     <span>Enviar pedido por WhatsApp</span>
                 </a>
             <?php else: ?>
-                <p class="carrito-error">El número de WhatsApp del negocio todavía no está configurado.</p>
+                <p class="carrito-error">Por ahora no podemos recibir pedidos por aquí. Escríbenos o visítanos en la cafetería.</p>
             <?php endif; ?>
 
             <button type="button" class="carrito-vaciar" id="carrito-vaciar">Vaciar carrito</button>
