@@ -21,6 +21,7 @@ $datosCarrito = [
     'zona'     => APP_TIMEZONE,
     'horario'  => HorarioAtencion::paraCarrito($horarios),
 ];
+$avisoUbicacion = \App\Models\Configuracion::avisoUbicacion($config);
 $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 7H6"/></svg>';
 ?>
 
@@ -78,6 +79,13 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
             <p class="carrito-error" id="carrito-error" role="alert" hidden></p>
 
             <?php if ($numeroCarrito !== ''): ?>
+                <div class="carrito-ubicacion" id="carrito-ubicacion">
+                    <p class="carrito-ubicacion-texto"><span aria-hidden="true">&#128205;</span> <?= htmlspecialchars($avisoUbicacion, ENT_QUOTES, 'UTF-8') ?></p>
+                    <label class="carrito-entendido" for="carrito-entendido">
+                        <input type="checkbox" id="carrito-entendido" name="entendido_ubicacion">
+                        <span>Entendido</span>
+                    </label>
+                </div>
                 <a href="#" class="btn btn-whatsapp carrito-enviar" id="carrito-enviar" target="_blank" rel="noopener">
                     <?= Vista::iconoWhatsapp() ?>
                     <span>Enviar pedido por WhatsApp</span>

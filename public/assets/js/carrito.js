@@ -42,6 +42,7 @@
     total: document.getElementById('carrito-total'),
     error: document.getElementById('carrito-error'),
     enviar: document.getElementById('carrito-enviar'),
+    entendido: document.getElementById('carrito-entendido'),
     nombre: document.getElementById('carrito-nombre'),
     direccion: document.getElementById('carrito-direccion'),
     detalles: document.getElementById('carrito-detalles'),
@@ -97,6 +98,7 @@
   var pago = '';
   var cliente = { nombre: '', direccion: '', detalles: '' };
   var modoActual = 'pedido';   // 'pedido' | 'confirmar' | 'gracias'
+  var entendido = false;   // casilla «Entendido» del aviso de ubicación: no se guarda, hay que marcarla en cada pedido
   var enviado = false;     // se tocó "Enviar" y falta saber si el mensaje realmente salió
   var ultimaActividad = 0; // para vaciar un carrito olvidado
   var CADUCA_MS = 12 * 60 * 60 * 1000;   // 12 horas sin tocarlo
@@ -271,6 +273,8 @@
       lineas.push('');
       lineas.push('_Pedido enviado fuera del horario de atencion._');
     }
+    lineas.push('');
+    lineas.push('Te enviaré mi ubicación a continuación.');
     return lineas.join('\n');
   }
 
@@ -285,6 +289,21 @@
     if (cliente.direccion.trim() === '') { falta.push('direccion'); }
     if (!pago) { falta.push('pago'); }
     return falta;
+  }
+
+  // El botón de WhatsApp solo se habilita con carrito, datos completos y la casilla «Entendido» marcada.
+  // (El horario NO interviene aquí: es solo informativo y nunca bloquea el envío.)
+  function sincronizarEnviar() {
+    if (!el.enviar) { return; }
+    var listo = totalArticulos() > 0 && datosFaltantes().length === 0 && entendido;
+    el.enviar.href = listo ? enlaceWhatsapp() : '#';
+    el.enviar.setAttribute('aria-disabled', listo ? 'false' : 'true');
+    el.enviar.classList.toggle('carrito-enviar--bloqueado', !entendido);
+  }
+
+  function reiniciarEntendido() {
+    entendido = false;
+    if (el.entendido) { el.entendido.checked = false; }
   }
 
   function marcarInvalidos(falta) {
@@ -407,10 +426,8 @@
       el.error.hidden = true;
       marcarInvalidos([]);
     }
-    if (el.enviar) {
-      el.enviar.href = hayItems && falta.length === 0 ? enlaceWhatsapp() : '#';
-      el.enviar.setAttribute('aria-disabled', hayItems && falta.length === 0 ? 'false' : 'true');
-    }
+    if (el.entendido) { el.entendido.checked = entendido; }
+    sincronizarEnviar();
     pintarAviso();
   }
 
@@ -599,17 +616,22 @@
       cliente[par[0]] = par[1].value;
       guardar();
       var falta = datosFaltantes();
-      var listo = totalArticulos() > 0 && falta.length === 0;
-      if (el.enviar) {
-        el.enviar.href = listo ? enlaceWhatsapp() : '#';
-        el.enviar.setAttribute('aria-disabled', listo ? 'false' : 'true');
-      }
+      sincronizarEnviar();
       if (falta.length === 0) { el.error.hidden = true; }
       if (par[0] !== 'detalles' && par[1].value.trim() !== '') { par[1].setAttribute('aria-invalid', 'false'); }
     });
   });
 
+  if (el.entendido) {
+    el.entendido.addEventListener('change', function () {
+      entendido = el.entendido.checked;
+      if (entendido && datosFaltantes().length === 0) { el.error.hidden = true; }
+      sincronizarEnviar();
+    });
+  }
+
   el.yaEnvie.addEventListener('click', function () {
+    reiniciarEntendido();
     items = {};
     orden = [];
     pago = '';
@@ -642,6 +664,7 @@
   });
 
   el.vaciar.addEventListener('click', function () {
+    reiniciarEntendido();
     items = {};
     orden = [];
     cliente.detalles = '';
@@ -666,11 +689,18 @@
         if (primero) { primero.focus(); }
         return;
       }
+      if (!entendido) {
+        evento.preventDefault();
+        el.error.textContent = 'Marca «Entendido» para poder enviar tu pedido.';
+        el.error.hidden = false;
+        if (el.entendido) { el.entendido.focus(); }
+        return;
+      }
       el.enviar.href = enlaceWhatsapp();   // mensaje con la hora de este instante; el enlace sigue su curso
       enviado = true;
       guardar();
       // Se pregunta después de que el navegador abra WhatsApp (no antes, o el clic se perdería).
-      window.setTimeout(function () { mostrarModo('confirmar'); }, 0);
+      window.setTimeout(function () { reiniciarEntendido(); sincronizarEnviar(); mostrarModo('confirmar'); }, 0);
     });
   }
 

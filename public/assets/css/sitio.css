@@ -1763,6 +1763,44 @@ html.carrito-abierto body {
   opacity: 0.75;
 }
 
+.carrito-ubicacion {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e3d3b8;
+  border-left: 4px solid #2f6b3a;
+  border-radius: 10px;
+  background: #fbf4e6;
+  color: #3e2f24;
+}
+
+.carrito-ubicacion-texto {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.carrito-entendido {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.carrito-entendido input {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  accent-color: #2f6b3a;
+}
+
+.carrito-enviar.carrito-enviar--bloqueado {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.3);
+}
+
 .carrito-vaciar {
   display: block;
   margin: 6px auto 0;

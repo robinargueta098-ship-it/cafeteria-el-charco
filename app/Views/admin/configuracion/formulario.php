@@ -244,6 +244,13 @@ $totalPortada = count($portada);
                    value="<?= htmlspecialchars($config['umbral_lealtad'] ?? '10', ENT_QUOTES, 'UTF-8') ?>">
         </div>
 
+        <h2>Carrito de pedidos</h2>
+        <div class="campo">
+            <label for="carrito_aviso_ubicacion">Aviso de ubicación (se muestra en el carrito, antes de enviar por WhatsApp)</label>
+            <textarea id="carrito_aviso_ubicacion" name="carrito_aviso_ubicacion" rows="2" maxlength="300"><?= htmlspecialchars(\App\Models\Configuracion::avisoUbicacion($config), ENT_NOQUOTES, 'UTF-8') ?></textarea>
+            <p class="campo-ayuda">El cliente debe marcar «Entendido» para poder enviar el pedido. Si lo dejas vacío se usa: «<?= htmlspecialchars(\App\Models\Configuracion::AVISO_UBICACION_DEFECTO, ENT_QUOTES, 'UTF-8') ?>»</p>
+        </div>
+
         <h2>Horario de atención</h2>
         <p class="campo-ayuda" style="margin-top:0;">
             El segundo turno es para un día con horario partido (ej. abre 9:00-14:00, cierra a

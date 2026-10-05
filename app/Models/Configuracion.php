@@ -14,6 +14,27 @@ use App\Core\Database;
  */
 class Configuracion
 {
+    /** Aviso del carrito sobre la ubicación; se usa cuando Configuración lo deja vacío o no existe. */
+    public const AVISO_UBICACION_DEFECTO = 'Después de enviar tu pedido, mándanos tu ubicación por WhatsApp para poder enviarlo.';
+
+    public const CLAVE_AVISO_UBICACION = 'carrito_aviso_ubicacion';
+
+    /** Texto del aviso de ubicación (el configurado, o el de por defecto si está vacío). */
+    public static function avisoUbicacion(array $config): string
+    {
+        $texto = trim((string) ($config[self::CLAVE_AVISO_UBICACION] ?? ''));
+
+        return $texto !== '' ? $texto : self::AVISO_UBICACION_DEFECTO;
+    }
+
+    /** Crea la clave con ese valor si todavía no existe (no pisa una existente). */
+    public function asegurar(string $clave, string $valor, string $descripcion): void
+    {
+        Database::conexion()
+            ->prepare('INSERT IGNORE INTO configuracion_sistema (clave, valor, descripcion) VALUES (:clave, :valor, :descripcion)')
+            ->execute(['clave' => $clave, 'valor' => $valor, 'descripcion' => $descripcion]);
+    }
+
     /** @return array<string,string> clave => valor */
     public function obtenerTodas(): array
     {

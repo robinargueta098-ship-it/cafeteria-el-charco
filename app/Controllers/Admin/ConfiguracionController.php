@@ -25,7 +25,7 @@ class ConfiguracionController extends Controller
         'instagram_usuario', 'tiktok_usuario',
         'facebook_nombre', 'facebook_url',
         'umbral_lealtad', 'google_maps_embed', 'mapa_coordenadas', 'google_calificacion',
-        'google_calificacion_url', 'sobre_nosotros_texto',
+        'google_calificacion_url', 'sobre_nosotros_texto', 'carrito_aviso_ubicacion',
     ];
 
     /**
@@ -155,6 +155,14 @@ class ConfiguracionController extends Controller
             } else {
                 $avisoMapa = 'No se pudieron leer las coordenadas del enlace de Google Maps; el mapa conserva la ubicación anterior. Puedes escribirlas a mano en "Coordenadas exactas".';
             }
+        }
+
+        if (array_key_exists(Configuracion::CLAVE_AVISO_UBICACION, $datos)) {
+            // Vacío = vuelve al texto de siempre; y si la fila aún no existe (instalación sin la migración 007) se crea.
+            if ($datos[Configuracion::CLAVE_AVISO_UBICACION] === '') {
+                $datos[Configuracion::CLAVE_AVISO_UBICACION] = Configuracion::AVISO_UBICACION_DEFECTO;
+            }
+            $configModelo->asegurar(Configuracion::CLAVE_AVISO_UBICACION, Configuracion::AVISO_UBICACION_DEFECTO, 'Aviso del carrito: pedir la ubicación por WhatsApp después de enviar el pedido');
         }
 
         $configModelo->actualizarMultiples($datos);
@@ -354,7 +362,8 @@ class ConfiguracionController extends Controller
             ->longitudMaxima('facebook_nombre', 'Facebook', 100)
             ->longitudMaxima('frase_hero', 'Frase de bienvenida', 200)
             ->longitudMaxima('descripcion_corta', 'Descripción breve', 300)
-            ->longitudMaxima('google_maps_embed', 'Enlace de Google Maps', 255);
+            ->longitudMaxima('google_maps_embed', 'Enlace de Google Maps', 255)
+            ->longitudMaxima('carrito_aviso_ubicacion', 'Aviso de ubicación del carrito', 300);
 
         $errores = $validador->errores();
 
