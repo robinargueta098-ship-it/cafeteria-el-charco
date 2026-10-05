@@ -80,7 +80,7 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 
             <?php if ($numeroCarrito !== ''): ?>
                 <div class="carrito-ubicacion" id="carrito-ubicacion">
-                    <p class="carrito-ubicacion-texto"><span aria-hidden="true">&#128205;</span> <?= htmlspecialchars($avisoUbicacion, ENT_QUOTES, 'UTF-8') ?></p>
+                    <p class="carrito-ubicacion-texto"><?= htmlspecialchars($avisoUbicacion, ENT_QUOTES, 'UTF-8') ?></p>
                     <label class="carrito-entendido" for="carrito-entendido">
                         <input type="checkbox" id="carrito-entendido" name="entendido_ubicacion">
                         <span>Entendido</span>

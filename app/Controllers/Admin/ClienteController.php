@@ -100,6 +100,7 @@ class ClienteController extends Controller
 
         if ($errores !== []) {
             $datos['id'] = $id;
+            $datos['pin_hash'] = $existente['pin_hash'];   // solo para saber si tiene cuenta (la vista no lo muestra)
             $this->vista('admin/clientes/formulario', ['seccionActiva' => 'clientes', 'cliente' => $datos, 'errores' => $errores]);
             return;
         }

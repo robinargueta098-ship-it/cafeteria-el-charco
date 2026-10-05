@@ -55,6 +55,22 @@ $accion = $esEdicion ? '/admin/clientes/' . (int) $cliente['id'] . '/editar' : '
         <a href="/admin/clientes" class="btn btn-secundario">Cancelar</a>
     </form>
 
+    <?php if ($esEdicion): ?>
+        <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e3d3b8;">
+            <h2 style="margin-top:0;">PIN de la cuenta</h2>
+            <?php if (empty($cliente['pin_hash'])): ?>
+                <p style="margin:0;">Este cliente todavía no tiene cuenta en el sitio, así que no tiene PIN.</p>
+            <?php else: ?>
+                <p class="campo-ayuda" style="margin-top:0;">Confirma la identidad del cliente (nombre y teléfono) antes de restablecer.</p>
+                <form method="post" action="/admin/lealtad/<?= (int) $cliente['id'] ?>/restablecer-pin"
+                      onsubmit="return confirm('¿Restablecer el PIN de este cliente? Se generará un PIN temporal y se cerrarán sus sesiones abiertas.');">
+                    <?= Csrf::campo() ?>
+                    <button type="submit" class="btn btn-secundario">Restablecer PIN</button>
+                </form>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
     <?php if ($esEdicion && (\App\Core\Auth::usuario()['rol_id'] ?? null) === 1): ?>
         <form method="post" action="/admin/clientes/<?= (int) $cliente['id'] ?>/eliminar" style="margin-top:24px;"
               onsubmit="return confirm('¿Eliminar a este cliente y TODO su historial de lealtad (cafés, recompensas y cupones)? No se puede deshacer.');">
