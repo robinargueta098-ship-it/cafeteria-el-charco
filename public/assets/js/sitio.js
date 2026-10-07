@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
   inicializarMenuMovil();
   inicializarAnclas();
   inicializarNavActiva();
+  inicializarBurbujaWhatsapp();
   inicializarHeroFondo();
   inicializarRevelado();
   inicializarRevelaDescripciones();
@@ -515,12 +516,14 @@ function inicializarMenuMovil() {
   boton.addEventListener('click', function () {
     var abierto = enlaces.classList.toggle('abierto');
     boton.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    document.body.classList.toggle('menu-movil-abierto', abierto);   // esconde el WhatsApp flotante mientras el menú está abierto
   });
 
   // Cierra el menú al elegir una sección (útil en móvil).
   enlaces.querySelectorAll('a').forEach(function (enlace) {
     enlace.addEventListener('click', function () {
       enlaces.classList.remove('abierto');
+      document.body.classList.remove('menu-movil-abierto');
       boton.setAttribute('aria-expanded', 'false');
     });
   });
@@ -763,4 +766,16 @@ function inicializarNavActiva() {
   window.addEventListener('resize', pedir);
   window.addEventListener('load', pedir);
   actualizar();
+}
+
+/**
+ * En el celular la burbuja del WhatsApp flotante solo aparece unos segundos para invitar a escribir y se
+ * desvanece sola, así no tapa el contenido de abajo; el botón redondo se queda. En pantallas grandes se mantiene.
+ */
+function inicializarBurbujaWhatsapp() {
+  var burbuja = document.querySelector('.whatsapp-burbuja');
+  if (!burbuja || !window.matchMedia || !window.matchMedia('(max-width: 767px)').matches) {
+    return;
+  }
+  window.setTimeout(function () { burbuja.classList.add('oculta'); }, 8000);
 }

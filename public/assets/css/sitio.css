@@ -153,6 +153,26 @@ img {
     height: 48px;
     width: 48px;
   }
+
+  .sitio-nav-interior {
+    padding: 10px 14px;
+  }
+
+  .sitio-nav-marca {
+    gap: 8px;
+    font-size: 1rem;
+    line-height: 1.2;
+    min-width: 0;
+  }
+
+  .sitio-nav-acciones {
+    gap: 8px;
+  }
+
+  .sitio-nav-acciones .nav-carrito {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 .sitio-nav-boton-menu {
@@ -169,7 +189,13 @@ img {
   color: var(--color-cafe-oscuro);
 }
 
+.sitio-nav-interior {
+  flex-wrap: wrap;   /* en móvil el menú desplegable baja a una fila propia, debajo del logo y los botones */
+}
+
 .sitio-nav-enlaces {
+  flex: 0 0 100%;
+  order: 3;
   display: none;
   flex-direction: column;
   gap: 4px;
@@ -235,7 +261,12 @@ img {
     display: none;
   }
 
+  .sitio-nav-interior {
+    flex-wrap: nowrap;
+  }
+
   .sitio-nav-enlaces {
+    flex: 0 1 auto;
     display: flex !important;
     flex-direction: row;
     align-items: center;
@@ -1231,6 +1262,35 @@ img {
 @media (prefers-reduced-motion: reduce) {
   .whatsapp-burbuja {
     animation: none;
+  }
+}
+
+/* La burbuja se desvanece sola (sitio.js, solo en móvil) y el botón flotante se esconde mientras
+   el menú o el carrito están abiertos: ahí tapaban el botón de WhatsApp del menú y el pie del carrito. */
+.whatsapp-burbuja {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.whatsapp-burbuja.oculta {
+  opacity: 0;
+  transform: scale(0.9) translateY(6px);
+  pointer-events: none;
+}
+
+body.menu-movil-abierto .whatsapp-flotante-envoltorio,
+html.carrito-abierto .whatsapp-flotante-envoltorio {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .whatsapp-flotante-envoltorio {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .whatsapp-burbuja {
+    max-width: 200px;
+    font-size: 0.85rem;
   }
 }
 
