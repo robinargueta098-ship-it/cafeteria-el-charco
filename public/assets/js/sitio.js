@@ -51,7 +51,7 @@ function inicializarRevelado() {
   // Las tarjetas de las primeras secciones (todo menos el menú completo) entran además una
   // tras otra, un poco escalonadas: es el movimiento de "bienvenida" del inicio de la página.
   var tarjetas = Array.prototype.slice.call(
-    document.querySelectorAll('section.sitio-seccion:not(#menu) .tarjeta-producto')
+    document.querySelectorAll('section.sitio-seccion:not(#menu) .tarjeta-producto, #nosotros .texto-largo-item')
   );
 
   if (secciones.length === 0) {
