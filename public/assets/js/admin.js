@@ -41,6 +41,7 @@ function restaurarBorrador() {
 
 document.addEventListener('DOMContentLoaded', function () {
   restaurarBorrador();
+  inicializarSobreNosotros();   // después de restaurar el borrador: así toma los valores ya recuperados
   // Campos de teléfono: solo números (y como máximo los que permite maxlength) mientras se escribe o se pega.
   document.querySelectorAll('input[data-solo-digitos]').forEach(function (campo) {
     campo.addEventListener('input', function () {
@@ -300,4 +301,222 @@ function inicializarTipoPromocion() {
 
   select.addEventListener('change', actualizar);
   actualizar();
+}
+
+
+/**
+ * Configuración → "Sobre nosotros": tarjetas editables (agregar, quitar, subir/bajar) y vista previa en vivo.
+ * Los campos son planos (nosotros_titulo_1…6 / nosotros_desc_1…6) y siempre van en orden desde la 1:
+ * al agregar, quitar o reordenar, los valores se mueven entre los lugares; no se renombra nada. La vista previa
+ * usa las mismas clases que el sitio (sobre-nosotros.css) y arma todo con textContent: nunca interpreta HTML.
+ */
+function inicializarSobreNosotros() {
+  var contenedor = document.querySelector('[data-nosotros-tarjetas]');
+  var previa = document.querySelector('[data-nosotros-previa]');
+  if (!contenedor || !previa) {
+    return;
+  }
+
+  var MAX = parseInt(contenedor.getAttribute('data-max'), 10) || 6;
+  var lugares = Array.prototype.slice.call(contenedor.querySelectorAll('[data-nosotros-tarjeta]'));
+  var botonAgregar = contenedor.querySelector('[data-nosotros-agregar]');
+  var contador = contenedor.querySelector('[data-nosotros-contador]');
+  var form = contenedor.closest('form');
+  var intro = document.getElementById('nosotros_intro');
+  var subtitulo = document.getElementById('nosotros_subtitulo');
+  var cierre = document.getElementById('nosotros_cierre');
+  var foto = document.getElementById('sobre_nosotros_foto');
+  var quitarFoto = document.getElementById('quitar_sobre_nosotros_foto');
+  var urlLocal = null;
+
+  function campos(i) {
+    return { t: lugares[i].querySelector('input[type="text"]'), d: lugares[i].querySelector('textarea') };
+  }
+
+  function leer(i) {
+    var c = campos(i);
+    return { titulo: c.t.value, descripcion: c.d.value };
+  }
+
+  function escribir(i, valor) {
+    var c = campos(i);
+    c.t.value = valor.titulo;
+    c.d.value = valor.descripcion;
+  }
+
+  function usado(i) {
+    var v = leer(i);
+    return v.titulo.trim() !== '' || v.descripcion.trim() !== '';
+  }
+
+  function visibles() {
+    return lugares.filter(function (l) { return !l.hidden; }).length;
+  }
+
+  // Los lugares visibles son siempre los primeros N; los de más abajo quedan ocultos y vacíos.
+  function mostrarHasta(n) {
+    lugares.forEach(function (l, i) { l.hidden = i >= n; });
+  }
+
+  function refrescar() {
+    var n = visibles();
+    lugares.forEach(function (l, i) {
+      l.querySelector('[data-nosotros-numero]').textContent = String(i + 1);
+      l.querySelector('[data-nosotros-accion="subir"]').disabled = i === 0;
+      l.querySelector('[data-nosotros-accion="bajar"]').disabled = i === n - 1;
+    });
+    botonAgregar.hidden = n >= MAX;
+    contador.textContent = '(' + lugares.filter(function (_, i) { return i < n && usado(i); }).length + ' de ' + MAX + ')';
+    pintarPrevia();
+  }
+
+  // Al abrir: junta las tarjetas con contenido desde el primer lugar (por si un borrador dejó huecos).
+  var llenas = [];
+  lugares.forEach(function (_, i) { if (usado(i)) { llenas.push(leer(i)); } });
+  lugares.forEach(function (_, i) { escribir(i, llenas[i] || { titulo: '', descripcion: '' }); });
+  mostrarHasta(llenas.length);
+
+  contenedor.addEventListener('click', function (evento) {
+    var boton = evento.target.closest('[data-nosotros-accion]');
+    if (!boton) { return; }
+    var lugar = boton.closest('[data-nosotros-tarjeta]');
+    var i = lugares.indexOf(lugar);
+    var n = visibles();
+    var accion = boton.getAttribute('data-nosotros-accion');
+
+    if (accion === 'quitar') {
+      for (var j = i; j < n - 1; j++) { escribir(j, leer(j + 1)); }
+      escribir(n - 1, { titulo: '', descripcion: '' });
+      mostrarHasta(n - 1);
+    } else {
+      var otro = accion === 'subir' ? i - 1 : i + 1;
+      if (otro < 0 || otro >= n) { return; }
+      var a = leer(i);
+      escribir(i, leer(otro));
+      escribir(otro, a);
+      campos(otro).t.focus();
+    }
+    refrescar();
+  });
+
+  botonAgregar.addEventListener('click', function () {
+    var n = visibles();
+    if (n >= MAX) { return; }
+    mostrarHasta(n + 1);
+    refrescar();
+    campos(n).t.focus();
+  });
+
+  // Foto: avisar de inmediato si pesa de más, y mostrarla en la vista previa antes de guardar.
+  if (foto) {
+    foto.addEventListener('change', function () {
+      foto.setCustomValidity('');
+      if (urlLocal) { URL.revokeObjectURL(urlLocal); urlLocal = null; }
+      var archivo = foto.files && foto.files[0];
+      var maximo = parseInt(foto.getAttribute('data-max-bytes'), 10) || 0;
+      if (archivo && maximo && archivo.size > maximo) {
+        foto.setCustomValidity('La imagen pesa más de ' + Math.round(maximo / 1048576) + ' MB. Elige una más liviana.');
+        foto.reportValidity();
+        foto.value = '';
+      } else if (archivo) {
+        urlLocal = URL.createObjectURL(archivo);
+      }
+      pintarPrevia();
+    });
+  }
+
+  function elemento(etiqueta, clase, texto) {
+    var e = document.createElement(etiqueta);
+    e.className = clase;
+    if (texto !== undefined) { e.textContent = texto; }
+    return e;
+  }
+
+  function conDosPuntos(texto) {
+    return /:$/.test(texto) ? texto : texto + ':';
+  }
+
+  function pintarPrevia() {
+    previa.textContent = '';
+
+    var partesIntro = intro.value.replace(/\r\n?/g, '\n').split(/\n[ \t\u200b]*\n/).map(function (p) {
+      return p.split('\n').map(function (l) { return l.trim(); }).filter(function (l) { return l !== ''; });
+    }).filter(function (lineas) { return lineas.length > 0; });
+    var textoSub = subtitulo.value.trim();
+    var tarjetas = [];
+    lugares.forEach(function (_, i) {
+      var v = leer(i);
+      if (!lugares[i].hidden && v.titulo.trim() !== '') { tarjetas.push({ titulo: v.titulo.trim(), descripcion: v.descripcion.trim() }); }
+    });
+    var textoCierre = cierre.value.trim();
+
+    var urlFoto = '';
+    if (urlLocal) {
+      urlFoto = urlLocal;
+    } else if (quitarFoto && quitarFoto.checked) {
+      urlFoto = previa.getAttribute('data-foto-galeria') || '';
+    } else {
+      urlFoto = previa.getAttribute('data-foto-actual') || previa.getAttribute('data-foto-galeria') || '';
+    }
+
+    if (partesIntro.length === 0 && textoSub === '' && tarjetas.length === 0 && textoCierre === '') {
+      previa.classList.remove('sobre-nosotros--con-foto');
+      previa.appendChild(elemento('p', 'sobre-nosotros-previa-vacia', 'Todavía no hay contenido: aquí verás cómo queda la sección.'));
+      return;
+    }
+
+    previa.classList.toggle('sobre-nosotros--con-foto', urlFoto !== '');
+    if (urlFoto !== '') {
+      var figura = elemento('figure', 'sobre-nosotros-foto');
+      var img = document.createElement('img');
+      img.src = urlFoto;
+      img.alt = '';
+      figura.appendChild(img);
+      previa.appendChild(figura);
+    }
+
+    partesIntro.forEach(function (lineas) {
+      var p = elemento('p', 'texto-largo-parrafo');
+      lineas.forEach(function (linea, k) {
+        if (k > 0) { p.appendChild(document.createElement('br')); }
+        p.appendChild(document.createTextNode(linea));
+      });
+      previa.appendChild(p);
+    });
+
+    if (textoSub !== '') {
+      previa.appendChild(elemento('h3', 'texto-largo-subtitulo', conDosPuntos(textoSub)));
+    }
+
+    if (tarjetas.length > 0) {
+      var lista = elemento('ul', 'texto-largo-lista');
+      tarjetas.forEach(function (t) {
+        var li = elemento('li', 'texto-largo-item');
+        if (t.descripcion !== '') {
+          li.appendChild(elemento('strong', '', conDosPuntos(t.titulo)));
+          li.appendChild(document.createTextNode(' ' + t.descripcion));
+        } else {
+          li.textContent = t.titulo;
+        }
+        lista.appendChild(li);
+      });
+      previa.appendChild(lista);
+    }
+
+    if (textoCierre !== '') {
+      previa.appendChild(elemento('p', 'texto-largo-cierre', textoCierre));
+    }
+  }
+
+  [intro, subtitulo, cierre, quitarFoto, document.getElementById('sobre_nosotros_foto_alt')].forEach(function (campo) {
+    if (campo) { campo.addEventListener('input', pintarPrevia); campo.addEventListener('change', pintarPrevia); }
+  });
+  contenedor.addEventListener('input', pintarPrevia);
+
+  // Un envío con tarjetas ocultas no manda nada raro: están vacías. Solo se evita enviar con una foto marcada como "quitar" y otra nueva a la vez.
+  if (form && quitarFoto && foto) {
+    foto.addEventListener('change', function () { if (foto.files && foto.files[0]) { quitarFoto.checked = false; } });
+  }
+
+  refrescar();
 }

@@ -20,7 +20,7 @@
  */
 use App\Core\ImagenOptimizada;
 use App\Core\TemperaturaProductos;
-use App\Core\TextoLargo;
+use App\Core\SobreNosotros;
 use App\Core\Vista;
 use App\Core\WhatsApp;
 
@@ -330,19 +330,21 @@ $tarjetaProducto = function (array $p) use ($temperaturasProductos) {
     <div class="sitio-contenedor">
         <h2>Sobre nosotros</h2>
         <?php
-        // Una foto de la galería acompaña al texto (a un lado en escritorio, arriba en móvil); sin fotos, el texto va solo.
-        $fotoNosotros = $galeria[0] ?? null;
+        // Contenido estructurado (Configuración → Sobre nosotros); mientras no se haya guardado desde el panel,
+        // se usa el texto anterior con el formateador de siempre. La foto: la propia, si no la primera de la galería.
+        $htmlNosotros = SobreNosotros::html($config);
+        $fotoNosotros = $htmlNosotros !== '' ? SobreNosotros::foto($config, $galeria, $nombreSitio) : null;
         ?>
         <div class="sobre-nosotros<?= $fotoNosotros !== null ? ' sobre-nosotros--con-foto' : '' ?>">
-            <?php if (!empty($config['sobre_nosotros_texto'])): ?>
+            <?php if ($htmlNosotros !== ''): ?>
                 <?php if ($fotoNosotros !== null): ?>
                     <figure class="sobre-nosotros-foto">
-                        <img src="<?= htmlspecialchars(UPLOADS_URL . '/galeria/' . $fotoNosotros['imagen'], ENT_QUOTES, 'UTF-8') ?>"
-                             alt="<?= htmlspecialchars($fotoNosotros['titulo'] ?: $nombreSitio, ENT_QUOTES, 'UTF-8') ?>"
+                        <img src="<?= htmlspecialchars($fotoNosotros['url'], ENT_QUOTES, 'UTF-8') ?>"
+                             alt="<?= htmlspecialchars($fotoNosotros['alt'], ENT_QUOTES, 'UTF-8') ?>"
                              loading="lazy" decoding="async">
                     </figure>
                 <?php endif; ?>
-                <?= TextoLargo::formatear((string) $config['sobre_nosotros_texto']) /* ya escapado dentro del formateador */ ?>
+                <?= $htmlNosotros /* ya escapado dentro de TextoLargo */ ?>
             <?php else: ?>
                 <p class="texto-largo-parrafo"><?= Vista::pendiente('texto de "Sobre nosotros"') ?></p>
             <?php endif; ?>

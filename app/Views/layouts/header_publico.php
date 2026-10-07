@@ -28,6 +28,7 @@ $anclaInicio = $rutaPagina === '' ? '' : '/';
     <?php endif; ?>
     <link rel="stylesheet" href="<?= htmlspecialchars(Vista::asset('/assets/css/main.css'), ENT_QUOTES, 'UTF-8') ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars(Vista::asset('/assets/css/sitio.css'), ENT_QUOTES, 'UTF-8') ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars(Vista::asset('/assets/css/sobre-nosotros.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="sitio-body">
 

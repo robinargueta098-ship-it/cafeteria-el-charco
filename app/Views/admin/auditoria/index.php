@@ -68,6 +68,12 @@ $etiquetasAccion = [
                         if (!empty($d['motivo'])) {
                             $partes[] = 'Motivo: ' . $d['motivo'];
                         }
+                        if ($r['tabla_afectada'] === 'configuracion_sistema' && $r['valores_despues'] !== null) {
+                            $dcfg = json_decode((string) $r['valores_despues'], true) ?: [];
+                            if (!empty($dcfg['detalle']) && is_string($dcfg['detalle'])) {
+                                $partes[] = $dcfg['detalle'];
+                            }
+                        }
                         if ($r['tabla_afectada'] === 'clientes' && $r['valores_despues'] !== null) {
                             $dc = json_decode((string) $r['valores_despues'], true) ?: [];
                             if (($dc['accion'] ?? '') === 'restablecer_pin') {

@@ -521,7 +521,10 @@ INSERT INTO configuracion_sistema (clave, valor, descripcion) VALUES
   ('frase_hero', '', 'Frase corta de bienvenida en la portada — pendiente de redactar/aprobar'),
   ('descripcion_corta', '', 'Descripción breve de la cafetería en la portada — pendiente de redactar/aprobar'),
   ('lealtad_dias_vencimiento_recompensa', '90', 'Días que dura disponible una recompensa generada antes de vencer. Vacío o 0 = no vence.'),
-  ('carrito_aviso_ubicacion', 'Después de enviar tu pedido, mándanos tu ubicación por WhatsApp para poder enviarlo.', 'Aviso del carrito: pedir la ubicación por WhatsApp después de enviar el pedido');
+  ('carrito_aviso_ubicacion', 'Después de enviar tu pedido, mándanos tu ubicación por WhatsApp para poder enviarlo.', 'Aviso del carrito: pedir la ubicación por WhatsApp después de enviar el pedido'),
+  ('sobre_nosotros_estructura', '', 'Sobre nosotros: estructura (introducción, subtítulo, tarjetas y cierre) en JSON'),
+  ('sobre_nosotros_foto', '', 'Sobre nosotros: foto propia (archivo en uploads/sitio)'),
+  ('sobre_nosotros_foto_alt', '', 'Sobre nosotros: texto alternativo de la foto');
 
 -- Horario semanal: se crean las 7 filas marcadas como "cerrado/sin
 -- configurar" (no se inventan horarios). El negocio los completa desde

@@ -812,3 +812,61 @@ table.tabla th {
   .tarjeta-enlace,
   .tarjeta-enlace-flecha { transition: none; }
 }
+
+
+/* ---------- Configuración → Sobre nosotros (tarjetas editables) ---------- */
+
+.nosotros-tarjetas {
+  border: 1px solid var(--color-beige);
+  border-radius: var(--radio-borde);
+  padding: 14px 16px 16px;
+  margin: 0 0 20px;
+  min-width: 0;
+}
+
+.nosotros-tarjetas legend {
+  font-weight: 700;
+  padding: 0 6px;
+}
+
+.nosotros-tarjeta {
+  background: var(--color-blanco);
+  border: 1px solid var(--color-beige);
+  border-left: 4px solid var(--color-verde);
+  border-radius: var(--radio-borde);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.nosotros-tarjeta[hidden] {
+  display: none;
+}
+
+.nosotros-tarjeta-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.nosotros-tarjeta-botones {
+  display: flex;
+  gap: 8px;
+}
+
+.nosotros-tarjeta-botones .btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 767px) {
+  .nosotros-tarjeta-botones .btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .nosotros-tarjeta-botones { width: 100%; }
+  .nosotros-tarjeta-botones .btn-peligro { margin-left: auto; }
+}

@@ -71,6 +71,130 @@ class TextoLargo
     }
 
     /**
+     * Separa un texto (el formato de un solo campo) en las partes de la estructura editable: introducción,
+     * subtítulo, tarjetas y frase de cierre. Usa el MISMO analizador que formatear(), así que lo que antes
+     * se mostraba como subtítulo / tarjetas / cierre queda en su campo correspondiente.
+     *
+     * Devuelve null si el texto no cabe en esa estructura (varios subtítulos o listas, párrafos después
+     * de la lista, más de $maxTarjetas elementos…): en ese caso quien llama debe conservar el texto tal cual.
+     *
+     * @return array{intro:string,subtitulo:string,tarjetas:array<int,array{titulo:string,descripcion:string}>,cierre:string}|null
+     */
+    public static function estructurar(string $texto, int $maxTarjetas = 6): ?array
+    {
+        $bloques = self::bloques($texto);
+        $cierre = '';
+
+        $ultimo = count($bloques) - 1;
+        if ($ultimo >= 1 && $bloques[$ultimo]['tipo'] === 'parrafo'
+            && count($bloques[$ultimo]['lineas']) === 1
+            && mb_strlen($bloques[$ultimo]['lineas'][0]) <= self::CIERRE_MAX_CARACTERES) {
+            $cierre = $bloques[$ultimo]['lineas'][0];
+            array_pop($bloques);
+        }
+
+        $intro = [];
+        $subtitulo = '';
+        $tarjetas = [];
+        $fase = 0;   // 0 = introducción, 1 = ya hubo subtítulo, 2 = ya hubo lista
+        foreach ($bloques as $bloque) {
+            if ($bloque['tipo'] === 'parrafo' && $fase === 0) {
+                $intro[] = implode("\n", $bloque['lineas']);
+            } elseif ($bloque['tipo'] === 'subtitulo' && $fase === 0) {
+                $subtitulo = rtrim(substr($bloque['lineas'][0], 0, -1));   // sin los ":" finales: se agregan al mostrar
+                $fase = 1;
+            } elseif ($bloque['tipo'] === 'lista' && $fase <= 1) {
+                foreach ($bloque['lineas'] as $linea) {
+                    $tarjetas[] = self::partirElemento($linea);
+                }
+                $fase = 2;
+            } else {
+                return null;
+            }
+        }
+
+        if (count($tarjetas) > $maxTarjetas) {
+            return null;
+        }
+
+        return ['intro' => implode("\n\n", $intro), 'subtitulo' => $subtitulo, 'tarjetas' => $tarjetas, 'cierre' => $cierre];
+    }
+
+    /**
+     * Muestra la estructura editable con el mismo HTML y las mismas clases que formatear().
+     *
+     * @param array{intro?:string,subtitulo?:string,tarjetas?:array<int,array{titulo?:string,descripcion?:string}>,cierre?:string} $e
+     */
+    public static function formatearEstructura(array $e): string
+    {
+        $html = '';
+
+        $parrafo = [];
+        $cerrarParrafo = function () use (&$html, &$parrafo): void {
+            if ($parrafo !== []) {
+                $html .= '<p class="texto-largo-parrafo">' . implode("<br>\n", array_map([self::class, 'e'], $parrafo)) . "</p>\n";
+                $parrafo = [];
+            }
+        };
+        foreach (preg_split('/\R/u', (string) ($e['intro'] ?? '')) ?: [] as $linea) {
+            $linea = self::recortar($linea);
+            if ($linea === '') {
+                $cerrarParrafo();
+            } else {
+                $parrafo[] = $linea;
+            }
+        }
+        $cerrarParrafo();
+
+        $subtitulo = self::recortar((string) ($e['subtitulo'] ?? ''));
+        if ($subtitulo !== '') {
+            $html .= '<h3 class="texto-largo-subtitulo">' . self::e(self::conDosPuntos($subtitulo)) . "</h3>\n";
+        }
+
+        $items = '';
+        foreach ((array) ($e['tarjetas'] ?? []) as $t) {
+            $titulo = self::recortar((string) ($t['titulo'] ?? ''));
+            $descripcion = self::recortar((string) ($t['descripcion'] ?? ''));
+            if ($titulo === '') {
+                continue;   // una tarjeta sin título se descarta
+            }
+            $items .= '<li class="texto-largo-item">'
+                . ($descripcion !== '' ? '<strong>' . self::e(self::conDosPuntos($titulo)) . '</strong> ' . self::e($descripcion) : self::e($titulo))
+                . '</li>';
+        }
+        if ($items !== '') {
+            $html .= '<ul class="texto-largo-lista">' . $items . "</ul>\n";
+        }
+
+        $cierre = self::recortar((string) ($e['cierre'] ?? ''));
+        if ($cierre !== '') {
+            $html .= '<p class="texto-largo-cierre">' . self::e($cierre) . "</p>\n";
+        }
+
+        return $html;
+    }
+
+    private static function conDosPuntos(string $texto): string
+    {
+        return str_ends_with($texto, ':') ? $texto : $texto . ':';
+    }
+
+    /** "Encabezado: descripción" → título (sin los ":") y descripción; sin encabezado, todo va como título. */
+    private static function partirElemento(string $linea): array
+    {
+        $pos = strpos($linea, ':');
+        if ($pos !== false) {
+            $encabezado = substr($linea, 0, $pos + 1);
+            $descripcion = self::recortar(substr($linea, $pos + 1));
+            if ($descripcion !== '' && mb_strlen($encabezado) <= self::ENCABEZADO_MAX_CARACTERES) {
+                return ['titulo' => rtrim(substr($encabezado, 0, -1)), 'descripcion' => $descripcion];
+            }
+        }
+
+        return ['titulo' => $linea, 'descripcion' => ''];
+    }
+
+    /**
      * @return array<int,array{tipo:string,lineas:array<int,string>}>
      */
     private static function bloques(string $texto): array

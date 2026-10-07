@@ -8,10 +8,16 @@
  * @var int $portadaLote cuántas se pueden subir en este momento (cupo restante, tope por envío)
  * @var int $portadaMaxBytes tamaño máximo por imagen
  * @var bool $optimiza si el servidor tiene GD para crear versiones reducidas
+ * @var array<string,mixed> $sobre estructura de «Sobre nosotros» (intro, subtitulo, tarjetas, cierre, origen)
+ * @var array{url:string,alt:string,propia:bool}|null $fotoGaleria la foto de la galería que se usa si no hay foto propia
  */
 use App\Core\Csrf;
+use App\Core\SobreNosotros;
 
 require APP_PATH . '/Views/layouts/panel_header.php';
+?>
+<link rel="stylesheet" href="<?= htmlspecialchars(\App\Core\Vista::asset('/assets/css/sobre-nosotros.css'), ENT_QUOTES, 'UTF-8') ?>">
+<?php
 
 $nombresDias = [0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado'];
 $totalPortada = count($portada);
@@ -156,9 +162,109 @@ $totalPortada = count($portada);
             <input type="text" id="direccion_texto" name="direccion_texto" maxlength="255"
                    value="<?= htmlspecialchars($config['direccion_texto'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
         </div>
+
+        <h2 id="sobre-nosotros">Sobre nosotros</h2>
+        <p class="campo-ayuda" style="margin-top:0;">
+            Así se arma la sección «Sobre nosotros» del sitio: una introducción, un subtítulo con tarjetas y una frase de cierre,
+            más una foto. Abajo ves cómo queda. Cada parte es opcional.
+            <?php if (($sobre['origen'] ?? '') === 'texto_anterior'): ?>
+                <br><strong>Estos campos se rellenaron solos con el texto que ya tenía el sitio; no se cambió ninguna palabra.</strong>
+                Se guardan en cuanto pulses «Guardar configuración».
+            <?php elseif (($sobre['origen'] ?? '') === 'texto_anterior_libre'): ?>
+                <br><strong>El texto anterior no tenía este formato, así que está completo dentro de «Introducción».</strong>
+                Puedes separarlo en tarjetas y frase de cierre; no se pierde nada hasta que lo guardes.
+            <?php endif; ?>
+        </p>
+
         <div class="campo">
-            <label for="sobre_nosotros_texto">Texto "Sobre nosotros"</label>
-            <textarea id="sobre_nosotros_texto" name="sobre_nosotros_texto" rows="4"><?= htmlspecialchars($config['sobre_nosotros_texto'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+            <label for="nosotros_intro">Introducción</label>
+            <textarea id="nosotros_intro" name="nosotros_intro" rows="6" maxlength="<?= SobreNosotros::MAX_INTRO ?>"><?= htmlspecialchars($sobre['intro'] ?? '', ENT_NOQUOTES, 'UTF-8') ?></textarea>
+            <span class="campo-ayuda">Se muestra como párrafos, arriba. Separa los párrafos con una línea en blanco.</span>
+        </div>
+
+        <div class="campo">
+            <label for="nosotros_subtitulo">Subtítulo de las tarjetas</label>
+            <input type="text" id="nosotros_subtitulo" name="nosotros_subtitulo" maxlength="<?= SobreNosotros::MAX_SUBTITULO ?>"
+                   value="<?= htmlspecialchars($sobre['subtitulo'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Ej. Lo que nos distingue">
+            <span class="campo-ayuda">Título centrado que va encima de las tarjetas (se le agregan los dos puntos solo).</span>
+        </div>
+
+        <fieldset class="nosotros-tarjetas" data-nosotros-tarjetas data-max="<?= SobreNosotros::MAX_TARJETAS ?>">
+            <legend>Tarjetas <span class="campo-ayuda" data-nosotros-contador></span></legend>
+            <p class="campo-ayuda" style="margin-top:0;">
+                Cada tarjeta es un recuadro con un título en negrita y su descripción. Hasta <?= SobreNosotros::MAX_TARJETAS ?>.
+                Si dejas el título vacío, esa tarjeta no se muestra. Usa ▲ ▼ para cambiar el orden.
+            </p>
+            <?php
+            $tarjetasSobre = array_values($sobre['tarjetas'] ?? []);
+            for ($n = 1; $n <= SobreNosotros::MAX_TARJETAS; $n++):
+                $t = $tarjetasSobre[$n - 1] ?? ['titulo' => '', 'descripcion' => ''];
+                $usada = ($t['titulo'] ?? '') !== '' || ($t['descripcion'] ?? '') !== '';
+            ?>
+                <div class="nosotros-tarjeta" data-nosotros-tarjeta<?= $usada ? '' : ' hidden' ?>>
+                    <div class="nosotros-tarjeta-cabecera">
+                        <strong class="nosotros-tarjeta-numero">Tarjeta <span data-nosotros-numero><?= $n ?></span></strong>
+                        <span class="nosotros-tarjeta-botones">
+                            <button type="button" class="btn btn-secundario btn-pequeno" data-nosotros-accion="subir" aria-label="Subir tarjeta">▲</button>
+                            <button type="button" class="btn btn-secundario btn-pequeno" data-nosotros-accion="bajar" aria-label="Bajar tarjeta">▼</button>
+                            <button type="button" class="btn btn-peligro btn-pequeno" data-nosotros-accion="quitar">Quitar</button>
+                        </span>
+                    </div>
+                    <div class="campo">
+                        <label for="nosotros_titulo_<?= $n ?>">Título</label>
+                        <input type="text" id="nosotros_titulo_<?= $n ?>" name="nosotros_titulo_<?= $n ?>" maxlength="<?= SobreNosotros::MAX_TITULO ?>"
+                               value="<?= htmlspecialchars((string) ($t['titulo'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="Ej. Calidad en cada extracción">
+                    </div>
+                    <div class="campo" style="margin-bottom:0;">
+                        <label for="nosotros_desc_<?= $n ?>">Descripción</label>
+                        <textarea id="nosotros_desc_<?= $n ?>" name="nosotros_desc_<?= $n ?>" rows="3" maxlength="<?= SobreNosotros::MAX_DESCRIPCION ?>"><?= htmlspecialchars((string) ($t['descripcion'] ?? ''), ENT_NOQUOTES, 'UTF-8') ?></textarea>
+                    </div>
+                </div>
+            <?php endfor; ?>
+            <button type="button" class="btn btn-secundario" data-nosotros-agregar>+ Agregar tarjeta</button>
+        </fieldset>
+
+        <div class="campo">
+            <label for="nosotros_cierre">Frase de cierre</label>
+            <textarea id="nosotros_cierre" name="nosotros_cierre" rows="2" maxlength="<?= SobreNosotros::MAX_CIERRE ?>"><?= htmlspecialchars($sobre['cierre'] ?? '', ENT_NOQUOTES, 'UTF-8') ?></textarea>
+            <span class="campo-ayuda">Frase corta, centrada y destacada al final de la sección.</span>
+        </div>
+
+        <div class="campo">
+            <label for="sobre_nosotros_foto">Foto de la sección</label>
+            <?php
+            $fotoPropia = (string) ($config['sobre_nosotros_foto'] ?? '');
+            $hayFotoPropia = $fotoPropia !== '' && is_file(UPLOADS_PATH . '/sitio/' . basename($fotoPropia));
+            ?>
+            <?php if ($hayFotoPropia): ?>
+                <div style="margin-bottom:8px;"><img class="miniatura" id="nosotros-foto-actual" style="max-width:220px;" src="<?= UPLOADS_URL ?>/sitio/<?= htmlspecialchars(basename($fotoPropia), ENT_QUOTES, 'UTF-8') ?>" alt=""></div>
+            <?php else: ?>
+                <p class="campo-ayuda" id="nosotros-foto-aviso" style="margin:0 0 8px;">
+                    Sin foto propia: se usará una foto de la galería<?= $fotoGaleria === null ? ' (y ahora no hay fotos en la galería, así que la sección va solo con texto)' : '' ?>.
+                </p>
+            <?php endif; ?>
+            <input type="file" id="sobre_nosotros_foto" name="sobre_nosotros_foto" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                   data-max-bytes="<?= (int) $portadaMaxBytes ?>">
+            <span class="campo-ayuda"><?= $hayFotoPropia ? 'Elige otra para reemplazarla. ' : '' ?>JPG, PNG o WEBP, de hasta <?= (int) round($portadaMaxBytes / 1048576) ?> MB. Mejor si es horizontal o cuadrada.</span>
+            <?php if ($hayFotoPropia): ?>
+                <label class="campo-checkbox" style="margin-top:8px;min-height:44px;">
+                    <input type="checkbox" name="quitar_sobre_nosotros_foto" value="1" id="quitar_sobre_nosotros_foto">
+                    Quitar la foto (el sitio usará una de la galería)
+                </label>
+            <?php endif; ?>
+        </div>
+        <div class="campo">
+            <label for="sobre_nosotros_foto_alt">Texto alternativo de la foto (opcional)</label>
+            <input type="text" id="sobre_nosotros_foto_alt" name="sobre_nosotros_foto_alt" maxlength="<?= SobreNosotros::MAX_ALT ?>"
+                   value="<?= htmlspecialchars($config['sobre_nosotros_foto_alt'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Ej. Interior de la cafetería">
+            <span class="campo-ayuda">Describe la foto para quien no la puede ver (lectores de pantalla). Si lo dejas vacío se usa el nombre del sitio.</span>
+        </div>
+
+        <div class="campo">
+            <span class="campo-etiqueta" style="display:block;font-weight:600;margin-bottom:6px;">Vista previa <span class="campo-ayuda" style="font-weight:400;">(versión celular; se actualiza mientras escribes)</span></span>
+            <div class="sobre-nosotros sobre-nosotros--previa" data-nosotros-previa
+                 data-foto-actual="<?= $hayFotoPropia ? htmlspecialchars(UPLOADS_URL . '/sitio/' . basename($fotoPropia), ENT_QUOTES, 'UTF-8') : '' ?>"
+                 data-foto-galeria="<?= $fotoGaleria !== null ? htmlspecialchars($fotoGaleria['url'], ENT_QUOTES, 'UTF-8') : '' ?>"></div>
         </div>
 
         <h2>Contacto y redes</h2>

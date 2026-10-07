@@ -9,9 +9,11 @@ use App\Core\Entrada;
 use App\Core\Flash;
 use App\Core\GoogleMaps;
 use App\Core\ImagenOptimizada;
+use App\Core\SobreNosotros;
 use App\Core\SubidaArchivo;
 use App\Core\Validator;
 use App\Models\Configuracion;
+use App\Models\Galeria;
 use App\Models\HorarioAtencion;
 use App\Models\PortadaImagen;
 use App\Services\AuditoriaService;
@@ -25,7 +27,7 @@ class ConfiguracionController extends Controller
         'instagram_usuario', 'tiktok_usuario',
         'facebook_nombre', 'facebook_url',
         'umbral_lealtad', 'google_maps_embed', 'mapa_coordenadas', 'google_calificacion',
-        'google_calificacion_url', 'sobre_nosotros_texto', 'carrito_aviso_ubicacion',
+        'google_calificacion_url', 'carrito_aviso_ubicacion', 'sobre_nosotros_foto_alt',
     ];
 
     /**
@@ -53,7 +55,7 @@ class ConfiguracionController extends Controller
      *        base (pantalla normal); si el formulario tuvo un error se pasa lo que el
      *        administrador acababa de escribir, para no hacerlo repetir el horario.
      */
-    private function vistaFormulario(array $config, array $errores, ?array $horarios = null): void
+    private function vistaFormulario(array $config, array $errores, ?array $horarios = null, ?array $sobre = null): void
     {
         $portada = new PortadaImagen();
         $cupo = PortadaController::MAX_IMAGENES - $portada->contar();
@@ -61,6 +63,8 @@ class ConfiguracionController extends Controller
         $this->vista('admin/configuracion/formulario', [
             'seccionActiva'   => 'configuracion',
             'config'          => $config,
+            'sobre'           => $sobre ?? SobreNosotros::estructura($config),
+            'fotoGaleria'     => SobreNosotros::foto(['sobre_nosotros_foto' => ''], (new Galeria())->listarActivas(), (string) ($config['nombre_sitio'] ?? '')),
             'horarios'        => $horarios ?? (new HorarioAtencion())->listarTodos(),
             'errores'         => $errores,
             'portada'         => $portada->listar(),
@@ -101,20 +105,57 @@ class ConfiguracionController extends Controller
 
         $horarioPost = $this->leerHorarioDesdePost();   // solo los días que vienen en el envío
 
+        // "Sobre nosotros": introducción, subtítulo, tarjetas y cierre. Solo se toca si el envío trae esos campos.
+        $sobre = null;
+        if (SobreNosotros::hayEnvio($_POST)) {
+            $resultadoSobre = SobreNosotros::desdeEnvio($_POST, SobreNosotros::estructura($configActual));
+            $sobre = $resultadoSobre['estructura'];
+            $errores = array_merge($errores, $resultadoSobre['errores']);
+        }
+
         $subeLogo = ($_FILES['logo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
-        if ($datos === [] && $horarioPost === [] && !$subeLogo && $errores === []) {
+        $subeFotoNosotros = ($_FILES[SobreNosotros::CLAVE_FOTO]['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        $quitaFotoNosotros = isset($_POST['quitar_sobre_nosotros_foto']);
+        if ($datos === [] && $horarioPost === [] && !$subeLogo && $sobre === null && !$subeFotoNosotros && !$quitaFotoNosotros && $errores === []) {
             $errores[] = 'El envío no traía ningún dato de configuración; no se cambió nada.';
         }
 
         $errores = array_merge($errores, $this->validar($datos), $this->validarHorario($horarioPost));
 
         if ($errores !== []) {
+            if ($subeFotoNosotros || ($_FILES['logo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+                $errores[] = 'Los archivos no se pueden conservar al corregir: vuelve a elegir la foto (o el logo) antes de guardar.';
+            }
             $this->vistaFormulario(
                 array_merge($configActual, $datos),
                 $errores,
-                $this->horarioPostComoFilas($horarioPost)
+                $this->horarioPostComoFilas($horarioPost),
+                $sobre
             );
             return;
+        }
+
+        // Foto propia de "Sobre nosotros" (si falla, nada se guarda y lo escrito se vuelve a mostrar).
+        $fotoActual = (string) ($configActual[SobreNosotros::CLAVE_FOTO] ?? '');
+        $accionFoto = null;          // 'subida' | 'reemplazada' | 'quitada'
+        $fotoNuevaGuardada = '';
+        if ($subeFotoNosotros) {
+            $subidaFoto = SubidaArchivo::guardarImagen($_FILES[SobreNosotros::CLAVE_FOTO], UPLOADS_PATH . '/sitio');
+            if (!$subidaFoto['ok']) {
+                $this->vistaFormulario(
+                    array_merge($configActual, $datos),
+                    ['Foto de «Sobre nosotros»: ' . $subidaFoto['error'] . ' No se guardó ningún cambio: vuelve a elegir la foto.'],
+                    $this->horarioPostComoFilas($horarioPost),
+                    $sobre
+                );
+                return;
+            }
+            $fotoNuevaGuardada = $subidaFoto['nombre'];
+            $datos[SobreNosotros::CLAVE_FOTO] = $fotoNuevaGuardada;
+            $accionFoto = $fotoActual !== '' ? 'reemplazada' : 'subida';
+        } elseif ($quitaFotoNosotros && $fotoActual !== '') {
+            $datos[SobreNosotros::CLAVE_FOTO] = '';
+            $accionFoto = 'quitada';
         }
 
         $archivosNuevos = [];
@@ -131,7 +172,8 @@ class ConfiguracionController extends Controller
         }
 
         if ($errores !== []) {
-            $this->vistaFormulario($configActual, $errores, $this->horarioPostComoFilas($horarioPost));
+            SubidaArchivo::eliminar(UPLOADS_PATH . '/sitio', $fotoNuevaGuardada);   // no dejar la foto nueva huérfana si no se guarda nada
+            $this->vistaFormulario(array_merge($configActual, $datos, [SobreNosotros::CLAVE_FOTO => $fotoActual]), $errores, $this->horarioPostComoFilas($horarioPost), $sobre);
             return;
         }
 
@@ -165,10 +207,38 @@ class ConfiguracionController extends Controller
             $configModelo->asegurar(Configuracion::CLAVE_AVISO_UBICACION, Configuracion::AVISO_UBICACION_DEFECTO, 'Aviso del carrito: pedir la ubicación por WhatsApp después de enviar el pedido');
         }
 
+        $cambioSobre = false;
+        if ($sobre !== null) {
+            $datos[SobreNosotros::CLAVE_ESTRUCTURA] = SobreNosotros::aJson($sobre);
+            $cambioSobre = $datos[SobreNosotros::CLAVE_ESTRUCTURA] !== ($configActual[SobreNosotros::CLAVE_ESTRUCTURA] ?? '');
+        }
+        // Las claves de "Sobre nosotros" se crean si todavía no existen (instalación sin la migración 008).
+        foreach ([SobreNosotros::CLAVE_ESTRUCTURA => 'Sobre nosotros: estructura (introducción, subtítulo, tarjetas y cierre) en JSON',
+                  SobreNosotros::CLAVE_FOTO => 'Sobre nosotros: foto propia (archivo en uploads/sitio)',
+                  SobreNosotros::CLAVE_FOTO_ALT => 'Sobre nosotros: texto alternativo de la foto'] as $claveNueva => $descripcionNueva) {
+            if (array_key_exists($claveNueva, $datos)) {
+                $configModelo->asegurar($claveNueva, '', $descripcionNueva);
+            }
+        }
+
         $configModelo->actualizarMultiples($datos);
         $this->guardarHorario($horarioPost);
 
+        // La foto anterior se borra del disco, salvo que otro ajuste todavía apunte al mismo archivo.
+        if ($fotoActual !== '' && $accionFoto !== null) {
+            $otrosValores = array_values(array_diff_key(array_merge($configActual, $datos), [SobreNosotros::CLAVE_FOTO => 1]));
+            if (!in_array($fotoActual, $otrosValores, true)) {
+                SubidaArchivo::eliminar(UPLOADS_PATH . '/sitio', $fotoActual);
+            }
+        }
+
         AuditoriaService::registrar('configuracion_sistema', 0, 'editar', $configActual, $datos);
+        if ($cambioSobre) {
+            AuditoriaService::registrar('configuracion_sistema', 0, 'editar', null, ['detalle' => 'Texto de «Sobre nosotros» editado (introducción, tarjetas o frase de cierre)']);
+        }
+        if ($accionFoto !== null) {
+            AuditoriaService::registrar('configuracion_sistema', 0, 'editar', null, ['detalle' => 'Foto de «Sobre nosotros»: ' . $accionFoto]);
+        }
 
         if ($avisoMapa !== null) {
             Flash::error('Configuración guardada, pero: ' . $avisoMapa);
@@ -363,7 +433,8 @@ class ConfiguracionController extends Controller
             ->longitudMaxima('frase_hero', 'Frase de bienvenida', 200)
             ->longitudMaxima('descripcion_corta', 'Descripción breve', 300)
             ->longitudMaxima('google_maps_embed', 'Enlace de Google Maps', 255)
-            ->longitudMaxima('carrito_aviso_ubicacion', 'Aviso de ubicación del carrito', 300);
+            ->longitudMaxima('carrito_aviso_ubicacion', 'Aviso de ubicación del carrito', 300)
+            ->longitudMaxima('sobre_nosotros_foto_alt', 'Texto alternativo de la foto de «Sobre nosotros»', SobreNosotros::MAX_ALT);
 
         $errores = $validador->errores();
 

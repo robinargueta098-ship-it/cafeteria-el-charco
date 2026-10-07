@@ -1533,6 +1533,45 @@ bloqueo de 15 minutos por cuenta tras 5 fallos; se reemplazó por uno escalonado
 - Se conserva el límite general existente de 20 fallidos por IP en 15 minutos (protege contra rotar teléfonos);
   puede devolver «Espera unos minutos» después de unas 4 rondas de bloqueo desde la misma IP.
 
+### 4.42 «Sobre nosotros» editable por partes, con foto propia
+
+Antes la sección se guardaba como **un solo texto** (`sobre_nosotros_texto`) que un analizador (`TextoLargo`, commit
+`ed1ef40`) interpretaba al mostrarlo, y la foto salía sola de la galería. Ahora el panel controla cada parte.
+
+- **Diagnóstico previo**: no existía ningún campo de foto para esta sección. La única subida de Configuración era el
+  logo (`SubidaArchivo::guardarImagen` → `uploads/sitio`); la portada tiene su propio módulo. Se reutilizó ese mismo
+  servicio, carpeta, validaciones (extensión, MIME real, `getimagesize`, 5 MB, nombre aleatorio) y mensajes.
+- **Datos** (`database/migrations/008_sobre_nosotros_estructura.sql`, ya en `schema.sql`; solo `INSERT`, sin `ALTER`):
+  `sobre_nosotros_estructura` (JSON: `intro`, `subtitulo`, `tarjetas[{titulo,descripcion}]`, `cierre`),
+  `sobre_nosotros_foto` (archivo en `uploads/sitio`) y `sobre_nosotros_foto_alt`. Las claves se crean solas al guardar si
+  falta la migración (`Configuracion::asegurar`).
+- **Sin pérdida de texto**: `sobre_nosotros_texto` **no se borra ni se modifica nunca**. Mientras `sobre_nosotros_estructura`
+  esté vacía, el sitio sigue mostrando ese texto con el formateador de siempre (fallback), y el panel lo separa solo en
+  campos con el mismo analizador (`TextoLargo::estructurar`, la misma lógica que `formatear`). No se guarda nada hasta
+  que el Administrador pulse «Guardar configuración». Si el texto anterior no cabe en la estructura (varios subtítulos,
+  más de 6 elementos…), queda completo en «Introducción». Con la estructura ya guardada, un guardado vacío manda: no
+  reaparece el texto anterior.
+- **Código**: `App\Core\SobreNosotros` (leer/guardar/validar la estructura y elegir la foto) y
+  `TextoLargo::formatearEstructura()`, que produce el **mismo HTML** que `formatear()` (se comprobó: guardar sin cambios
+  deja la sección pública idéntica, ignorando espacios). En la estructura el título de cada tarjeta y el subtítulo se
+  guardan **sin los dos puntos**; se agregan al mostrar.
+- **Panel** (Configuración → «Sobre nosotros»): Introducción, Subtítulo, hasta 6 tarjetas (título + descripción;
+  ▲ ▼ Quitar y «+ Agregar tarjeta»; título vacío = se descarta), Frase de cierre, Foto (miniatura o aviso «Sin foto
+  propia», subir/reemplazar, casilla «Quitar la foto», texto alternativo) y **vista previa en vivo** (`admin.js`,
+  `inicializarSobreNosotros`, arma todo con `textContent`; reutiliza `sobre-nosotros.css`, archivo nuevo que cargan el
+  sitio y el panel). Botones de 44 px en móvil.
+- **Foto**: prioridad 1) la propia, 2) la primera de la galería, 3) ninguna (el texto ocupa todo el ancho, sin hueco).
+  Al reemplazar o quitar se borra el archivo anterior de `uploads/sitio` (solo si otro ajuste no apunta al mismo
+  archivo); si el guardado falla no queda la foto nueva huérfana.
+- **Seguridad y compatibilidad**: solo Administrador. Lectura con `Entrada`/`is_string`, longitudes con `Validator`
+  (introducción 2000, subtítulo 80, título 80, descripción 500, cierre 250, alt 150), todo se escapa al mostrar y no
+  se permite HTML. Los campos de tarjeta son **planos** (`nosotros_titulo_1…6`, `nosotros_desc_1…6`), no arreglos:
+  así `BorradorFormulario` los conserva completos si el token vence y `admin.js` los restaura por nombre; la foto no se
+  puede recuperar (el aviso pide volver a elegirla). Actualización parcial (`47ae530`): solo cambia lo que llega; un
+  envío sin campos de la sección no la toca, y guardar solo texto no borra la foto.
+- **Auditoría**: además del registro general de Configuración, quedan «Texto de «Sobre nosotros» editado» y «Foto de
+  «Sobre nosotros»: subida / reemplazada / quitada» (visibles en la pantalla de Auditoría).
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```
