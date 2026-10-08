@@ -550,6 +550,12 @@ function inicializarCarrusel(carrusel) {
   var INTERVALO_MS = 5000;      // cada cuánto avanza solo
   var INACTIVIDAD_MS = 8000;    // sin tocar el carrusel durante este tiempo, vuelve a avanzar solo
   var ultimoAvance = 0;
+
+  // Cada vez que alguien usa el carrusel se reinicia la cuenta de inactividad y las flechas dejan el modo reposo.
+  function registrarAccion() {
+    ultimaAccion = Date.now();
+    carrusel.classList.remove('carrusel--reposo');
+  }
   var ultimaAccion = 0;         // cuándo fue la última vez que el usuario lo usó (botones, puntos, arrastre, teclado)
   var pausado = false;          // pausa mientras el mouse está encima o el foco está dentro
   var pendiente = false;
@@ -647,7 +653,7 @@ function inicializarCarrusel(carrusel) {
       punto.className = 'carrusel-punto';
       punto.setAttribute('aria-label', 'Ir a la foto ' + (i + 1) + ' de ' + items.length);
       punto.addEventListener('click', function () {
-        ultimaAccion = Date.now();
+        registrarAccion();
         irA(i);
       });
       contenedorPuntos.appendChild(punto);
@@ -656,10 +662,10 @@ function inicializarCarrusel(carrusel) {
   }
 
   if (anterior) {
-    anterior.addEventListener('click', function () { ultimaAccion = Date.now(); avanzar(-1); });
+    anterior.addEventListener('click', function () { registrarAccion(); avanzar(-1); });
   }
   if (siguiente) {
-    siguiente.addEventListener('click', function () { ultimaAccion = Date.now(); avanzar(1); });
+    siguiente.addEventListener('click', function () { registrarAccion(); avanzar(1); });
   }
 
   pista.addEventListener('scroll', programarActualizacion, { passive: true });
@@ -678,23 +684,23 @@ function inicializarCarrusel(carrusel) {
 
   // Si el usuario toca, arrastra o usa el teclado, se detiene; tras 8 segundos sin actividad vuelve a avanzar solo.
   ['pointerdown', 'touchstart', 'keydown'].forEach(function (evento) {
-    pista.addEventListener(evento, function () { ultimaAccion = Date.now(); }, { passive: true });
+    pista.addEventListener(evento, function () { registrarAccion(); }, { passive: true });
   });
   // La rueda del mouse solo cuenta si es horizontal: la vertical es la persona bajando por la página
   // y no tiene nada que ver con el carrusel (antes eso lo detenía para siempre).
   pista.addEventListener('wheel', function (evento) {
     if (Math.abs(evento.deltaX) > Math.abs(evento.deltaY)) {
-      ultimaAccion = Date.now();
+      registrarAccion();
     }
   }, { passive: true });
 
   // Pausa mientras el mouse está encima o el foco está dentro. Solo el mouse de verdad: en el celular,
   // un toque deja el "mouse encima" activo hasta tocar en otro lado y el carrusel se quedaba pausado.
-  carrusel.addEventListener('pointerenter', function (evento) { if (evento.pointerType === 'mouse') { pausado = true; } });
+  carrusel.addEventListener('pointerenter', function (evento) { if (evento.pointerType === 'mouse') { pausado = true; carrusel.classList.remove('carrusel--reposo'); } });
   carrusel.addEventListener('pointerleave', function (evento) {
     if (evento.pointerType === 'mouse') {
       pausado = false;
-      ultimaAccion = Date.now();   // los 8 segundos cuentan desde que el mouse se va
+      registrarAccion();   // los 8 segundos cuentan desde que el mouse se va
     }
   });
   // El foco solo pausa si es de teclado (:focus-visible). Al tocar un botón con el mouse o el dedo el botón
@@ -704,7 +710,7 @@ function inicializarCarrusel(carrusel) {
     try { teclado = evento.target.matches(':focus-visible'); } catch (e) { teclado = false; }
     pausado = teclado;
   });
-  carrusel.addEventListener('focusout', function () { pausado = false; ultimaAccion = Date.now(); });
+  carrusel.addEventListener('focusout', function () { pausado = false; registrarAccion(); });
 
   // Avance automático cada 5 segundos, salvo: el usuario pidió menos movimiento, está pausado (mouse o teclado),
   // lo usó hace menos de 8 segundos, la pestaña está oculta o no hay nada que desplazar. Se revisa cada segundo
@@ -712,6 +718,9 @@ function inicializarCarrusel(carrusel) {
   if (!reducirMovimiento) {
     window.setInterval(function () {
       var ahora = Date.now();
+      if (!pausado && ahora - ultimaAccion >= INACTIVIDAD_MS) {
+        carrusel.classList.add('carrusel--reposo');   // 8 s sin usarlo: las flechas vuelven a su color normal
+      }
       if (pausado || document.hidden || !hayDesbordamiento() || ahora - ultimaAccion < INACTIVIDAD_MS || ahora - ultimoAvance < INTERVALO_MS) {
         return;
       }
