@@ -8,7 +8,7 @@ namespace App\Core;
  * Contenido de la sección "Sobre nosotros": introducción, subtítulo, tarjetas, frase de cierre y foto.
  *
  * Se guarda como UNA estructura (JSON) en la clave `sobre_nosotros_estructura` de configuracion_sistema,
- * más la foto propia en `sobre_nosotros_foto` (+ `sobre_nosotros_foto_alt`). El texto anterior de un solo
+ * más la foto propia en `sobre_nosotros_foto` (+ `sobre_nosotros_foto_pie`). El texto anterior de un solo
  * campo (`sobre_nosotros_texto`) NO se borra ni se modifica nunca: mientras no se guarde la estructura
  * desde el panel, el sitio sigue mostrándolo con el formateador de siempre (TextoLargo::formatear) y el
  * panel lo separa automáticamente (TextoLargo::estructurar) para rellenar los campos.
@@ -17,7 +17,6 @@ class SobreNosotros
 {
     public const CLAVE_ESTRUCTURA = 'sobre_nosotros_estructura';
     public const CLAVE_FOTO = 'sobre_nosotros_foto';
-    public const CLAVE_FOTO_ALT = 'sobre_nosotros_foto_alt';
     public const CLAVE_FOTO_PIE = 'sobre_nosotros_foto_pie';
     public const CLAVE_TEXTO_ANTERIOR = 'sobre_nosotros_texto';
 
@@ -27,7 +26,6 @@ class SobreNosotros
     public const MAX_TITULO = 80;
     public const MAX_DESCRIPCION = 500;
     public const MAX_CIERRE = 250;
-    public const MAX_ALT = 150;
     public const MAX_PIE = 150;
 
     /** Campos del formulario del panel (planos, no arreglos, para que el borrador por token vencido los conserve completos). */
@@ -91,11 +89,9 @@ class SobreNosotros
     {
         $propia = basename((string) ($config[self::CLAVE_FOTO] ?? ''));
         if ($propia !== '' && is_file(UPLOADS_PATH . '/sitio/' . $propia)) {
-            $alt = trim((string) ($config[self::CLAVE_FOTO_ALT] ?? ''));
-
             return [
                 'url'    => UPLOADS_URL . '/sitio/' . $propia,
-                'alt'    => $alt !== '' ? $alt : $nombreSitio,
+                'alt'    => $nombreSitio,
                 'pie'    => trim((string) ($config[self::CLAVE_FOTO_PIE] ?? '')),   // texto visible debajo de la foto
                 'propia' => true,
             ];
