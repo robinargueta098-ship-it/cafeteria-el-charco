@@ -547,7 +547,9 @@ function inicializarCarrusel(carrusel) {
   var reducirMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var comportamiento = reducirMovimiento ? 'auto' : 'smooth';
   var puntos = [];
-  var INACTIVIDAD_MS = 10000;   // sin tocar el carrusel durante este tiempo, vuelve a avanzar solo
+  var INTERVALO_MS = 5000;      // cada cuánto avanza solo
+  var INACTIVIDAD_MS = 8000;    // sin tocar el carrusel durante este tiempo, vuelve a avanzar solo
+  var ultimoAvance = 0;
   var ultimaAccion = 0;         // cuándo fue la última vez que el usuario lo usó (botones, puntos, arrastre, teclado)
   var pausado = false;          // pausa mientras el mouse está encima o el foco está dentro
   var pendiente = false;
@@ -674,7 +676,7 @@ function inicializarCarrusel(carrusel) {
     items.forEach(function (item) { observador.observe(item); });
   }
 
-  // Si el usuario toca, arrastra o usa el teclado, se detiene; tras 10 segundos sin actividad vuelve a avanzar solo.
+  // Si el usuario toca, arrastra o usa el teclado, se detiene; tras 8 segundos sin actividad vuelve a avanzar solo.
   ['pointerdown', 'touchstart', 'keydown'].forEach(function (evento) {
     pista.addEventListener(evento, function () { ultimaAccion = Date.now(); }, { passive: true });
   });
@@ -692,21 +694,30 @@ function inicializarCarrusel(carrusel) {
   carrusel.addEventListener('pointerleave', function (evento) {
     if (evento.pointerType === 'mouse') {
       pausado = false;
-      ultimaAccion = Date.now();   // los 10 segundos cuentan desde que el mouse se va
+      ultimaAccion = Date.now();   // los 8 segundos cuentan desde que el mouse se va
     }
   });
-  carrusel.addEventListener('focusin', function () { pausado = true; });
+  // El foco solo pausa si es de teclado (:focus-visible). Al tocar un botón con el mouse o el dedo el botón
+  // se queda con el foco hasta que se haga clic en otro lado, y eso dejaba el carrusel trabado.
+  carrusel.addEventListener('focusin', function (evento) {
+    var teclado = false;
+    try { teclado = evento.target.matches(':focus-visible'); } catch (e) { teclado = false; }
+    pausado = teclado;
+  });
   carrusel.addEventListener('focusout', function () { pausado = false; ultimaAccion = Date.now(); });
 
-  // Avance automático cada 5 segundos, salvo: el usuario pidió menos movimiento, está pausado (mouse o foco),
-  // lo usó hace menos de 10 segundos, la pestaña está oculta o no hay nada que desplazar.
+  // Avance automático cada 5 segundos, salvo: el usuario pidió menos movimiento, está pausado (mouse o teclado),
+  // lo usó hace menos de 8 segundos, la pestaña está oculta o no hay nada que desplazar. Se revisa cada segundo
+  // para que, pasados los 8 segundos de inactividad, vuelva a moverse enseguida.
   if (!reducirMovimiento) {
     window.setInterval(function () {
-      if (pausado || document.hidden || !hayDesbordamiento() || Date.now() - ultimaAccion < INACTIVIDAD_MS) {
+      var ahora = Date.now();
+      if (pausado || document.hidden || !hayDesbordamiento() || ahora - ultimaAccion < INACTIVIDAD_MS || ahora - ultimoAvance < INTERVALO_MS) {
         return;
       }
+      ultimoAvance = ahora;
       avanzar(1);
-    }, 5000);
+    }, 1000);
   }
 
   actualizar();
