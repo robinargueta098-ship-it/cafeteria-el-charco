@@ -18,6 +18,7 @@ class SobreNosotros
     public const CLAVE_ESTRUCTURA = 'sobre_nosotros_estructura';
     public const CLAVE_FOTO = 'sobre_nosotros_foto';
     public const CLAVE_FOTO_ALT = 'sobre_nosotros_foto_alt';
+    public const CLAVE_FOTO_PIE = 'sobre_nosotros_foto_pie';
     public const CLAVE_TEXTO_ANTERIOR = 'sobre_nosotros_texto';
 
     public const MAX_TARJETAS = 6;
@@ -27,6 +28,7 @@ class SobreNosotros
     public const MAX_DESCRIPCION = 500;
     public const MAX_CIERRE = 250;
     public const MAX_ALT = 150;
+    public const MAX_PIE = 150;
 
     /** Campos del formulario del panel (planos, no arreglos, para que el borrador por token vencido los conserve completos). */
     public const CAMPO_INTRO = 'nosotros_intro';
@@ -83,7 +85,7 @@ class SobreNosotros
      *
      * @param array<string,string> $config
      * @param array<int,array<string,mixed>> $galeria
-     * @return array{url:string,alt:string,propia:bool}|null
+     * @return array{url:string,alt:string,pie:string,propia:bool}|null
      */
     public static function foto(array $config, array $galeria, string $nombreSitio): ?array
     {
@@ -91,7 +93,12 @@ class SobreNosotros
         if ($propia !== '' && is_file(UPLOADS_PATH . '/sitio/' . $propia)) {
             $alt = trim((string) ($config[self::CLAVE_FOTO_ALT] ?? ''));
 
-            return ['url' => UPLOADS_URL . '/sitio/' . $propia, 'alt' => $alt !== '' ? $alt : $nombreSitio, 'propia' => true];
+            return [
+                'url'    => UPLOADS_URL . '/sitio/' . $propia,
+                'alt'    => $alt !== '' ? $alt : $nombreSitio,
+                'pie'    => trim((string) ($config[self::CLAVE_FOTO_PIE] ?? '')),   // texto visible debajo de la foto
+                'propia' => true,
+            ];
         }
 
         $primera = $galeria[0] ?? null;
@@ -99,6 +106,7 @@ class SobreNosotros
             return [
                 'url'    => UPLOADS_URL . '/galeria/' . $primera['imagen'],
                 'alt'    => (string) (($primera['titulo'] ?? '') ?: $nombreSitio),
+                'pie'    => trim((string) ($config[self::CLAVE_FOTO_PIE] ?? '')),
                 'propia' => false,
             ];
         }

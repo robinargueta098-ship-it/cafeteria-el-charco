@@ -27,7 +27,7 @@ class ConfiguracionController extends Controller
         'instagram_usuario', 'tiktok_usuario',
         'facebook_nombre', 'facebook_url',
         'umbral_lealtad', 'google_maps_embed', 'mapa_coordenadas', 'google_calificacion',
-        'google_calificacion_url', 'carrito_aviso_ubicacion', 'sobre_nosotros_foto_alt',
+        'google_calificacion_url', 'carrito_aviso_ubicacion', 'sobre_nosotros_foto_alt', 'sobre_nosotros_foto_pie',
     ];
 
     /**
@@ -215,7 +215,8 @@ class ConfiguracionController extends Controller
         // Las claves de "Sobre nosotros" se crean si todavía no existen (instalación sin la migración 008).
         foreach ([SobreNosotros::CLAVE_ESTRUCTURA => 'Sobre nosotros: estructura (introducción, subtítulo, tarjetas y cierre) en JSON',
                   SobreNosotros::CLAVE_FOTO => 'Sobre nosotros: foto propia (archivo en uploads/sitio)',
-                  SobreNosotros::CLAVE_FOTO_ALT => 'Sobre nosotros: texto alternativo de la foto'] as $claveNueva => $descripcionNueva) {
+                  SobreNosotros::CLAVE_FOTO_ALT => 'Sobre nosotros: texto alternativo de la foto',
+                  SobreNosotros::CLAVE_FOTO_PIE => 'Sobre nosotros: pie de foto (texto visible debajo de la foto)'] as $claveNueva => $descripcionNueva) {
             if (array_key_exists($claveNueva, $datos)) {
                 $configModelo->asegurar($claveNueva, '', $descripcionNueva);
             }
@@ -434,7 +435,8 @@ class ConfiguracionController extends Controller
             ->longitudMaxima('descripcion_corta', 'Descripción breve', 300)
             ->longitudMaxima('google_maps_embed', 'Enlace de Google Maps', 255)
             ->longitudMaxima('carrito_aviso_ubicacion', 'Aviso de ubicación del carrito', 300)
-            ->longitudMaxima('sobre_nosotros_foto_alt', 'Texto alternativo de la foto de «Sobre nosotros»', SobreNosotros::MAX_ALT);
+            ->longitudMaxima('sobre_nosotros_foto_alt', 'Texto alternativo de la foto de «Sobre nosotros»', SobreNosotros::MAX_ALT)
+            ->longitudMaxima('sobre_nosotros_foto_pie', 'Pie de foto de «Sobre nosotros»', SobreNosotros::MAX_PIE);
 
         $errores = $validador->errores();
 

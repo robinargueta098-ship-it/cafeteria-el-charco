@@ -251,10 +251,16 @@ $totalPortada = count($portada);
             <?php endif; ?>
         </div>
         <div class="campo">
+            <label for="sobre_nosotros_foto_pie">Pie de foto (opcional)</label>
+            <input type="text" id="sobre_nosotros_foto_pie" name="sobre_nosotros_foto_pie" maxlength="<?= SobreNosotros::MAX_PIE ?>"
+                   value="<?= htmlspecialchars($config['sobre_nosotros_foto_pie'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Ej. Nuestro espacio, listo para recibirte">
+            <span class="campo-ayuda">Texto <strong>visible</strong> debajo de la foto, en el sitio. Si lo dejas vacío no se muestra nada.</span>
+        </div>
+        <div class="campo">
             <label for="sobre_nosotros_foto_alt">Texto alternativo de la foto (opcional)</label>
             <input type="text" id="sobre_nosotros_foto_alt" name="sobre_nosotros_foto_alt" maxlength="<?= SobreNosotros::MAX_ALT ?>"
                    value="<?= htmlspecialchars($config['sobre_nosotros_foto_alt'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Ej. Interior de la cafetería">
-            <span class="campo-ayuda">Describe la foto para quien no la puede ver (lectores de pantalla). Si lo dejas vacío se usa el nombre del sitio.</span>
+            <span class="campo-ayuda">No se ve en pantalla: lo leen los lectores de pantalla (personas que no pueden ver la foto) y se muestra solo si la foto no carga. Si lo dejas vacío se usa el nombre del sitio.</span>
         </div>
         </div>
 

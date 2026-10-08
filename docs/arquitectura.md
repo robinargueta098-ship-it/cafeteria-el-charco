@@ -1560,6 +1560,9 @@ Antes la sección se guardaba como **un solo texto** (`sobre_nosotros_texto`) qu
   propia», subir/reemplazar, casilla «Quitar la foto», texto alternativo). Botones de 44 px en móvil. (Se probó una vista previa en vivo dentro del panel y se quitó: ocupaba
   demasiado espacio.) El estilo de la sección vive en `sobre-nosotros.css`. El texto alternativo no se ve en pantalla
   a propósito: lo leen los lectores de pantalla y se muestra solo si la foto no carga.
+- **Pie de foto** (`sobre_nosotros_foto_pie`, migración `009`): texto visible debajo de la foto (`figcaption`); distinto del alt, que no se ve.
+  Con foto al lado, el párrafo de introducción se agranda un poco, se centra en vertical y lleva una línea verde de acento
+  para que la sección se vea más llena.
 - **Foto**: prioridad 1) la propia, 2) la primera de la galería, 3) ninguna (el texto ocupa todo el ancho, sin hueco).
   Al reemplazar o quitar se borra el archivo anterior de `uploads/sitio` (solo si otro ajuste no apunta al mismo
   archivo); si el guardado falla no queda la foto nueva huérfana.

@@ -342,6 +342,9 @@ $tarjetaProducto = function (array $p) use ($temperaturasProductos) {
                         <img src="<?= htmlspecialchars($fotoNosotros['url'], ENT_QUOTES, 'UTF-8') ?>"
                              alt="<?= htmlspecialchars($fotoNosotros['alt'], ENT_QUOTES, 'UTF-8') ?>"
                              loading="lazy" decoding="async">
+                        <?php if ($fotoNosotros['pie'] !== ''): ?>
+                            <figcaption><?= htmlspecialchars($fotoNosotros['pie'], ENT_QUOTES, 'UTF-8') ?></figcaption>
+                        <?php endif; ?>
                     </figure>
                 <?php endif; ?>
                 <?= $htmlNosotros /* ya escapado dentro de TextoLargo */ ?>

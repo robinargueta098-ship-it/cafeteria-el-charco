@@ -21,6 +21,16 @@
   border-radius: var(--radio-borde);
   overflow: hidden;
   box-shadow: 0 6px 18px rgba(59, 36, 21, 0.14);
+  background: var(--color-blanco);
+}
+
+.sobre-nosotros-foto figcaption {
+  padding: 10px 14px;
+  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  font-style: italic;
+  color: var(--color-cafe);
 }
 
 .sobre-nosotros-foto img {
@@ -121,6 +131,17 @@
 
   .sobre-nosotros--con-foto .texto-largo-parrafo {
     grid-column: 1;
+  }
+
+  /* Con foto al lado, el párrafo de introducción se ve más lleno: letra algo mayor, centrado en
+     vertical respecto a la foto y con una línea verde de acento (así no queda un hueco debajo). */
+  .sobre-nosotros--con-foto > .texto-largo-parrafo:first-of-type {
+    align-self: center;
+    max-width: none;
+    padding: 6px 0 6px 22px;
+    border-left: 4px solid var(--color-verde);
+    font-size: 1.22rem;
+    line-height: 1.85;
   }
 
   .texto-largo-lista {
