@@ -892,10 +892,18 @@ img {
   box-shadow: 0 2px 8px rgba(59, 36, 21, 0.3);
 }
 
-.carrusel-boton:hover,
 .carrusel-boton:focus-visible {
   background: var(--color-verde);
   color: var(--color-blanco);
+}
+
+/* El verde al pasar el mouse solo en dispositivos con mouse. En pantallas táctiles el :hover se queda "pegado"
+   después de tocar y el botón seguía verde hasta tocar en otro lado. */
+@media (hover: hover) {
+  .carrusel-boton:hover {
+    background: var(--color-verde);
+    color: var(--color-blanco);
+  }
 }
 
 .carrusel-anterior {

@@ -716,6 +716,13 @@ function inicializarCarrusel(carrusel) {
         return;
       }
       ultimoAvance = ahora;
+      // Un botón que quedó con el foco tras un clic o un toque lo suelta al reanudarse (vuelve a su color normal).
+      var activo = document.activeElement;
+      if (activo && carrusel.contains(activo) && activo.blur) {
+        var deTeclado = false;
+        try { deTeclado = activo.matches(':focus-visible'); } catch (e) { deTeclado = false; }
+        if (!deTeclado) { activo.blur(); }
+      }
       avanzar(1);
     }, 1000);
   }
