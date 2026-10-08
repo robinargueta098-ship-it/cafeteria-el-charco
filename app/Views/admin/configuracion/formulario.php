@@ -15,9 +15,6 @@ use App\Core\Csrf;
 use App\Core\SobreNosotros;
 
 require APP_PATH . '/Views/layouts/panel_header.php';
-?>
-<link rel="stylesheet" href="<?= htmlspecialchars(\App\Core\Vista::asset('/assets/css/sobre-nosotros.css'), ENT_QUOTES, 'UTF-8') ?>">
-<?php
 
 $nombresDias = [0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado'];
 $totalPortada = count($portada);
@@ -166,7 +163,7 @@ $totalPortada = count($portada);
         <h2 id="sobre-nosotros">Sobre nosotros</h2>
         <p class="campo-ayuda" style="margin-top:0;">
             Así se arma la sección «Sobre nosotros» del sitio: una introducción, un subtítulo con tarjetas y una frase de cierre,
-            más una foto. Abajo ves cómo queda. Cada parte es opcional.
+            más una foto. Cada parte es opcional.
             <?php if (($sobre['origen'] ?? '') === 'texto_anterior'): ?>
                 <br><strong>Estos campos se rellenaron solos con el texto que ya tenía el sitio; no se cambió ninguna palabra.</strong>
                 Se guardan en cuanto pulses «Guardar configuración».
@@ -259,12 +256,6 @@ $totalPortada = count($portada);
                    value="<?= htmlspecialchars($config['sobre_nosotros_foto_alt'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Ej. Interior de la cafetería">
             <span class="campo-ayuda">Describe la foto para quien no la puede ver (lectores de pantalla). Si lo dejas vacío se usa el nombre del sitio.</span>
         </div>
-
-        <div class="campo">
-            <span class="campo-etiqueta" style="display:block;font-weight:600;margin-bottom:6px;">Vista previa <span class="campo-ayuda" style="font-weight:400;">(versión celular; se actualiza mientras escribes)</span></span>
-            <div class="sobre-nosotros sobre-nosotros--previa" data-nosotros-previa
-                 data-foto-actual="<?= $hayFotoPropia ? htmlspecialchars(UPLOADS_URL . '/sitio/' . basename($fotoPropia), ENT_QUOTES, 'UTF-8') : '' ?>"
-                 data-foto-galeria="<?= $fotoGaleria !== null ? htmlspecialchars($fotoGaleria['url'], ENT_QUOTES, 'UTF-8') : '' ?>"></div>
         </div>
 
         <h2>Contacto y redes</h2>

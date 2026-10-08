@@ -1,7 +1,6 @@
 /*
  * Sección "Sobre nosotros": párrafos, subtítulo, tarjetas y frase de cierre (los genera
- * App\Core\TextoLargo). Archivo aparte porque lo cargan el sitio público Y la vista previa del
- * panel (Configuración), que no usa sitio.css.
+ * App\Core\TextoLargo).
  */
 
 /* El texto lo formatea App\Core\TextoLargo (párrafos, subtítulos, lista en tarjetas y frase de cierre).
@@ -128,40 +127,4 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 18px;
   }
-}
-
-
-/* ---------- Vista previa dentro del panel (Configuración → Sobre nosotros) ----------
-   Misma estructura y mismas clases que el sitio, pero siempre en una sola columna (el panel es más
-   angosto que la pantalla), con la foto arriba como en el celular. */
-.sobre-nosotros--previa,
-.sobre-nosotros--previa.sobre-nosotros--con-foto {
-  grid-template-columns: minmax(0, 1fr);
-  margin: 0;
-  padding: 18px 16px;
-  background: var(--color-beige);
-  border-radius: var(--radio-borde);
-  font-size: 1rem;
-}
-
-.sobre-nosotros--previa .texto-largo-lista,
-.sobre-nosotros--previa.sobre-nosotros--con-foto .texto-largo-lista {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.sobre-nosotros--previa.sobre-nosotros--con-foto .sobre-nosotros-foto,
-.sobre-nosotros--previa.sobre-nosotros--con-foto .texto-largo-parrafo {
-  grid-column: 1;
-  grid-row: auto;
-}
-
-.sobre-nosotros--previa.sobre-nosotros--con-foto .sobre-nosotros-foto img {
-  aspect-ratio: 16 / 9;
-  max-height: 200px;
-}
-
-.sobre-nosotros-previa-vacia {
-  margin: 0;
-  color: #6b5a4d;
-  font-style: italic;
 }

@@ -1557,9 +1557,9 @@ Antes la sección se guardaba como **un solo texto** (`sobre_nosotros_texto`) qu
   guardan **sin los dos puntos**; se agregan al mostrar.
 - **Panel** (Configuración → «Sobre nosotros»): Introducción, Subtítulo, hasta 6 tarjetas (título + descripción;
   ▲ ▼ Quitar y «+ Agregar tarjeta»; título vacío = se descarta), Frase de cierre, Foto (miniatura o aviso «Sin foto
-  propia», subir/reemplazar, casilla «Quitar la foto», texto alternativo) y **vista previa en vivo** (`admin.js`,
-  `inicializarSobreNosotros`, arma todo con `textContent`; reutiliza `sobre-nosotros.css`, archivo nuevo que cargan el
-  sitio y el panel). Botones de 44 px en móvil.
+  propia», subir/reemplazar, casilla «Quitar la foto», texto alternativo). Botones de 44 px en móvil. (Se probó una vista previa en vivo dentro del panel y se quitó: ocupaba
+  demasiado espacio.) El estilo de la sección vive en `sobre-nosotros.css`. El texto alternativo no se ve en pantalla
+  a propósito: lo leen los lectores de pantalla y se muestra solo si la foto no carga.
 - **Foto**: prioridad 1) la propia, 2) la primera de la galería, 3) ninguna (el texto ocupa todo el ancho, sin hueco).
   Al reemplazar o quitar se borra el archivo anterior de `uploads/sitio` (solo si otro ajuste no apunta al mismo
   archivo); si el guardado falla no queda la foto nueva huérfana.
