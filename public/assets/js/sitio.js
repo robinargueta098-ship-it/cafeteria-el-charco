@@ -547,8 +547,9 @@ function inicializarCarrusel(carrusel) {
   var reducirMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var comportamiento = reducirMovimiento ? 'auto' : 'smooth';
   var puntos = [];
-  var detenido = false; // true = el usuario ya interactuó: no volver a avanzar solo
-  var pausado = false;  // pausa temporal (mouse encima, foco dentro)
+  var INACTIVIDAD_MS = 10000;   // sin tocar el carrusel durante este tiempo, vuelve a avanzar solo
+  var ultimaAccion = 0;         // cuándo fue la última vez que el usuario lo usó (botones, puntos, arrastre, teclado)
+  var pausado = false;          // pausa mientras el mouse está encima o el foco está dentro
   var pendiente = false;
 
   carrusel.classList.add('carrusel--js');
@@ -644,7 +645,7 @@ function inicializarCarrusel(carrusel) {
       punto.className = 'carrusel-punto';
       punto.setAttribute('aria-label', 'Ir a la foto ' + (i + 1) + ' de ' + items.length);
       punto.addEventListener('click', function () {
-        detenido = true;
+        ultimaAccion = Date.now();
         irA(i);
       });
       contenedorPuntos.appendChild(punto);
@@ -653,10 +654,10 @@ function inicializarCarrusel(carrusel) {
   }
 
   if (anterior) {
-    anterior.addEventListener('click', function () { detenido = true; avanzar(-1); });
+    anterior.addEventListener('click', function () { ultimaAccion = Date.now(); avanzar(-1); });
   }
   if (siguiente) {
-    siguiente.addEventListener('click', function () { detenido = true; avanzar(1); });
+    siguiente.addEventListener('click', function () { ultimaAccion = Date.now(); avanzar(1); });
   }
 
   pista.addEventListener('scroll', programarActualizacion, { passive: true });
@@ -673,22 +674,35 @@ function inicializarCarrusel(carrusel) {
     items.forEach(function (item) { observador.observe(item); });
   }
 
-  // Si el usuario toca, arrastra o usa el teclado, deja de avanzar solo.
-  ['pointerdown', 'touchstart', 'keydown', 'wheel'].forEach(function (evento) {
-    pista.addEventListener(evento, function () { detenido = true; }, { passive: true });
+  // Si el usuario toca, arrastra o usa el teclado, se detiene; tras 10 segundos sin actividad vuelve a avanzar solo.
+  ['pointerdown', 'touchstart', 'keydown'].forEach(function (evento) {
+    pista.addEventListener(evento, function () { ultimaAccion = Date.now(); }, { passive: true });
   });
+  // La rueda del mouse solo cuenta si es horizontal: la vertical es la persona bajando por la página
+  // y no tiene nada que ver con el carrusel (antes eso lo detenía para siempre).
+  pista.addEventListener('wheel', function (evento) {
+    if (Math.abs(evento.deltaX) > Math.abs(evento.deltaY)) {
+      ultimaAccion = Date.now();
+    }
+  }, { passive: true });
 
-  // Pausa mientras el mouse está encima o el foco está dentro.
-  carrusel.addEventListener('mouseenter', function () { pausado = true; });
-  carrusel.addEventListener('mouseleave', function () { pausado = false; });
+  // Pausa mientras el mouse está encima o el foco está dentro. Solo el mouse de verdad: en el celular,
+  // un toque deja el "mouse encima" activo hasta tocar en otro lado y el carrusel se quedaba pausado.
+  carrusel.addEventListener('pointerenter', function (evento) { if (evento.pointerType === 'mouse') { pausado = true; } });
+  carrusel.addEventListener('pointerleave', function (evento) {
+    if (evento.pointerType === 'mouse') {
+      pausado = false;
+      ultimaAccion = Date.now();   // los 10 segundos cuentan desde que el mouse se va
+    }
+  });
   carrusel.addEventListener('focusin', function () { pausado = true; });
-  carrusel.addEventListener('focusout', function () { pausado = false; });
+  carrusel.addEventListener('focusout', function () { pausado = false; ultimaAccion = Date.now(); });
 
-  // Avance automático: no si el usuario pidió menos movimiento, si ya
-  // interactuó, si la pestaña está oculta o si no hay nada que desplazar.
+  // Avance automático cada 5 segundos, salvo: el usuario pidió menos movimiento, está pausado (mouse o foco),
+  // lo usó hace menos de 10 segundos, la pestaña está oculta o no hay nada que desplazar.
   if (!reducirMovimiento) {
     window.setInterval(function () {
-      if (detenido || pausado || document.hidden || !hayDesbordamiento()) {
+      if (pausado || document.hidden || !hayDesbordamiento() || Date.now() - ultimaAccion < INACTIVIDAD_MS) {
         return;
       }
       avanzar(1);

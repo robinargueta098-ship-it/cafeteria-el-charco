@@ -425,9 +425,12 @@ nombre original, en `public/uploads/galeria/`.
   Las fotos nuevas se agregan al final.
 - **Carrusel público**: contenedor con `scroll-snap` (se desliza sin
   JavaScript); `sitio.js` agrega flechas, puntos y avance automático
-  cada 5 s que se detiene ante cualquier interacción, con el mouse
-  encima, con el foco dentro, con la pestaña oculta y si el usuario
-  pidió "reducir movimiento". 1 foto (+ borde de la siguiente) en
+  cada 5 s. Se pausa mientras el mouse (solo mouse, no toques) está
+  encima o el foco está dentro; tras usarlo (flechas, puntos, arrastre,
+  teclado, rueda horizontal) espera 10 s sin actividad y **vuelve a
+  avanzar solo** (antes quedaba detenido para siempre). La rueda
+  vertical, que es bajar por la página, no cuenta. Tampoco avanza con
+  la pestaña oculta ni si el usuario pidió "reducir movimiento". 1 foto (+ borde de la siguiente) en
   móvil, 2 en tablet, 3 en escritorio; con pocas fotos se centran y
   desaparecen flechas/puntos. Recalcula con `ResizeObserver` (rotar el
   teléfono, cambiar el zoom).
