@@ -632,7 +632,9 @@ img {
   flex-grow: 0;
 }
 
-#promociones .tarjeta-producto-cuerpo > .tarjeta-producto-descripcion:last-child {
+/* Solo el aviso de "Reclama tu cupón" baja al fondo; el resto del texto queda junto (si no, al estirarse la tarjeta
+   quedaba un hueco entre "Todo el menú" y "Válido hasta"). */
+#promociones .tarjeta-producto-cta {
   margin-top: auto;
   padding-top: 6px;
 }

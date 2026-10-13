@@ -291,7 +291,7 @@ $tarjetaProducto = function (array $p) use ($temperaturasProductos) {
                         </p>
                         <p class="tarjeta-producto-descripcion">Válido hasta <?= htmlspecialchars(Vista::fechaLarga($promo['fecha_fin']), ENT_QUOTES, 'UTF-8') ?></p>
                         <?php if ($esDeLealtad): ?>
-                            <p class="tarjeta-producto-descripcion" style="color:var(--color-verde);font-weight:700;">Reclama tu cupón en Mi cuenta →</p>
+                            <p class="tarjeta-producto-descripcion tarjeta-producto-cta" style="color:var(--color-verde);font-weight:700;">Reclama tu cupón en Mi cuenta →</p>
                         <?php endif; ?>
                     </div>
                 </<?= $etiquetaHtml ?>>
