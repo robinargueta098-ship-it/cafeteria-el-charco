@@ -426,26 +426,35 @@ img {
   margin-bottom: 16px;
 }
 
+/* Celular: los dos botones van lado a lado y más compactos (antes, uno debajo del otro y a todo el ancho),
+   así la portada ocupa menos y se ve más la foto de fondo. Si no caben (pantallas muy angostas) bajan a dos filas. */
 .hero-botones {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
   align-items: stretch;
 }
 
 .hero-botones .btn {
-  padding: 14px 20px;
-  font-size: 1.05rem;
+  flex: 1 1 140px;
+  max-width: 190px;
+  padding: 12px 10px;
+  font-size: 0.98rem;
+  text-align: center;
 }
 
 @media (min-width: 480px) {
   .hero-botones {
-    flex-direction: row;
-    justify-content: center;
+    gap: 12px;
   }
 
   .hero-botones .btn {
     flex: 0 1 auto;
+    max-width: none;
+    padding: 14px 20px;
+    font-size: 1.05rem;
   }
 }
 
