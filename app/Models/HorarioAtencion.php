@@ -42,9 +42,9 @@ class HorarioAtencion
     }
 
     /**
-     * Filas para mostrar el horario en el sitio. Con $agrupar, los días SEGUIDOS (de lunes a domingo) que tienen
-     * exactamente el mismo horario se juntan en una sola fila: "Lunes a Viernes", "Sábado y Domingo". Sin agrupar,
-     * una fila por día en el orden de siempre (domingo primero). Un día distinto en medio corta el grupo.
+     * Filas para mostrar el horario en el sitio. Con $agrupar, los días que tienen exactamente el mismo
+     * horario se juntan en una sola fila: "Lunes a Viernes", "Sábado y Domingo", y si no son seguidos "Lunes a Viernes y
+     * Domingo". Sin agrupar, una fila por día en el orden de siempre (domingo primero).
      *
      * @param array<int,array<string,mixed>> $filas resultado de listarTodos()
      * @param array<int,string> $nombresDias 0 = domingo … 6 = sábado
@@ -66,26 +66,39 @@ class HorarioAtencion
             return $salida;
         }
 
-        $grupos = [];   // cada grupo: ['texto' => ..., 'dias' => [numeros en orden lunes → domingo]]
-        foreach ([1, 2, 3, 4, 5, 6, 0] as $dia) {
-            if (!isset($porDia[$dia])) {
-                continue;
-            }
-            $texto = self::textoDia($porDia[$dia]);
-            $ultimo = count($grupos) - 1;
-            if ($ultimo >= 0 && $grupos[$ultimo]['texto'] === $texto) {
-                $grupos[$ultimo]['dias'][] = $dia;
-            } else {
-                $grupos[] = ['texto' => $texto, 'dias' => [$dia]];
+        // Un grupo por cada horario distinto (en el orden en que aparece, de lunes a domingo). Los días que
+        // comparten horario se juntan aunque no sean seguidos: "Lunes a Viernes y Domingo".
+        $orden = [1, 2, 3, 4, 5, 6, 0];
+        $grupos = [];   // texto => posiciones (en $orden) de los días con ese horario
+        foreach ($orden as $posicion => $dia) {
+            if (isset($porDia[$dia])) {
+                $grupos[self::textoDia($porDia[$dia])][] = $posicion;
             }
         }
 
         $salida = [];
-        foreach ($grupos as $g) {
-            $nombres = array_map(fn (int $d): string => $nombresDias[$d] ?? '', $g['dias']);
-            $n = count($nombres);
-            $etiqueta = $n === 1 ? $nombres[0] : ($n === 2 ? $nombres[0] . ' y ' . $nombres[1] : $nombres[0] . ' a ' . $nombres[$n - 1]);
-            $salida[] = ['dias' => $etiqueta, 'texto' => $g['texto']];
+        foreach ($grupos as $texto => $posiciones) {
+            // Se parten en tramos de días seguidos: [0,1,2,3,4] y [6] → "Lunes a Viernes" y "Domingo".
+            $tramos = [];
+            foreach ($posiciones as $pos) {
+                $ultimo = count($tramos) - 1;
+                if ($ultimo >= 0 && $tramos[$ultimo][count($tramos[$ultimo]) - 1] === $pos - 1) {
+                    $tramos[$ultimo][] = $pos;
+                } else {
+                    $tramos[] = [$pos];
+                }
+            }
+
+            $partes = [];
+            foreach ($tramos as $tramo) {
+                $primero = $nombresDias[$orden[$tramo[0]]] ?? '';
+                $ultimoNombre = $nombresDias[$orden[$tramo[count($tramo) - 1]]] ?? '';
+                $partes[] = count($tramo) === 1 ? $primero : (count($tramo) === 2 ? $primero . ' y ' . $ultimoNombre : $primero . ' a ' . $ultimoNombre);
+            }
+            $n = count($partes);
+            $etiqueta = $n === 1 ? $partes[0] : implode(', ', array_slice($partes, 0, -1)) . ' y ' . $partes[$n - 1];
+
+            $salida[] = ['dias' => $etiqueta, 'texto' => (string) $texto];
         }
 
         return $salida;
