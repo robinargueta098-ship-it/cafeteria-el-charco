@@ -66,6 +66,33 @@ class TemporadaController extends Controller
         $this->redirigir('/admin/temporadas');
     }
 
+    /** Sube o baja una posición en el orden en que se muestran en el sitio (flechas ▲▼ del listado). */
+    public function mover(string $id): void
+    {
+        $this->requerirRol(1);
+
+        $direccion = Entrada::texto($_POST, 'direccion', '');
+        if (!in_array($direccion, ['subir', 'bajar'], true)) {
+            Flash::error('Movimiento inválido.');
+            $this->redirigir('/admin/temporadas');
+        }
+
+        $resultado = (new Temporada())->mover((int) $id, $direccion);
+
+        if ($resultado['resultado'] === 'no_existe') {
+            $this->error404();
+        }
+
+        if ($resultado['resultado'] === 'movida') {
+            AuditoriaService::registrar(
+                'temporadas', (int) $id, 'editar',
+                ['posicion' => $resultado['desde']], ['posicion' => $resultado['hasta']]
+            );
+        }
+
+        $this->redirigir('/admin/temporadas');
+    }
+
     public function mostrarEditar(string $id): void
     {
         $this->requerirRol(1);

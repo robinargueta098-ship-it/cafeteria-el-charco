@@ -16,8 +16,58 @@ class Promocion
              FROM promociones pr
              LEFT JOIN categorias c ON c.id = pr.categoria_id
              LEFT JOIN productos p ON p.id = pr.producto_id
-             ORDER BY pr.fecha_inicio DESC"
+             ORDER BY pr.prioridad DESC, pr.fecha_inicio ASC, pr.id ASC"
         )->fetchAll();
+    }
+
+    /**
+     * Sube o baja una promoción una posición en el orden en que se muestran en el sitio (el mismo del listado del
+     * panel). El orden ES la prioridad: mayor prioridad = más arriba. Antes de intercambiar se renumera TODA la lista
+     * (n, n-1, …, 1) según su orden actual, así funciona aunque haya empates; una promoción más arriba también gana
+     * si dos aplican al mismo producto, que es justo lo que se espera de "la que más quiero mostrar".
+     *
+     * @return array{resultado:string,desde?:int,hasta?:int} 'movida' | 'extremo' | 'no_existe'
+     */
+    public function mover(int $id, string $direccion): array
+    {
+        $pdo = Database::conexion();
+
+        try {
+            $pdo->beginTransaction();
+
+            $ids = array_map('intval', $pdo->query(
+                'SELECT id FROM promociones ORDER BY prioridad DESC, fecha_inicio ASC, id ASC FOR UPDATE'
+            )->fetchAll(\PDO::FETCH_COLUMN));
+
+            $posicion = array_search($id, $ids, true);
+            if ($posicion === false) {
+                $pdo->rollBack();
+                return ['resultado' => 'no_existe'];
+            }
+
+            $destino = $direccion === 'subir' ? $posicion - 1 : $posicion + 1;
+            if ($destino < 0 || $destino >= count($ids)) {
+                $pdo->rollBack();
+                return ['resultado' => 'extremo'];
+            }
+
+            [$ids[$posicion], $ids[$destino]] = [$ids[$destino], $ids[$posicion]];
+
+            $total = count($ids);
+            $stmt = $pdo->prepare('UPDATE promociones SET prioridad = :prioridad WHERE id = :id');
+            foreach ($ids as $indice => $idPromocion) {
+                $stmt->execute(['prioridad' => min(100, $total - $indice), 'id' => $idPromocion]);   // 100 = tope que valida el formulario
+            }
+
+            $pdo->commit();
+
+            return ['resultado' => 'movida', 'desde' => $posicion + 1, 'hasta' => $destino + 1];
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public function buscarPorId(int $id): ?array
@@ -85,7 +135,7 @@ class Promocion
              WHERE pr.activo = 1 AND CURDATE() BETWEEN pr.fecha_inicio AND pr.fecha_fin
                AND (pr.categoria_id IS NULL OR c.activo = 1)
                AND (pr.producto_id IS NULL OR p.activo = 1)
-             ORDER BY pr.prioridad DESC, pr.fecha_inicio ASC"
+             ORDER BY pr.prioridad DESC, pr.fecha_inicio ASC, pr.id ASC"
         )->fetchAll();
 
         return array_values(array_filter($filas, function (array $promo) use ($diaSemana, $horaActual): bool {

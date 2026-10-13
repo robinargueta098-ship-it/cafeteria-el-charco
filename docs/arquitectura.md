@@ -1596,6 +1596,18 @@ se logra poniendo solo el primer turno (ej. 9:00 a 21:00) y dejando vacío el se
 - **Escritorio**: las promociones siguen en cuadrícula; 2 o más temporadas van en **2 columnas** (antes apiladas) y una
   sola queda como banner. Los puntos solo existen cuando la lista realmente se desliza.
 
+### 4.45 Orden manual de promociones y temporadas
+
+Listados de **Promociones** y **Temporadas** con flechas ▲ ▼; el orden del listado es el orden en el sitio (escritorio y
+teléfono). Sin cambios de esquema (la cuenta de la aplicación no tiene `ALTER`):
+
+- **Promociones**: el orden es la `prioridad` que ya existía (mayor = más arriba). `Promocion::mover()` renumera toda
+  la lista (n … 1, tope 100) e intercambia con el vecino. Una promoción más arriba también gana si dos aplican al mismo
+  producto. El campo «Prioridad» del formulario sigue existiendo.
+- **Temporadas**: el orden se guarda como lista JSON de ids en `configuracion_sistema.orden_temporadas` (migración
+  `011`). Las temporadas sin lugar elegido van al final por fecha de inicio. `Temporada::mover()` guarda el orden completo.
+- Cada movimiento queda en Auditoría («posición» antes y después).
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```

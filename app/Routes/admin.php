@@ -66,6 +66,7 @@ $router->post('/admin/temporadas/crear', [TemporadaController::class, 'crear']);
 $router->get('/admin/temporadas/{id}/editar', [TemporadaController::class, 'mostrarEditar']);
 $router->post('/admin/temporadas/{id}/editar', [TemporadaController::class, 'actualizar']);
 $router->post('/admin/temporadas/{id}/eliminar', [TemporadaController::class, 'eliminar']);
+$router->post('/admin/temporadas/{id}/mover', [TemporadaController::class, 'mover']);
 
 // --- Promociones ---
 $router->get('/admin/promociones', [PromocionController::class, 'index']);
@@ -74,6 +75,7 @@ $router->post('/admin/promociones/crear', [PromocionController::class, 'crear'])
 $router->get('/admin/promociones/{id}/editar', [PromocionController::class, 'mostrarEditar']);
 $router->post('/admin/promociones/{id}/editar', [PromocionController::class, 'actualizar']);
 $router->post('/admin/promociones/{id}/eliminar', [PromocionController::class, 'eliminar']);
+$router->post('/admin/promociones/{id}/mover', [PromocionController::class, 'mover']);
 
 // --- Clientes ---
 $router->get('/admin/clientes', [ClienteController::class, 'index']);

@@ -166,7 +166,7 @@ $nombresDias = [0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 
         <div class="campo">
             <label for="prioridad">Prioridad</label>
             <input type="number" id="prioridad" name="prioridad" value="<?= (int) ($promocion['prioridad'] ?? 0) ?>">
-            <span class="campo-ayuda">Si dos promociones vigentes aplican al mismo producto, gana la de mayor prioridad — nunca se suman.</span>
+            <span class="campo-ayuda">Si dos promociones vigentes aplican al mismo producto, gana la de mayor prioridad — nunca se suman. También es el orden en que se muestran en el sitio: puedes cambiarlo con las flechas ▲ ▼ del listado en vez de escribir un número.</span>
         </div>
 
         <div class="campo campo-checkbox">

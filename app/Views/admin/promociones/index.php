@@ -16,14 +16,17 @@ $hoy = date('Y-m-d');
     <a class="btn" href="/admin/promociones/crear">+ Nueva promoción</a>
 </div>
 
+<p class="campo-ayuda" style="margin-top:0;">El orden de esta lista es el orden en que se muestran en el sitio (la de arriba aparece primero). Usa ▲ ▼ para moverlas.</p>
+
 <div class="tarjeta tabla-contenedor">
     <?php if ($promociones === []): ?>
         <p class="tabla-vacio">Todavía no hay promociones registradas.</p>
     <?php else: ?>
         <table class="tabla">
-            <thead><tr><th></th><th>Nombre</th><th>Tipo</th><th>Alcance</th><th>Vigencia</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <thead><tr><th></th><th>Nombre</th><th>Tipo</th><th>Alcance</th><th>Vigencia</th><th>Estado</th><th>Orden</th><th>Acciones</th></tr></thead>
             <tbody>
-                <?php foreach ($promociones as $p): ?>
+                <?php $total = count($promociones); ?>
+                <?php foreach ($promociones as $indice => $p): ?>
                     <?php
                         $vigente = (int) $p['activo'] === 1 && $hoy >= $p['fecha_inicio'] && $hoy <= $p['fecha_fin'];
                         $futura = $hoy < $p['fecha_inicio'];
@@ -56,6 +59,19 @@ $hoy = date('Y-m-d');
                             <?php else: ?>
                                 <span class="insignia insignia-vencida">Vencida</span>
                             <?php endif; ?>
+                        </td>
+                        <td class="c-orden">
+                            <div class="acciones-tabla">
+                                <?php foreach (['subir' => ['▲', 'Subir', $indice === 0], 'bajar' => ['▼', 'Bajar', $indice === $total - 1]] as $direccion => [$simbolo, $etiqueta, $deshabilitado]): ?>
+                                    <form method="post" action="/admin/promociones/<?= (int) $p['id'] ?>/mover">
+                                        <?= \App\Core\Csrf::campo() ?>
+                                        <input type="hidden" name="direccion" value="<?= $direccion ?>">
+                                        <button type="submit" class="btn btn-secundario btn-pequeno"
+                                                aria-label="<?= $etiqueta ?> promoción <?= $indice + 1 ?>"
+                                                <?= $deshabilitado ? 'disabled' : '' ?>><?= $simbolo ?></button>
+                                    </form>
+                                <?php endforeach; ?>
+                            </div>
                         </td>
                         <td class="acciones-tabla">
                             <a class="btn btn-pequeno" href="/admin/promociones/<?= (int) $p['id'] ?>/editar">Editar</a>
