@@ -459,8 +459,16 @@ img {
   font-weight: 600;
 }
 
-/* El efecto transparente es solo para dispositivos con mouse. En pantallas táctiles (y en la vista de teléfono del
-   navegador) el :hover se queda "pegado" tras tocar y el botón no volvía a blanco; ahí solo se ve mientras se presiona. */
+/* Estado normal y también "pegado" (en pantallas táctiles el :hover y el foco se quedan activos tras tocar): se
+   fija el blanco para que no tome el fondo oscuro del .btn:hover genérico con letra oscura (texto invisible). */
+.btn-ver-menu:hover,
+.btn-ver-menu:focus {
+  background: var(--color-blanco);
+  color: var(--color-cafe-oscuro);
+  border-color: var(--color-blanco);
+}
+
+/* El efecto transparente solo mientras se presiona (táctil) o al pasar el mouse (dispositivos con mouse). */
 .btn-ver-menu:active {
   background: transparent;
   color: var(--color-blanco);
@@ -851,6 +859,28 @@ img {
   overflow: hidden;
   border-radius: var(--radio-borde);
   background: var(--color-beige);
+}
+
+/* Celular: la galería usa casi todo el ancho (menos margen a los lados y entre fotos, esquinas menos redondeadas)
+   para que las fotos se vean más grandes. En tablet y escritorio queda como estaba. */
+@media (max-width: 599px) {
+  #galeria .sitio-contenedor {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .carrusel {
+    --carrusel-separacion: 6px;
+  }
+
+  .carrusel-pista,
+  .carrusel-item {
+    border-radius: 8px;
+  }
+
+  .carrusel-item {
+    flex-basis: 93%;
+  }
 }
 
 @media (min-width: 600px) {
