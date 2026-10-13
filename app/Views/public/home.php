@@ -213,7 +213,12 @@ $tarjetaProducto = function (array $p) use ($temperaturasProductos) {
 <section class="sitio-seccion" id="temporada">
     <div class="sitio-contenedor">
         <h2>De temporada</h2>
-        <div class="temporadas-lista<?= count($temporadas) > 1 ? ' temporadas-lista--varias' : '' ?>"<?= count($temporadas) > 1 ? ' data-deslizable' : '' ?>>
+        <?php
+        // Columnas en escritorio: 3 si caben justas en filas de 3 (3, 5 o 6 temporadas); si no, 2 (2 o 4). Evita una tarjeta sola en la última fila.
+        $nTemporadas = count($temporadas);
+        $columnasTemporadas = ($nTemporadas % 3 === 0 || $nTemporadas === 5) ? 3 : 2;
+        ?>
+        <div class="temporadas-lista<?= $nTemporadas > 1 ? ' temporadas-lista--varias temporadas-lista--c' . $columnasTemporadas : '' ?>"<?= count($temporadas) > 1 ? ' data-deslizable' : '' ?>>
         <?php foreach ($temporadas as $t): ?>
             <article class="tarjeta-producto tarjeta-temporada">
                 <?php if (!empty($t['imagen'])): ?>

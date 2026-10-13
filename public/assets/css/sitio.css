@@ -625,6 +625,18 @@ img {
   flex-grow: 1;
 }
 
+/* Promociones y temporadas: las tarjetas de una misma fila miden lo mismo, y con "flex-grow" cada párrafo se
+   estiraba y quedaban huecos enormes entre líneas. El texto va junto, arriba; solo el último baja al fondo. */
+#promociones .tarjeta-producto-descripcion,
+.tarjeta-temporada .tarjeta-producto-descripcion {
+  flex-grow: 0;
+}
+
+#promociones .tarjeta-producto-cuerpo > .tarjeta-producto-descripcion:last-child {
+  margin-top: auto;
+  padding-top: 6px;
+}
+
 .tarjeta-producto-precio {
   font-weight: 700;
   color: var(--color-verde);
@@ -695,6 +707,11 @@ img {
     gap: 24px;
     max-width: 1000px;
     margin: 0 auto 20px;
+  }
+
+  .temporadas-lista--c3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: none;
   }
 
   .temporadas-lista--varias .tarjeta-temporada {
