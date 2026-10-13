@@ -213,6 +213,7 @@ $tarjetaProducto = function (array $p) use ($temperaturasProductos) {
 <section class="sitio-seccion" id="temporada">
     <div class="sitio-contenedor">
         <h2>De temporada</h2>
+        <div class="temporadas-lista<?= count($temporadas) > 1 ? ' temporadas-lista--varias' : '' ?>"<?= count($temporadas) > 1 ? ' data-deslizable' : '' ?>>
         <?php foreach ($temporadas as $t): ?>
             <article class="tarjeta-producto tarjeta-temporada">
                 <?php if (!empty($t['imagen'])): ?>
@@ -228,6 +229,7 @@ $tarjetaProducto = function (array $p) use ($temperaturasProductos) {
                 </div>
             </article>
         <?php endforeach; ?>
+        </div>
 
         <?php if ($productosTemporada !== []): ?>
             <div class="tarjetas-grid" style="margin-top:20px;">
@@ -251,7 +253,8 @@ $tarjetaProducto = function (array $p) use ($temperaturasProductos) {
     <div class="sitio-contenedor">
         <h2>Promociones</h2>
         <p class="sitio-seccion-intro">Vigentes en este momento.</p>
-        <div class="tarjetas-grid">
+        <?php /* En el teléfono se desliza de lado (data-deslizable: sitio.js agrega los puntos); en escritorio es la cuadrícula de siempre. */ ?>
+        <div class="tarjetas-grid tarjetas-deslizables" data-deslizable>
             <?php foreach ($promociones as $promo): ?>
                 <?php
                     // Vinculada a lealtad: la tarjeta entera es un enlace a /cuenta, donde

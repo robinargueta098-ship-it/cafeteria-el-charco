@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
   inicializarAnclas();
   inicializarNavActiva();
   inicializarBurbujaWhatsapp();
+  inicializarDeslizables();
   inicializarHeroFondo();
   inicializarRevelado();
   inicializarRevelaDescripciones();
@@ -833,4 +834,90 @@ function inicializarBurbujaWhatsapp() {
   }
 
   window.setTimeout(ocultar, VISIBLE_MS);
+}
+
+/**
+ * Promociones y temporadas en el teléfono: la fila se desliza de lado (CSS) y aquí se le agregan los puntos
+ * (uno por tarjeta, el de la tarjeta visible va en verde; tocarlos lleva a esa tarjeta). Solo cuando de verdad
+ * hay algo que deslizar; en pantallas anchas, donde son una cuadrícula, no se muestra ninguno.
+ */
+function inicializarDeslizables() {
+  var listas = Array.prototype.slice.call(document.querySelectorAll('[data-deslizable]'));
+  if (listas.length === 0) {
+    return;
+  }
+
+  listas.forEach(function (lista) {
+    var puntos = [];
+    var contenedor = null;
+
+    function quitar() {
+      if (contenedor && contenedor.parentNode) {
+        contenedor.parentNode.removeChild(contenedor);
+      }
+      contenedor = null;
+      puntos = [];
+    }
+
+    // Borde izquierdo (en pantalla) donde empieza la primera tarjeta visible: el de la lista más su relleno.
+    function inicioVisible() {
+      return lista.getBoundingClientRect().left + (parseFloat(getComputedStyle(lista).paddingLeft) || 0);
+    }
+
+    function activo() {
+      var items = Array.prototype.slice.call(lista.children);
+      var final = lista.scrollLeft + lista.clientWidth >= lista.scrollWidth - 2;
+      var mejor = 0;
+      var menor = Infinity;
+      items.forEach(function (item, i) {
+        var d = Math.abs(item.getBoundingClientRect().left - inicioVisible());
+        if (d < menor) { menor = d; mejor = i; }
+      });
+      return final ? items.length - 1 : mejor;
+    }
+
+    function pintar() {
+      var a = activo();
+      puntos.forEach(function (punto, i) {
+        punto.classList.toggle('activo', i === a);
+      });
+    }
+
+    function armar() {
+      quitar();
+      var items = Array.prototype.slice.call(lista.children);
+      var enFila = getComputedStyle(lista).display === 'flex' && lista.scrollWidth > lista.clientWidth + 2;
+      if (!enFila || items.length < 2) {
+        return;
+      }
+
+      contenedor = document.createElement('div');
+      contenedor.className = 'deslizable-puntos';
+      items.forEach(function (item, i) {
+        var punto = document.createElement('button');
+        punto.type = 'button';
+        punto.className = 'carrusel-punto';
+        punto.setAttribute('aria-label', 'Ir a la tarjeta ' + (i + 1) + ' de ' + items.length);
+        punto.addEventListener('click', function () {
+          lista.scrollTo({ left: lista.scrollLeft + (item.getBoundingClientRect().left - inicioVisible()), behavior: 'smooth' });
+        });
+        contenedor.appendChild(punto);
+        puntos.push(punto);
+      });
+      lista.parentNode.insertBefore(contenedor, lista.nextSibling);
+      pintar();
+    }
+
+    var espera = null;
+    lista.addEventListener('scroll', function () {
+      window.clearTimeout(espera);
+      espera = window.setTimeout(pintar, 60);
+    }, { passive: true });
+    window.addEventListener('resize', function () {
+      window.clearTimeout(espera);
+      espera = window.setTimeout(armar, 150);
+    });
+    window.addEventListener('load', armar);
+    armar();
+  });
 }

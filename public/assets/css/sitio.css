@@ -678,6 +678,69 @@ img {
   margin: 0 auto 20px;
 }
 
+/* Temporadas vigentes. Una sola: banner centrado (arriba). Varias: en escritorio van en 2 columnas, no apiladas;
+   en el teléfono se deslizan de lado (ver "deslizables" más abajo), como las promociones. */
+.temporadas-lista {
+  margin-bottom: 20px;
+}
+
+.temporadas-lista .tarjeta-temporada:last-child {
+  margin-bottom: 0;
+}
+
+@media (min-width: 768px) {
+  .temporadas-lista--varias {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    max-width: 1000px;
+    margin: 0 auto 20px;
+  }
+
+  .temporadas-lista--varias .tarjeta-temporada {
+    max-width: none;
+    margin: 0;
+  }
+}
+
+/* Promociones y temporadas en el teléfono: una fila que se desliza con el dedo (con imán), la siguiente tarjeta
+   asoma por la derecha y abajo van los puntos. Misma idea que las categorías del menú. */
+@media (max-width: 767px) {
+  .tarjetas-deslizables,
+  .temporadas-lista--varias {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0 -20px;
+    padding: 6px 20px 12px;
+    scroll-padding: 0 20px;
+  }
+
+  .tarjetas-deslizables::-webkit-scrollbar,
+  .temporadas-lista--varias::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tarjetas-deslizables > *,
+  .temporadas-lista--varias > .tarjeta-temporada {
+    flex: 0 0 82%;
+    max-width: 320px;
+    margin: 0;
+    scroll-snap-align: start;
+  }
+}
+
+.deslizable-puntos {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0 0 8px;
+}
+
 /* ---------- Menú por categorías ---------- */
 
 .menu-categoria {

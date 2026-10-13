@@ -1588,6 +1588,14 @@ fila («Lunes a Viernes», «Sábado y Domingo»); si no son seguidos, el tramo 
 de cada día se guarda igual y el carrito (aviso de abierto/cerrado) sigue leyendo día por día. Una jornada corrida
 se logra poniendo solo el primer turno (ej. 9:00 a 21:00) y dejando vacío el segundo.
 
+### 4.44 Promociones y temporadas en el teléfono
+
+- **Teléfono (< 768 px)**: las promociones, y las temporadas cuando hay 2 o más, van en una fila que se desliza de lado
+  con imán (`scroll-snap`); la siguiente tarjeta asoma por la derecha y `sitio.js` (`inicializarDeslizables`) agrega
+  puntos (uno por tarjeta, tocables). Una sola temporada sigue siendo un banner centrado.
+- **Escritorio**: las promociones siguen en cuadrícula; 2 o más temporadas van en **2 columnas** (antes apiladas) y una
+  sola queda como banner. Los puntos solo existen cuando la lista realmente se desliza.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```
