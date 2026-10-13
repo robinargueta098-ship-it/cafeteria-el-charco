@@ -194,6 +194,20 @@ a {
   padding: var(--espaciado-2) 0;
 }
 
+/* Escritorio: el menú lateral es una barra independiente. Se queda fija a la altura de la ventana mientras el
+   contenido se desplaza (con su propio scroll si el menú fuera más alto que la pantalla). En celular el menú es un
+   cajón aparte (más abajo) y estas reglas no aplican. */
+@media (min-width: 768px) {
+  .panel-sidebar {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
 .panel-sidebar-marca {
   font-weight: 700;
   padding: 0 var(--espaciado-2) var(--espaciado-2);
