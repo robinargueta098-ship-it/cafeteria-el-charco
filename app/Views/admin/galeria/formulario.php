@@ -43,12 +43,6 @@ require APP_PATH . '/Views/layouts/panel_header.php';
             <span class="campo-ayuda">Aparece sobre la foto en el sitio público y como texto alternativo.</span>
         </div>
 
-        <div class="campo">
-            <label for="descripcion">Descripción (opcional)</label>
-            <input type="text" id="descripcion" name="descripcion" maxlength="255"
-                   value="<?= htmlspecialchars((string) ($foto['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-        </div>
-
         <div class="campo campo-checkbox">
             <input type="checkbox" id="activo" name="activo" value="1" <?= (int) ($foto['activo'] ?? 1) === 1 ? 'checked' : '' ?>>
             <label for="activo" style="margin:0;">Activa (visible en el sitio público)</label>

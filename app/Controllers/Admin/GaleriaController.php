@@ -152,6 +152,7 @@ class GaleriaController extends Controller
         // El orden ya no se escribe a mano (se cambia con las flechas del
         // listado): se conserva el actual.
         $datos['orden'] = (int) $existente['orden'];
+        $datos['descripcion'] = $existente['descripcion'];   // el campo ya no está en el formulario: no se borra lo que hubiera
         $imagenNueva = null;
 
         if (($_FILES['imagen']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
@@ -224,7 +225,7 @@ class GaleriaController extends Controller
     {
         return [
             'titulo'      => trim(Entrada::texto($_POST, 'titulo', '')) ?: null,
-            'descripcion' => trim(Entrada::texto($_POST, 'descripcion', '')) ?: null,
+            'descripcion' => null,   // ya no se edita (nunca se mostraba en el sitio); al actualizar se conserva la que hubiera
             'activo'      => isset($_POST['activo']) ? 1 : 0,
         ];
     }
@@ -233,7 +234,7 @@ class GaleriaController extends Controller
     private function validar(array $datos): array
     {
         $validador = new Validator($datos);
-        $validador->longitudMaxima('titulo', 'Título', 120)->longitudMaxima('descripcion', 'Descripción', 255);
+        $validador->longitudMaxima('titulo', 'Título', 120);
 
         return $validador->errores();
     }
