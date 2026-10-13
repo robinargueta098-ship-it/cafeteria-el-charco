@@ -525,7 +525,8 @@ INSERT INTO configuracion_sistema (clave, valor, descripcion) VALUES
   ('sobre_nosotros_estructura', '', 'Sobre nosotros: estructura (introducción, subtítulo, tarjetas y cierre) en JSON'),
   ('sobre_nosotros_foto', '', 'Sobre nosotros: foto propia (archivo en uploads/sitio)'),
   ('sobre_nosotros_foto_alt', '', 'Sobre nosotros: texto alternativo de la foto'),
-  ('sobre_nosotros_foto_pie', '', 'Sobre nosotros: pie de foto (texto visible debajo de la foto)');
+  ('sobre_nosotros_foto_pie', '', 'Sobre nosotros: pie de foto (texto visible debajo de la foto)'),
+  ('horario_agrupar', '1', 'Horario del sitio: 1 = juntar los días seguidos con el mismo horario (Lunes a Viernes), 0 = un renglón por día');
 
 -- Horario semanal: se crean las 7 filas marcadas como "cerrado/sin
 -- configurar" (no se inventan horarios). El negocio los completa desde

@@ -1579,6 +1579,15 @@ Antes la sección se guardaba como **un solo texto** (`sobre_nosotros_texto`) qu
 - **Auditoría**: además del registro general de Configuración, quedan «Texto de «Sobre nosotros» editado» y «Foto de
   «Sobre nosotros»: subida / reemplazada / quitada» (visibles en la pantalla de Auditoría).
 
+### 4.43 Horario agrupado en el sitio
+
+En el pie del sitio, el horario puede mostrarse **agrupado**: los días seguidos (de lunes a domingo) con exactamente el
+mismo horario se juntan en una fila («Lunes a Viernes», «Sábado y Domingo»); un día distinto corta el grupo.
+`HorarioAtencion::filasParaMostrar()` arma las filas. Se elige en Configuración → Horario (clave `horario_agrupar`,
+`1` agrupar —por defecto—, `0` un renglón por día como antes; migración `010`). Solo afecta cómo se **ve**: el horario
+de cada día se guarda igual y el carrito (aviso de abierto/cerrado) sigue leyendo día por día. Una jornada corrida
+se logra poniendo solo el primer turno (ej. 9:00 a 21:00) y dejando vacío el segundo.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```

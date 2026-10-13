@@ -42,6 +42,56 @@ class HorarioAtencion
     }
 
     /**
+     * Filas para mostrar el horario en el sitio. Con $agrupar, los días SEGUIDOS (de lunes a domingo) que tienen
+     * exactamente el mismo horario se juntan en una sola fila: "Lunes a Viernes", "Sábado y Domingo". Sin agrupar,
+     * una fila por día en el orden de siempre (domingo primero). Un día distinto en medio corta el grupo.
+     *
+     * @param array<int,array<string,mixed>> $filas resultado de listarTodos()
+     * @param array<int,string> $nombresDias 0 = domingo … 6 = sábado
+     * @return array<int,array{dias:string,texto:string}>
+     */
+    public static function filasParaMostrar(array $filas, array $nombresDias, bool $agrupar): array
+    {
+        $porDia = [];
+        foreach ($filas as $f) {
+            $porDia[(int) $f['dia_semana']] = $f;
+        }
+
+        if (!$agrupar) {
+            $salida = [];
+            foreach ($filas as $f) {
+                $salida[] = ['dias' => $nombresDias[(int) $f['dia_semana']] ?? '', 'texto' => self::textoDia($f)];
+            }
+
+            return $salida;
+        }
+
+        $grupos = [];   // cada grupo: ['texto' => ..., 'dias' => [numeros en orden lunes → domingo]]
+        foreach ([1, 2, 3, 4, 5, 6, 0] as $dia) {
+            if (!isset($porDia[$dia])) {
+                continue;
+            }
+            $texto = self::textoDia($porDia[$dia]);
+            $ultimo = count($grupos) - 1;
+            if ($ultimo >= 0 && $grupos[$ultimo]['texto'] === $texto) {
+                $grupos[$ultimo]['dias'][] = $dia;
+            } else {
+                $grupos[] = ['texto' => $texto, 'dias' => [$dia]];
+            }
+        }
+
+        $salida = [];
+        foreach ($grupos as $g) {
+            $nombres = array_map(fn (int $d): string => $nombresDias[$d] ?? '', $g['dias']);
+            $n = count($nombres);
+            $etiqueta = $n === 1 ? $nombres[0] : ($n === 2 ? $nombres[0] . ' y ' . $nombres[1] : $nombres[0] . ' a ' . $nombres[$n - 1]);
+            $salida[] = ['dias' => $etiqueta, 'texto' => $g['texto']];
+        }
+
+        return $salida;
+    }
+
+    /**
      * Horario en el formato que lee el carrito (JavaScript) para avisar si ahora se está
      * atendiendo: una entrada por día de la semana (0 = domingo) con sus turnos en minutos
      * desde la medianoche. Se lee de la base en cada carga: si el Administrador cambia el

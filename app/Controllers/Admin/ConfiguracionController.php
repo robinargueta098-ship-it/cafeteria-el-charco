@@ -27,7 +27,7 @@ class ConfiguracionController extends Controller
         'instagram_usuario', 'tiktok_usuario',
         'facebook_nombre', 'facebook_url',
         'umbral_lealtad', 'google_maps_embed', 'mapa_coordenadas', 'google_calificacion',
-        'google_calificacion_url', 'carrito_aviso_ubicacion', 'sobre_nosotros_foto_pie',
+        'google_calificacion_url', 'carrito_aviso_ubicacion', 'sobre_nosotros_foto_pie', 'horario_agrupar',
     ];
 
     /**
@@ -219,6 +219,10 @@ class ConfiguracionController extends Controller
             if (array_key_exists($claveNueva, $datos)) {
                 $configModelo->asegurar($claveNueva, '', $descripcionNueva);
             }
+        }
+
+        if (array_key_exists('horario_agrupar', $datos)) {
+            $configModelo->asegurar('horario_agrupar', '1', 'Horario del sitio: 1 = juntar los días seguidos con el mismo horario (Lunes a Viernes), 0 = un renglón por día');
         }
 
         $configModelo->actualizarMultiples($datos);
@@ -434,7 +438,8 @@ class ConfiguracionController extends Controller
             ->longitudMaxima('descripcion_corta', 'Descripción breve', 300)
             ->longitudMaxima('google_maps_embed', 'Enlace de Google Maps', 255)
             ->longitudMaxima('carrito_aviso_ubicacion', 'Aviso de ubicación del carrito', 300)
-            ->longitudMaxima('sobre_nosotros_foto_pie', 'Pie de foto de «Sobre nosotros»', SobreNosotros::MAX_PIE);
+            ->longitudMaxima('sobre_nosotros_foto_pie', 'Pie de foto de «Sobre nosotros»', SobreNosotros::MAX_PIE)
+            ->enQueValores('horario_agrupar', 'Forma de mostrar el horario', ['0', '1']);
 
         $errores = $validador->errores();
 

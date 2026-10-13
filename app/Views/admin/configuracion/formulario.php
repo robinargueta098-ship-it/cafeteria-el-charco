@@ -348,9 +348,20 @@ $totalPortada = count($portada);
         </div>
 
         <h2>Horario de atención</h2>
+        <div class="campo">
+            <label for="horario_agrupar">Cómo se muestra en el sitio</label>
+            <select id="horario_agrupar" name="horario_agrupar">
+                <?php $agrupar = ($config['horario_agrupar'] ?? '1') !== '0'; ?>
+                <option value="1"<?= $agrupar ? ' selected' : '' ?>>Juntar los días seguidos con el mismo horario (ej. «Lunes a Viernes»)</option>
+                <option value="0"<?= $agrupar ? '' : ' selected' ?>>Mostrar cada día por separado</option>
+            </select>
+            <span class="campo-ayuda">Solo cambia cómo se ve en el pie del sitio; los horarios de cada día de abajo no se tocan.
+                Si algún día tiene un horario distinto, aparece en su propia fila.</span>
+        </div>
         <p class="campo-ayuda" style="margin-top:0;">
             El segundo turno es para un día con horario partido (ej. abre 9:00-14:00, cierra a
             almorzar, y vuelve a abrir 16:00-21:00). Se deja vacío en los días que no lo tienen.
+            Para una jornada corrida (sin pausa), pon solo el primer turno (ej. 9:00 a 21:00) y deja el segundo vacío.
         </p>
         <?php
             // La base de datos guarda TIME con segundos ("09:00:00"); un <input

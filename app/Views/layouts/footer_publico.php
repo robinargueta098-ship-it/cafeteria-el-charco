@@ -81,11 +81,15 @@ foreach ($horarios as $h) {
         <?php /* Horario partido incluido: el texto de cada día lo arma HorarioAtencion::textoDia(), el mismo del carrito. */ ?>
         <?php if ($hayHorario): ?>
             <table class="horario-tabla">
-                <?php foreach ($horarios as $h): ?>
+                <?php
+                // Configuración → Horario: juntar los días seguidos con el mismo horario ("Lunes a Viernes") o mostrarlos por separado.
+                $agruparHorario = ($config['horario_agrupar'] ?? '1') !== '0';
+                ?>
+                <?php foreach (HorarioAtencion::filasParaMostrar($horarios, $nombresDias, $agruparHorario) as $fila): ?>
                     <tr>
-                        <td class="dia"><?= $nombresDias[(int) $h['dia_semana']] ?></td>
+                        <td class="dia"><?= htmlspecialchars($fila['dias'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td>
-                            <?= htmlspecialchars(HorarioAtencion::textoDia($h), ENT_QUOTES, 'UTF-8') ?>
+                            <?= htmlspecialchars($fila['texto'], ENT_QUOTES, 'UTF-8') ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
