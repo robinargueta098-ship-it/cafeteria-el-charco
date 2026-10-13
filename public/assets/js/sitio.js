@@ -810,13 +810,27 @@ function inicializarNavActiva() {
 }
 
 /**
- * En el celular la burbuja del WhatsApp flotante solo aparece unos segundos para invitar a escribir y se
- * desvanece sola, así no tapa el contenido de abajo; el botón redondo se queda. En pantallas grandes se mantiene.
+ * En el celular la burbuja del WhatsApp flotante no se queda tapando el contenido: se muestra 8 segundos, se
+ * desvanece y vuelve a aparecer cada ~30 segundos (el botón redondo siempre está). En pantallas grandes se mantiene.
  */
 function inicializarBurbujaWhatsapp() {
   var burbuja = document.querySelector('.whatsapp-burbuja');
   if (!burbuja || !window.matchMedia || !window.matchMedia('(max-width: 767px)').matches) {
     return;
   }
-  window.setTimeout(function () { burbuja.classList.add('oculta'); }, 8000);
+
+  var VISIBLE_MS = 8000;
+  var OCULTA_MS = 22000;
+
+  function ocultar() {
+    burbuja.classList.add('oculta');
+    window.setTimeout(mostrar, OCULTA_MS);
+  }
+
+  function mostrar() {
+    burbuja.classList.remove('oculta');
+    window.setTimeout(ocultar, VISIBLE_MS);
+  }
+
+  window.setTimeout(ocultar, VISIBLE_MS);
 }

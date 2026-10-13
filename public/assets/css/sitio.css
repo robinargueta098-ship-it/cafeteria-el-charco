@@ -459,10 +459,20 @@ img {
   font-weight: 600;
 }
 
-.btn-ver-menu:hover {
+/* El efecto transparente es solo para dispositivos con mouse. En pantallas táctiles (y en la vista de teléfono del
+   navegador) el :hover se queda "pegado" tras tocar y el botón no volvía a blanco; ahí solo se ve mientras se presiona. */
+.btn-ver-menu:active {
   background: transparent;
   color: var(--color-blanco);
   border-color: var(--color-blanco);
+}
+
+@media (hover: hover) {
+  .btn-ver-menu:hover {
+    background: transparent;
+    color: var(--color-blanco);
+    border-color: var(--color-blanco);
+  }
 }
 
 /* ---------- Botones de WhatsApp (portada y barra de navegación) ---------- */
