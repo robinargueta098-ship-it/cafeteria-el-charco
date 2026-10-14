@@ -51,6 +51,15 @@ class AuditoriaTexto
         $despues = json_decode((string) ($fila['valores_despues'] ?? ''), true) ?: [];
         $datos = $despues + $antes;
         $objeto = isset($datos['_objeto']) ? (string) $datos['_objeto'] : '';
+        if ($objeto === '') {
+            // Registros guardados antes de que existiera `_objeto`: el nombre suele venir en los propios datos.
+            foreach (['nombre', 'titulo', 'usuario', 'codigo'] as $campo) {
+                if (isset($datos[$campo]) && is_string($datos[$campo]) && trim($datos[$campo]) !== '') {
+                    $objeto = trim($datos[$campo]);
+                    break;
+                }
+            }
+        }
         $cliente = (string) ($fila['cliente_nombre'] ?? '');
         $sujeto = self::OBJETOS[$tabla][0] ?? 'el registro';
 
@@ -92,11 +101,11 @@ class AuditoriaTexto
         $cual = $objeto !== '' ? ' «' . $objeto . '»' : ' #' . (int) $fila['registro_id'];
 
         if ($accion === 'crear') {
-            $extra = $tabla === 'usuarios' && isset($despues['rol_id']) ? ' (' . self::valor('rol_id', $despues['rol_id']) . ')' : '';
+            $extra = $tabla === 'usuarios' ? self::detalleUsuario($despues) : '';
             return 'Creó ' . $sujeto . $cual . $extra;
         }
         if ($accion === 'eliminar') {
-            $extra = $tabla === 'usuarios' && isset($antes['rol_id']) ? ' (' . self::valor('rol_id', $antes['rol_id']) . ')' : '';
+            $extra = $tabla === 'usuarios' ? self::detalleUsuario($antes) : '';
             return 'Eliminó ' . $sujeto . $cual . $extra;
         }
         if ($accion === 'editar') {
@@ -114,6 +123,20 @@ class AuditoriaTexto
         }
 
         return ucfirst($accion) . ' ' . $sujeto . $cual;
+    }
+
+    /** " (usuario: Bvilatorlo, rol: Cajero)" para identificar sin dudas a quién se refiere. */
+    private static function detalleUsuario(array $datos): string
+    {
+        $partes = [];
+        if (!empty($datos['usuario']) && is_string($datos['usuario'])) {
+            $partes[] = 'usuario: ' . $datos['usuario'];
+        }
+        if (isset($datos['rol_id'])) {
+            $partes[] = 'rol: ' . self::valor('rol_id', $datos['rol_id']);
+        }
+
+        return $partes === [] ? '' : ' (' . implode(', ', $partes) . ')';
     }
 
     /** Valor corto y legible para una frase. */
