@@ -33,6 +33,14 @@ $actual = Auth::usuario();
                     <td><?= htmlspecialchars((string) ($u['ultimo_acceso'] ?? 'Nunca'), ENT_QUOTES, 'UTF-8') ?></td>
                     <td class="acciones-tabla">
                         <a class="btn btn-pequeno" href="/admin/usuarios/<?= (int) $u['id'] ?>/editar">Editar</a>
+                        <?php $esUnoMismo = $actual !== null && $actual['id'] === (int) $u['id']; ?>
+                        <?php if (!\App\Models\Usuario::esPrincipal((int) $u['id']) && !$esUnoMismo): ?>
+                            <form method="post" action="/admin/usuarios/<?= (int) $u['id'] ?>/eliminar"
+                                  onsubmit="return confirm('¿Eliminar a este usuario? Si ya tiene movimientos de lealtad o canjes a su nombre no se podrá eliminar: en ese caso, desactívalo.');">
+                                <?= \App\Core\Csrf::campo() ?>
+                                <button type="submit" class="btn btn-peligro btn-pequeno">Eliminar</button>
+                            </form>
+                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>

@@ -114,6 +114,33 @@ class Usuario
     }
 
     /** Cuántos usuarios Administrador (rol_id=1) activos hay, sin contar a $excluirId. */
+    /**
+     * Cuántos registros con historial real dependen de este usuario: movimientos de lealtad que registró y
+     * recompensas o cupones que canjeó o canceló. Si tiene alguno NO se debe eliminar (se perdería quién hizo cada
+     * operación, y la base de datos lo impide): se desactiva.
+     */
+    public function contarHistorial(int $id): int
+    {
+        $pdo = Database::conexion();
+        $total = 0;
+        foreach ([
+            'SELECT COUNT(*) FROM lealtad_movimientos WHERE usuario_id = :id',
+            'SELECT COUNT(*) FROM recompensas WHERE usuario_canjeo_id = :id OR usuario_cancelacion_id = :id2',
+            'SELECT COUNT(*) FROM cupones_promocion WHERE usuario_canjeo_id = :id OR usuario_cancelacion_id = :id2',
+        ] as $sql) {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute(str_contains($sql, ':id2') ? ['id' => $id, 'id2' => $id] : ['id' => $id]);
+            $total += (int) $stmt->fetchColumn();
+        }
+
+        return $total;
+    }
+
+    public function eliminar(int $id): void
+    {
+        Database::conexion()->prepare('DELETE FROM usuarios WHERE id = :id')->execute(['id' => $id]);
+    }
+
     public function contarAdministradoresActivos(?int $excluirId = null): int
     {
         $sql = 'SELECT COUNT(*) FROM usuarios WHERE rol_id = 1 AND activo = 1';

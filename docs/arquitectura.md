@@ -1634,8 +1634,11 @@ Las migraciones `006` y `012` se aplicaron en esta base el 13 de octubre de 2026
 El usuario con `id = 1` (`Usuario::ID_PRINCIPAL`, el administrador del negocio) no se puede desactivar, cambiarle el rol ni
 cambiarle el nombre de usuario: `UsuarioController::actualizar()` fuerza esos tres valores aunque lleguen otros en la
 petición, y el formulario los muestra bloqueados con un aviso. Su nombre para mostrar y su contraseña sí se pueden
-cambiar. El panel no tiene ninguna ruta para eliminar usuarios (solo desactivar a los demás), y ya existía la regla de no
-dejar al sistema sin un administrador activo.
+cambiar. Los demás usuarios **sí se pueden eliminar** (`UsuarioController::eliminar`), salvo: el principal, uno mismo, el
+último administrador activo y quien ya tiene historial a su nombre (movimientos de lealtad, canjes o cancelaciones de
+recompensas y cupones; la base de datos lo impide con `RESTRICT` y además se perdería quién hizo cada operación): a esos
+se les desactiva desde «Editar». Los registros de Auditoría de un usuario eliminado quedan con el usuario en blanco
+(`ON DELETE SET NULL`).
 
 ## 5. Modelo de datos (entidades y relaciones)
 

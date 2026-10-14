@@ -142,6 +142,46 @@ class UsuarioController extends Controller
         $this->redirigir('/admin/usuarios');
     }
 
+    /**
+     * Elimina un usuario. No se puede eliminar: al usuario principal, a uno mismo, al último administrador activo ni a
+     * quien ya tiene historial (lealtad, canjes): en esos casos se desactiva desde «Editar».
+     */
+    public function eliminar(string $id): void
+    {
+        $this->requerirRol(1);
+
+        $modelo = new Usuario();
+        $usuario = $modelo->buscarPorId((int) $id);
+        if ($usuario === null) {
+            $this->error404();
+        }
+
+        $actual = Auth::usuario();
+        $motivo = null;
+        if (Usuario::esPrincipal((int) $id)) {
+            $motivo = 'El usuario principal no se puede eliminar.';
+        } elseif ($actual !== null && (int) $actual['id'] === (int) $id) {
+            $motivo = 'No puedes eliminar tu propio usuario.';
+        } elseif ((int) $usuario['rol_id'] === 1 && (int) $usuario['activo'] === 1 && $modelo->contarAdministradoresActivos((int) $id) === 0) {
+            $motivo = 'No puedes eliminar al último administrador activo.';
+        } elseif (($historial = $modelo->contarHistorial((int) $id)) > 0) {
+            $motivo = "No se puede eliminar: tiene {$historial} registro(s) de lealtad o canjes a su nombre. Desactívalo desde «Editar» para que ya no pueda entrar.";
+        }
+
+        if ($motivo !== null) {
+            Flash::error($motivo);
+            $this->redirigir('/admin/usuarios');
+        }
+
+        $modelo->eliminar((int) $id);
+        AuditoriaService::registrar('usuarios', (int) $id, 'eliminar',
+            ['nombre' => $usuario['nombre'], 'usuario' => $usuario['usuario'], 'rol_id' => $usuario['rol_id']], null
+        );
+
+        Flash::exito('Usuario eliminado correctamente.');
+        $this->redirigir('/admin/usuarios');
+    }
+
     /** @return array{nombre:string,usuario:string,password:string,rol_id:int,activo:bool} */
     private function datosDelFormulario(): array
     {

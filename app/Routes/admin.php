@@ -122,6 +122,7 @@ $router->get('/admin/usuarios/crear', [UsuarioController::class, 'mostrarCrear']
 $router->post('/admin/usuarios/crear', [UsuarioController::class, 'crear']);
 $router->get('/admin/usuarios/{id}/editar', [UsuarioController::class, 'mostrarEditar']);
 $router->post('/admin/usuarios/{id}/editar', [UsuarioController::class, 'actualizar']);
+$router->post('/admin/usuarios/{id}/eliminar', [UsuarioController::class, 'eliminar']);
 
 // --- Auditoría ---
 $router->get('/admin/auditoria', [AuditoriaController::class, 'index']);
