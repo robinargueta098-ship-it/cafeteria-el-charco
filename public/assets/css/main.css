@@ -355,6 +355,52 @@ table.tabla th {
 .fila-pedido-nuevo td { background: #fff7e0; }
 .fila-pedido-nuevo td:first-child { box-shadow: inset 4px 0 0 #e0a800; }
 
+/* ---------- Reportes ---------- */
+.reportes-pestanas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.reportes-pestanas a {
+  padding: 8px 14px; border-radius: 999px; background: var(--color-blanco); color: var(--color-texto);
+  border: 1px solid var(--color-beige); text-decoration: none; font-weight: 600; font-size: 0.92rem;
+}
+.reportes-pestanas a.activo { background: var(--color-verde); color: var(--color-blanco); border-color: var(--color-verde); }
+
+.reportes-tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.reporte-tarjeta {
+  display: flex; flex-direction: column; gap: 4px; background: var(--color-blanco); border: 1px solid var(--color-beige);
+  border-left: 4px solid var(--color-verde); border-radius: var(--radio-borde); padding: 12px 14px;
+}
+.reporte-tarjeta-etiqueta { font-size: 0.85rem; color: #6b5a4d; }
+.reporte-tarjeta-valor { font-size: 1.5rem; color: var(--color-cafe-oscuro); }
+.reporte-tarjeta-nota { font-size: 0.78rem; color: #8a7a6d; }
+
+.reporte-grafico { margin-bottom: 16px; }
+.grafico-svg { width: 100%; height: auto; display: block; }
+.grafico-barra { fill: var(--color-verde); }
+.grafico-linea { stroke: var(--color-beige); stroke-width: 1; }
+.grafico-texto { font-size: 11px; fill: #6b5a4d; }
+
+.reporte-tabla-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.tabla-reporte th.num, .tabla-reporte td.num { text-align: right; white-space: nowrap; }
+
+.solo-impresion { display: none; }
+
+@media print {
+  .panel-sidebar, .panel-topbar, .panel-menu-fondo, .no-imprimir, .panel-menu-boton { display: none !important; }
+  .panel-body, .panel-contenido, .panel-main { background: #fff !important; padding: 0 !important; margin: 0 !important; }
+  .panel-layout { display: block !important; }
+  .solo-impresion { display: block; border-bottom: 2px solid #000; margin-bottom: 12px; padding-bottom: 6px; }
+  .solo-impresion h1 { margin: 0 0 4px; font-size: 18pt; }
+  .solo-impresion p { margin: 2px 0; font-size: 10pt; }
+  .tarjeta { box-shadow: none !important; border: 0 !important; padding: 0 !important; }
+  .tabla-reporte { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+  .tabla-reporte th, .tabla-reporte td { border-bottom: 1px solid #ccc; padding: 4px 6px; }
+  .tabla-reporte thead { display: table-header-group; }   /* el encabezado se repite en cada página */
+  .tabla-reporte tfoot { display: table-footer-group; }
+  .tabla-reporte tr { break-inside: avoid; page-break-inside: avoid; }
+  .reportes-tarjetas { grid-template-columns: repeat(3, 1fr); }
+  .reporte-tarjeta { break-inside: avoid; }
+  .grafico-barra { fill: #444 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
 .datos-pedido { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
 .datos-pedido dt { font-weight: 600; color: #6b5a4d; }
 .datos-pedido dd { margin: 0; }

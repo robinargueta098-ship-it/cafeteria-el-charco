@@ -20,6 +20,7 @@ use App\Controllers\Admin\DashboardController;
 use App\Controllers\Admin\GaleriaController;
 use App\Controllers\Admin\LealtadController;
 use App\Controllers\Admin\PedidoController;
+use App\Controllers\Admin\ReporteController;
 use App\Controllers\Admin\PortadaController;
 use App\Controllers\Admin\PromocionController;
 use App\Controllers\Admin\ProductoController;
@@ -118,6 +119,11 @@ $router->post('/admin/configuracion/portada/{id}/mover', [PortadaController::cla
 $router->post('/admin/configuracion/portada/{id}/eliminar', [PortadaController::class, 'eliminar']);
 
 // --- Usuarios ---
+// --- Reportes (Administrador: todo; Cajero: Resumen, Pedidos y sus consumos) ---
+$router->get('/admin/reportes', [ReporteController::class, 'mostrar']);
+$router->get('/admin/reportes/{seccion}', [ReporteController::class, 'mostrar']);
+$router->post('/admin/reportes/imprimir', [ReporteController::class, 'registrarImpresion']);
+
 // --- Pedidos del carrito (Administrador y Cajero) ---
 $router->get('/admin/pedidos', [PedidoController::class, 'index']);
 $router->get('/admin/pedidos/{id}', [PedidoController::class, 'mostrar']);

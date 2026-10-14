@@ -26,6 +26,7 @@ class AuditoriaTexto
         'recompensas'         => ['la recompensa', 'Recompensas'],
         'lealtad_movimientos' => ['los cafés', 'Lealtad'],
         'pedidos'             => ['el pedido', 'Pedidos'],
+        'reportes'            => ['el reporte', 'Reportes'],
     ];
 
     private const CAMPOS = [
@@ -65,7 +66,7 @@ class AuditoriaTexto
         $sujeto = self::OBJETOS[$tabla][0] ?? 'el registro';
 
         // --- Casos con frase propia ---
-        if ($tabla === 'configuracion_sistema' && !empty($despues['detalle']) && is_string($despues['detalle'])) {
+        if (($tabla === 'configuracion_sistema' || $tabla === 'reportes') && !empty($despues['detalle']) && is_string($despues['detalle'])) {
             return $despues['detalle'];
         }
         if ($tabla === 'clientes' && ($despues['accion'] ?? '') === 'restablecer_pin') {

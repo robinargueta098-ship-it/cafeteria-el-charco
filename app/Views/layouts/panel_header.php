@@ -20,6 +20,7 @@ $seccionActiva = $seccionActiva ?? '';
 $enlaces = [
     'dashboard'      => ['Dashboard', '/admin', false],
     'pedidos'        => ['Pedidos', '/admin/pedidos', false],
+    'reportes'       => ['Reportes', '/admin/reportes', false],
     'productos'      => ['Productos', '/admin/productos', true],
     'categorias'     => ['Categorías', '/admin/categorias', true],
     'galeria'        => ['Galería', '/admin/galeria', true],
