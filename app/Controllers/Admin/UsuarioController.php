@@ -92,6 +92,15 @@ class UsuarioController extends Controller
         }
 
         $datos = $this->datosDelFormulario();
+
+        // Usuario principal protegido: siempre Administrador, activo y con el mismo nombre de usuario, sin importar
+        // lo que llegue en el formulario. (Su nombre para mostrar y su contraseña sí se pueden cambiar.)
+        if (Usuario::esPrincipal((int) $id)) {
+            $datos['rol_id'] = 1;
+            $datos['activo'] = true;
+            $datos['usuario'] = (string) $existente['usuario'];
+        }
+
         $errores = $this->validar($datos, requierePassword: false);
 
         // No permitir dejar sin ningún Administrador activo en el sistema.

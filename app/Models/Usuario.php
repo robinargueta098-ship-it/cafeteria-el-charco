@@ -12,6 +12,18 @@ use App\Core\Database;
  */
 class Usuario
 {
+    /**
+     * El usuario principal del negocio (el primero que se creó). Está protegido: nadie puede desactivarlo, quitarle el
+     * rol de Administrador ni cambiarle el nombre de usuario, ni desde el panel ni con una petición manipulada.
+     * (El panel tampoco tiene ninguna opción para eliminar usuarios.)
+     */
+    public const ID_PRINCIPAL = 1;
+
+    public static function esPrincipal(int $id): bool
+    {
+        return $id === self::ID_PRINCIPAL;
+    }
+
     public function buscarPorUsuario(string $usuario): ?array
     {
         $stmt = Database::conexion()->prepare(
