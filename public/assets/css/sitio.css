@@ -2029,6 +2029,12 @@ html.carrito-abierto body {
   accent-color: #2f6b3a;
 }
 
+.carrito-enviar.carrito-enviar--enviando {
+  opacity: 0.7;
+  pointer-events: none;
+  cursor: progress;
+}
+
 .carrito-enviar.carrito-enviar--bloqueado {
   opacity: 0.45;
   cursor: not-allowed;

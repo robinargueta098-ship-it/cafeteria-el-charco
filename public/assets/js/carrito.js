@@ -68,12 +68,12 @@
     var temps = temp === 'ambas' ? ['c', 'f'] : (temp === 'caliente' ? ['c'] : (temp === 'frio' ? ['f'] : ['']));
     var versiones = [{
       clave: base, nombre: boton.getAttribute('data-nombre'),
-      precio: parseFloat(boton.getAttribute('data-precio')) || 0, corta: boton.getAttribute('data-corta') || ''
+      precio: aCentavos(boton.getAttribute('data-precio')), corta: boton.getAttribute('data-corta') || ''
     }];
     if (claveAlt) {
       versiones.push({
         clave: claveAlt, nombre: boton.getAttribute('data-alt-nombre'),
-        precio: parseFloat(boton.getAttribute('data-alt-precio')) || 0, corta: boton.getAttribute('data-alt-corta') || ''
+        precio: aCentavos(boton.getAttribute('data-alt-precio')), corta: boton.getAttribute('data-alt-corta') || ''
       });
     }
     versiones.forEach(function (v, i) {
@@ -100,6 +100,9 @@
   var modoActual = 'pedido';   // 'pedido' | 'confirmar' | 'gracias'
   var entendido = false;   // casilla «Entendido» del aviso de ubicación: no se guarda, hay que marcarla en cada pedido
   var enviado = false;     // se tocó "Enviar" y falta saber si el mensaje realmente salió
+  var tokenPedido = '';    // identifica ESTE pedido ante el servidor: reintentos y doble clic no crean otro
+  var ultimoPedido = null; // respuesta del servidor del pedido ya guardado (código, ítems y total reales)
+  var enviando = false;    // hay una petición en curso (el botón queda deshabilitado)
   var ultimaActividad = 0; // para vaciar un carrito olvidado
   var CADUCA_MS = 12 * 60 * 60 * 1000;   // 12 horas sin tocarlo
 
@@ -120,6 +123,8 @@
       cliente.direccion = typeof c.direccion === 'string' ? c.direccion : '';
       cliente.detalles = typeof c.detalles === 'string' ? c.detalles : '';
       enviado = guardado.enviado === true;
+      tokenPedido = typeof guardado.token === 'string' && /^[A-Za-z0-9_-]{16,64}$/.test(guardado.token) ? guardado.token : '';
+      ultimoPedido = enviado && guardado.pedido && typeof guardado.pedido.codigo === 'string' ? guardado.pedido : null;
       ultimaActividad = parseInt(guardado.ultimaActividad, 10) || 0;
 
       // Un carrito olvidado por más de 12 horas se vacía solo (se conservan nombre y dirección).
@@ -129,19 +134,37 @@
         pago = '';
         cliente.detalles = '';
         enviado = false;
+        tokenPedido = '';
+        ultimoPedido = null;
       }
     } catch (e) { /* sin almacenamiento: el carrito vive solo en esta visita */ }
   }
 
   function guardar() {
     try {
-      window.localStorage.setItem(CLAVE_ALMACEN, JSON.stringify({ items: items, orden: orden, pago: pago, cliente: cliente, enviado: enviado, ultimaActividad: Date.now() }));
+      window.localStorage.setItem(CLAVE_ALMACEN, JSON.stringify({ items: items, orden: orden, pago: pago, cliente: cliente, enviado: enviado, token: tokenPedido, pedido: ultimoPedido, ultimaActividad: Date.now() }));
     } catch (e) { /* ignorar */ }
   }
 
   // ---- Utilidades ----
-  function dinero(n) {
-    return 'Q' + n.toFixed(2);
+  // DINERO: siempre en CENTAVOS ENTEROS (nunca decimales de punto flotante). "38.36" -> 3836.
+  function aCentavos(texto) {
+    var m = /^(\d+)(?:\.(\d+))?$/.exec(String(texto === null || texto === undefined ? '' : texto).trim());
+    if (!m) { return 0; }
+    var dec = (m[2] || '') + '000';
+    var c = parseInt(m[1], 10) * 100 + parseInt(dec.substr(0, 2), 10);
+    if (parseInt(dec.charAt(2), 10) >= 5) { c += 1; }   // redondeo half-up, igual que el servidor
+    return c;
+  }
+
+  // 123450 -> "Q1,234.50"  (mismo formato que el servidor: App\Core\Dinero::formato)
+  function dinero(centavos) {
+    var c = Math.round(centavos);
+    var signo = c < 0 ? '-' : '';
+    if (c < 0) { c = -c; }
+    var enteros = String(Math.floor(c / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    var cents = c % 100;
+    return signo + 'Q' + enteros + '.' + (cents < 10 ? '0' : '') + cents;
   }
 
   function claves() {
@@ -253,15 +276,27 @@
     return String(texto).replace(/[*_~`]/g, '');   // estos caracteres son formato en WhatsApp
   }
 
-  function construirMensaje() {
-    var lineas = ['*Pedido - ' + limpiar(datos.sitio) + '*', '', '*Detalle del pedido:*'];
-    claves().forEach(function (c) {
-      var p = catalogo[c];
-      var cantidad = items[c];
-      lineas.push('- ' + cantidad + ' x ' + limpiar(p.nombre) + ' - ' + dinero(p.precio) + ' c/u = ' + dinero(cantidad * p.precio));
-    });
+  // Con "pedido" (la respuesta del servidor al guardarlo) el mensaje lleva EL CÓDIGO y los precios, subtotales y
+  // total que calculó y guardó el servidor: son exactamente los de la base de datos. Sin él (pruebas/soporte) usa el carrito.
+  function construirMensaje(pedido) {
+    var lineas = ['*Pedido - ' + limpiar(datos.sitio) + '*'];
+    if (pedido && pedido.codigo) {
+      lineas.push('Pedido *#' + pedido.codigo + '*');
+    }
+    lineas.push('', '*Detalle del pedido:*');
+    if (pedido && pedido.items) {
+      pedido.items.forEach(function (it) {
+        lineas.push('- ' + it.cantidad + ' x ' + limpiar(it.nombre) + ' - ' + it.precio + ' c/u = ' + it.subtotal);
+      });
+    } else {
+      claves().forEach(function (c) {
+        var p = catalogo[c];
+        var cantidad = items[c];
+        lineas.push('- ' + cantidad + ' x ' + limpiar(p.nombre) + ' - ' + dinero(p.precio) + ' c/u = ' + dinero(cantidad * p.precio));
+      });
+    }
     lineas.push('');
-    lineas.push('*Total: ' + dinero(totalPedido()) + '*');
+    lineas.push('*Total: ' + (pedido && pedido.total ? pedido.total : dinero(totalPedido())) + '*');
     lineas.push('*Forma de pago: ' + limpiar(pago) + '*');
     lineas.push('');
     lineas.push('*Nombre:* ' + limpiar(cliente.nombre.trim()));
@@ -278,8 +313,19 @@
     return lineas.join('\n');
   }
 
-  function enlaceWhatsapp() {
-    return 'https://wa.me/' + datos.whatsapp + '?text=' + encodeURIComponent(construirMensaje());
+  function enlaceWhatsapp(pedido) {
+    return 'https://wa.me/' + datos.whatsapp + '?text=' + encodeURIComponent(construirMensaje(pedido));
+  }
+
+  // Identificador de este envío (UUID-like). Se conserva mientras no cambie el pedido: reintentos y doble clic = un solo pedido.
+  function nuevoToken() {
+    var bytes = new Uint8Array(16);
+    if (window.crypto && window.crypto.getRandomValues) {
+      window.crypto.getRandomValues(bytes);
+    } else {
+      for (var i = 0; i < 16; i++) { bytes[i] = Math.floor(Math.random() * 256); }
+    }
+    return Array.prototype.map.call(bytes, function (b) { return (b < 16 ? '0' : '') + b.toString(16); }).join('');
   }
 
   // ---- Datos obligatorios (nombre, dirección y forma de pago; los detalles son opcionales) ----
@@ -296,7 +342,7 @@
   function sincronizarEnviar() {
     if (!el.enviar) { return; }
     var listo = totalArticulos() > 0 && datosFaltantes().length === 0 && entendido;
-    el.enviar.href = listo ? enlaceWhatsapp() : '#';
+    el.enviar.href = '#';   // el clic guarda el pedido y luego abre WhatsApp (ver enviarPedido)
     el.enviar.setAttribute('aria-disabled', listo ? 'false' : 'true');
     el.enviar.classList.toggle('carrito-enviar--bloqueado', !entendido);
   }
@@ -632,6 +678,8 @@
 
   el.yaEnvie.addEventListener('click', function () {
     reiniciarEntendido();
+    tokenPedido = '';
+    ultimoPedido = null;
     items = {};
     orden = [];
     pago = '';
@@ -665,6 +713,8 @@
 
   el.vaciar.addEventListener('click', function () {
     reiniciarEntendido();
+    tokenPedido = '';
+    ultimoPedido = null;
     items = {};
     orden = [];
     cliente.detalles = '';
@@ -672,16 +722,124 @@
     pintar();
   });
 
+  function mostrarErrorEnvio(texto) {
+    el.error.textContent = texto;
+    el.error.hidden = false;
+  }
+
+  function cerrarVentana(ventana) {
+    try { if (ventana && !ventana.closed) { ventana.close(); } } catch (e) { /* ignorar */ }
+  }
+
+  function terminarEnvio() {
+    enviando = false;
+    el.enviar.removeAttribute('aria-busy');
+    el.enviar.classList.remove('carrito-enviar--enviando');
+    var rotulo = el.enviar.querySelector('span');
+    if (rotulo) { rotulo.textContent = 'Enviar pedido por WhatsApp'; }
+  }
+
+  // Guarda el pedido en el servidor y SOLO si quedó guardado abre WhatsApp, con el código y los totales reales.
+  function enviarPedido(ventana, esReintento) {
+    if (enviando) { return; }
+    enviando = true;
+    el.enviar.setAttribute('aria-busy', 'true');
+    el.enviar.classList.add('carrito-enviar--enviando');
+    var rotulo = el.enviar.querySelector('span');
+    if (rotulo) { rotulo.textContent = 'Guardando tu pedido…'; }
+
+    if (!tokenPedido) {
+      tokenPedido = nuevoToken();
+      guardar();
+    }
+
+    var cuerpo = new URLSearchParams();
+    cuerpo.set('csrf_token', datos.csrf || '');
+    cuerpo.set('token', tokenPedido);
+    cuerpo.set('items', JSON.stringify(claves().map(function (c) { return { clave: c, cantidad: items[c] }; })));
+    cuerpo.set('forma_pago', pago);
+    cuerpo.set('nombre', cliente.nombre.trim());
+    cuerpo.set('direccion', cliente.direccion.trim());
+    cuerpo.set('detalles', cliente.detalles.trim());
+    cuerpo.set('total_cliente', String(totalPedido()));
+
+    fetch(datos.pedidoUrl || '/pedido', {
+      method: 'POST',
+      body: cuerpo,
+      credentials: 'same-origin',
+      headers: { 'Accept': 'application/json' }
+    }).then(function (respuesta) {
+      return respuesta.json().then(function (json) { return json; }, function () { return { ok: false, error: 'respuesta' }; });
+    }).then(function (resp) {
+      terminarEnvio();
+
+      if (resp && resp.ok) {
+        ultimoPedido = { codigo: resp.codigo, items: resp.items, total: resp.total, total_centavos: resp.total_centavos };
+        enviado = true;
+        guardar();
+        var url = enlaceWhatsapp(ultimoPedido);
+        if (ventana && !ventana.closed) {
+          ventana.location.href = url;
+        } else {
+          window.location.href = url;   // el navegador bloqueó la pestaña nueva: se abre en esta
+        }
+        reiniciarEntendido();
+        sincronizarEnviar();
+        mostrarModo('confirmar');
+        return;
+      }
+
+      // El mismo identificador con otro carrito (el cliente cambió algo después de un intento): se genera uno nuevo y se reintenta una vez.
+      if (resp && resp.error === 'token_reutilizado' && !esReintento) {
+        tokenPedido = nuevoToken();
+        guardar();
+        enviarPedido(ventana, true);
+        return;
+      }
+
+      cerrarVentana(ventana);
+
+      if (resp && resp.error === 'precios_cambiaron' && resp.precios) {
+        Object.keys(resp.precios).forEach(function (clave) {
+          if (catalogo[clave]) { catalogo[clave].precio = resp.precios[clave]; }
+        });
+        tokenPedido = '';
+        guardar();
+        pintar();
+        mostrarErrorEnvio(resp.mensaje || 'Algunos precios cambiaron. Revisa tu pedido y vuelve a enviarlo.');
+        return;
+      }
+
+      if (resp && resp.error === 'no_disponible' && resp.claves) {
+        resp.claves.forEach(function (clave) {
+          delete items[clave];
+          orden = orden.filter(function (c) { return c !== clave; });
+        });
+        tokenPedido = '';
+        guardar();
+        pintar();
+        mostrarErrorEnvio(resp.mensaje || 'Algunos productos ya no están disponibles y se quitaron de tu pedido.');
+        return;
+      }
+
+      mostrarErrorEnvio((resp && resp.mensaje) || 'No pudimos guardar tu pedido. Tu carrito sigue aquí; inténtalo de nuevo en un momento.');
+    }).catch(function () {
+      terminarEnvio();
+      cerrarVentana(ventana);
+      mostrarErrorEnvio('No pudimos guardar tu pedido. Revisa tu conexión: tu carrito sigue aquí; inténtalo de nuevo.');
+    });
+  }
+
   if (el.enviar) {
     el.enviar.addEventListener('click', function (evento) {
-      if (totalArticulos() === 0) {
-        evento.preventDefault();
+      evento.preventDefault();   // WhatsApp se abre desde enviarPedido(), una vez guardado el pedido
+
+      if (enviando || totalArticulos() === 0) {
         return;
       }
       var falta = datosFaltantes();
       if (falta.length > 0) {
         // Faltan datos obligatorios. Esto NO es el horario: el horario nunca bloquea el envío.
-        evento.preventDefault();
         el.error.textContent = mensajeFaltante(falta);
         el.error.hidden = false;
         marcarInvalidos(falta);
@@ -690,17 +848,17 @@
         return;
       }
       if (!entendido) {
-        evento.preventDefault();
         el.error.textContent = 'Marca «Entendido» para poder enviar tu pedido.';
         el.error.hidden = false;
         if (el.entendido) { el.entendido.focus(); }
         return;
       }
-      el.enviar.href = enlaceWhatsapp();   // mensaje con la hora de este instante; el enlace sigue su curso
-      enviado = true;
-      guardar();
-      // Se pregunta después de que el navegador abra WhatsApp (no antes, o el clic se perdería).
-      window.setTimeout(function () { reiniciarEntendido(); sincronizarEnviar(); mostrarModo('confirmar'); }, 0);
+
+      el.error.hidden = true;
+      // Se abre ya una pestaña en blanco (dentro del clic, para que el navegador no la bloquee); se llena al guardar.
+      var ventana = null;
+      try { ventana = window.open('', '_blank'); } catch (e) { ventana = null; }
+      enviarPedido(ventana, false);
     });
   }
 

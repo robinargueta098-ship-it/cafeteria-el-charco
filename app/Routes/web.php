@@ -11,8 +11,12 @@ declare(strict_types=1);
 
 use App\Controllers\Public\CuentaController;
 use App\Controllers\Public\HomeController;
+use App\Controllers\Public\PedidoController;
 
 $router->get('/', [HomeController::class, 'index']);
+
+// --- Carrito: guardar el pedido (responde JSON; el navegador abre WhatsApp después) ---
+$router->post('/pedido', [PedidoController::class, 'crear']);
 
 // --- Cuenta simple del cliente (teléfono + PIN) ---
 $router->get('/cuenta/registro', [CuentaController::class, 'mostrarRegistro']);

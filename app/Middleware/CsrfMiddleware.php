@@ -52,6 +52,14 @@ class CsrfMiddleware
     {
         $ruta = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
 
+        // El carrito del sitio público guarda el pedido por fetch: responde JSON, no una página.
+        if ($ruta === '/pedido') {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(403);
+            echo json_encode(['ok' => false, 'error' => 'sesion', 'mensaje' => 'La página estaba desactualizada. Recárgala y vuelve a enviar tu pedido (tu carrito se conserva).'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
         if ($ruta === '/admin' || str_starts_with($ruta, '/admin/')) {
             // Lo que el usuario alcanzó a escribir NO se pierde: se guarda un borrador temporal y se le
             // devuelve a la misma pantalla (admin.js rellena los campos). Los archivos sí hay que elegirlos otra vez.

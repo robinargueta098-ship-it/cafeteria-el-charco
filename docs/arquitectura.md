@@ -1666,6 +1666,35 @@ se les desactiva desde «Editar». Los registros de Auditoría de un usuario eli
 en sintaxis 7.4. Verificado con un escáner por tokenizer (sin `match`, nullsafe, atributos, uniones ni argumentos con
 nombre); **no se pudo ejecutar bajo un PHP 7.4 real** (solo hay 8.0 en esta PC), así que conviene una prueba en Hostinger.
 
+### 4.50 Pedidos — Fase 2: modelo y guardado (migración `013`)
+
+**Tablas** (`database/migrations/013_pedidos.sql`, también en `schema.sql`; requiere un usuario MySQL con CREATE/TRIGGER):
+`pedidos`, `pedido_items` (con *snapshot* de nombre, categoría y tipo, y el precio de ese momento) y `pedido_historial`.
+
+**Reglas de dinero**: todo en **centavos enteros** (`BIGINT UNSIGNED`). Nunca `float`/`DECIMAL` para montos nuevos. Los
+precios de `productos` (`DECIMAL(10,2)`, llegan como cadena) se convierten con `App\Core\Dinero::aCentavos()` (aritmética
+de enteros, redondeo half-up); se muestran con `Dinero::formato()` («Q1,234.50») y se exportan con `Dinero::decimal()`
+(«1234.50»). El carrito (`carrito.js`) usa las mismas reglas con enteros (`aCentavos`, `dinero`).
+
+**Restricciones en la base de datos**: `CHECK total + descuento = subtotal`, `total ≤ Q5,000`, cantidad 1–20,
+`subtotal = precio × cantidad`, cortesía ⇒ precio 0, entregado ⇒ `entregado_en`. Disparadores: los pedidos y sus ítems **no
+se pueden borrar**, y no se pueden editar montos, código, forma de pago ni ítems (solo estado, entrega y nota).
+
+**Flujo público** (`POST /pedido`, `PedidoController` → `PedidoService::crear`):
+1. El navegador manda **solo** claves de línea (`12`, `12-alt`, `12~c`) y cantidades, más un **token de idempotencia**.
+   Cualquier precio/nombre/total que mande se ignora.
+2. El servidor valida producto y categoría activos, versión y temperatura permitidas, cantidad 1–20, máx. 30 líneas, y
+   **recalcula con los precios de la base**. Si el total del navegador no coincide, responde `precios_cambiaron` con los
+   precios reales y **no guarda** (el cliente ve el total correcto y vuelve a enviar).
+3. Guarda pedido + ítems + historial en **una transacción** (todo o nada). El mismo token devuelve el mismo pedido
+   (doble clic, reintento, peticiones simultáneas: `UNIQUE`); con otro carrito responde `token_reutilizado`.
+4. Solo con el pedido guardado el navegador abre WhatsApp, con «Pedido *#CODIGO*» y los precios y el total **que guardó el
+   servidor**. Si algo falla, el carrito se conserva y no se abre WhatsApp.
+5. Límite de 10 envíos por minuto por IP (reutiliza `intentos_login`). Código de 6 caracteres sin O/0/I/1/L, único.
+6. Con sesión de lealtad el pedido se vincula al cliente (`cliente_id`, teléfono); no se piden datos extra.
+
+El carrito no aplica descuentos, cupones ni recompensas, por eso `descuento_centavos` es siempre 0 y no hay cortesías hoy.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```
