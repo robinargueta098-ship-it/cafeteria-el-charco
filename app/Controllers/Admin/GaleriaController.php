@@ -116,12 +116,7 @@ class GaleriaController extends Controller
             $this->error404();
         }
 
-        if ($resultado['resultado'] === 'movida') {
-            AuditoriaService::registrar(
-                'galeria', (int) $id, 'editar',
-                ['posicion' => $resultado['desde']], ['posicion' => $resultado['hasta']]
-            );
-        }
+        // Mover una posición (▲▼) ya no se guarda en Auditoría: es solo orden.
 
         $this->redirigir('/admin/galeria');
     }

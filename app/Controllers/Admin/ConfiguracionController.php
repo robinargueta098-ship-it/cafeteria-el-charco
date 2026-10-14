@@ -236,7 +236,12 @@ class ConfiguracionController extends Controller
             }
         }
 
-        AuditoriaService::registrar('configuracion_sistema', 0, 'editar', $configActual, $datos);
+        // Solo lo que cambió (el servicio descarta lo igual). La estructura de «Sobre nosotros» y su foto ya tienen sus
+        // propios avisos legibles (abajo), así que no se repiten aquí como JSON.
+        AuditoriaService::registrar(
+            'configuracion_sistema', 0, 'editar', $configActual,
+            array_diff_key($datos, array_flip([SobreNosotros::CLAVE_ESTRUCTURA, SobreNosotros::CLAVE_FOTO]))
+        );
         if ($cambioSobre) {
             AuditoriaService::registrar('configuracion_sistema', 0, 'editar', null, ['detalle' => 'Texto de «Sobre nosotros» editado (introducción, tarjetas o frase de cierre)']);
         }

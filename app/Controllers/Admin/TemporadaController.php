@@ -83,12 +83,7 @@ class TemporadaController extends Controller
             $this->error404();
         }
 
-        if ($resultado['resultado'] === 'movida') {
-            AuditoriaService::registrar(
-                'temporadas', (int) $id, 'editar',
-                ['posicion' => $resultado['desde']], ['posicion' => $resultado['hasta']]
-            );
-        }
+        // Mover una posición (▲▼) ya no se guarda en Auditoría: es solo orden.
 
         $this->redirigir('/admin/temporadas');
     }

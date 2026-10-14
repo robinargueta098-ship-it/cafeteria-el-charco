@@ -44,8 +44,7 @@ class AuthController extends Controller
             return;
         }
 
-        $usuario = Auth::usuario();
-        AuditoriaService::registrar('usuarios', $usuario['id'], 'login', null, ['usuario' => $usuario['nombre']]);
+        // Los inicios de sesión ya no se guardan en Auditoría (solo ruido); los intentos fallidos quedan en intentos_login.
 
         // Si la sesión venció a mitad de un formulario, se vuelve a esa pantalla (con lo escrito) y no al inicio.
         $this->redirigir(BorradorFormulario::destinoPendiente() ?? '/admin');

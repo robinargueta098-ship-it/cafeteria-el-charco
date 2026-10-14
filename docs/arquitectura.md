@@ -1618,6 +1618,17 @@ y una columna), que **debe ejecutar un usuario de MySQL con permiso ALTER**. Mie
 Las migraciones `006` y `012` se aplicaron en esta base el 13 de octubre de 2026 (con copia previa en
 `C:/xamppn/respaldos/bd_completa_antes_de_migraciones_006_012_2026-10-13.sql`).
 
+### 4.47 Auditoría: solo lo importante
+
+`AuditoriaService::registrar()` ya no guarda cada clic:
+- **No se guarda**: los inicios de sesión (los intentos fallidos siguen en `intentos_login`), los movimientos ▲▼ de orden y
+  las ediciones que no cambiaron nada (se guardó el formulario sin tocar nada).
+- **En las ediciones se guarda solo lo que cambió** (antes y después de cada campo), no la fila completa; la pantalla de
+  Auditoría lo resume como «Cambió: precio, descripción».
+- **Sí se guarda siempre**: crear y eliminar cualquier cosa, consumos/ajustes/canjes de lealtad, restablecer PIN,
+  usuarios, y los cambios de configuración (solo las claves que cambiaron).
+- Los registros anteriores a este cambio no se tocaron.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```

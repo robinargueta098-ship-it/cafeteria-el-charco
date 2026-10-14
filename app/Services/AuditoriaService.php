@@ -21,7 +21,16 @@ use Throwable;
  */
 class AuditoriaService
 {
+    /** Campos que cambian solos o no dicen nada: nunca cuentan como "un cambio". */
+    private const CAMPOS_IGNORADOS = ['creado_en', 'actualizado_en', 'updated_at', 'created_at'];
+
     /**
+     * Qué NO se guarda (para que la bitácora sea útil y no un registro de cada clic):
+     *  - los inicios de sesión (los intentos fallidos ya quedan en `intentos_login`, que es lo que sirve contra abusos);
+     *  - los movimientos ▲▼ de orden (solo cambian una posición);
+     *  - las ediciones que no cambiaron nada (se guardó el formulario sin tocar nada).
+     * Y en las ediciones se guardan SOLO los campos que cambiaron (antes y después), no la fila completa.
+     *
      * @param array<string,mixed>|null $antes
      * @param array<string,mixed>|null $despues
      */
@@ -32,6 +41,21 @@ class AuditoriaService
         ?array $antes = null,
         ?array $despues = null
     ): void {
+        if ($accion === 'login') {
+            return;
+        }
+
+        if ($accion === 'editar' && is_array($antes) && is_array($despues)) {
+            if (array_keys($despues) === ['posicion']) {
+                return;   // mover una posición ▲▼
+            }
+
+            [$antes, $despues] = self::soloCambios($antes, $despues);
+            if ($despues === []) {
+                return;   // no cambió nada
+            }
+        }
+
         try {
             $usuario = Auth::usuario();
 
@@ -57,5 +81,45 @@ class AuditoriaService
         } catch (Throwable $e) {
             Logger::error('No se pudo registrar en bitacora_auditoria: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * De una edición, deja solo los campos de $despues cuyo valor realmente cambió respecto de $antes.
+     * (null, '' y "0.0"/"0" se comparan por su valor, no por cómo los entrega la base de datos.)
+     *
+     * @param array<string,mixed> $antes
+     * @param array<string,mixed> $despues
+     * @return array{0:array<string,mixed>,1:array<string,mixed>}
+     */
+    private static function soloCambios(array $antes, array $despues): array
+    {
+        $a = [];
+        $d = [];
+        foreach ($despues as $campo => $nuevo) {
+            if (in_array($campo, self::CAMPOS_IGNORADOS, true)) {
+                continue;
+            }
+            $viejo = $antes[$campo] ?? null;
+            if (!self::mismoValor($viejo, $nuevo)) {
+                $a[$campo] = $viejo;
+                $d[$campo] = $nuevo;
+            }
+        }
+
+        return [$a, $d];
+    }
+
+    private static function mismoValor(mixed $x, mixed $y): bool
+    {
+        if (is_array($x) || is_array($y)) {
+            return json_encode($x) === json_encode($y);
+        }
+        $x = $x === null ? '' : (string) $x;
+        $y = $y === null ? '' : (string) $y;
+        if ($x === $y) {
+            return true;
+        }
+
+        return is_numeric($x) && is_numeric($y) && (float) $x === (float) $y;
     }
 }

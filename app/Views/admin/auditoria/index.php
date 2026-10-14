@@ -74,6 +74,23 @@ $etiquetasAccion = [
                                 $partes[] = $dcfg['detalle'];
                             }
                         }
+                        // Ediciones: qué campos cambiaron (solo se guardan los que cambiaron).
+                        if ($partes === [] && $r['accion'] === 'editar' && $r['valores_despues'] !== null) {
+                            $campos = array_keys(json_decode((string) $r['valores_despues'], true) ?: []);
+                            $campos = array_values(array_filter($campos, fn ($c) => !in_array($c, ['detalle', 'accion'], true)));
+                            if ($campos !== []) {
+                                $nombresCampos = [
+                                    'nombre' => 'nombre', 'descripcion' => 'descripción', 'precio' => 'precio', 'precio_alt' => 'precio alterno',
+                                    'activo' => 'activo/inactivo', 'orden' => 'orden', 'imagen' => 'imagen', 'categoria_id' => 'categoría',
+                                    'producto_id' => 'producto', 'tipo' => 'tipo', 'valor' => 'valor', 'fecha_inicio' => 'fecha de inicio',
+                                    'fecha_fin' => 'fecha de fin', 'prioridad' => 'prioridad', 'telefono' => 'teléfono', 'email' => 'correo',
+                                    'notas' => 'notas', 'titulo' => 'título', 'temperatura' => 'temperatura', 'rol_id' => 'rol',
+                                    'usuario' => 'usuario', 'etiqueta_personalizada' => 'texto de la etiqueta',
+                                ];
+                                $legibles = array_map(fn ($c) => $nombresCampos[$c] ?? str_replace('_', ' ', (string) $c), array_slice($campos, 0, 6));
+                                $partes[] = 'Cambió: ' . implode(', ', $legibles) . (count($campos) > 6 ? '…' : '');
+                            }
+                        }
                         if ($r['tabla_afectada'] === 'clientes' && $r['valores_despues'] !== null) {
                             $dc = json_decode((string) $r['valores_despues'], true) ?: [];
                             if (($dc['accion'] ?? '') === 'restablecer_pin') {
