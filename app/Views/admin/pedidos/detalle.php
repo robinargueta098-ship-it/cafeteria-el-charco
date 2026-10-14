@@ -109,7 +109,7 @@ $textosBoton = ['confirmado' => 'Confirmar pedido', 'entregado' => 'Marcar como 
                         <?= $h['estado_anterior'] !== null ? $e(Pedido::ETIQUETAS_ESTADO[$h['estado_anterior']] ?? $h['estado_anterior']) . ' → ' : 'Creado como ' ?>
                         <strong><?= $e(Pedido::ETIQUETAS_ESTADO[$h['estado_nuevo']] ?? $h['estado_nuevo']) ?></strong>
                     </td>
-                    <td><?= $h['usuario_id'] === null && $h['estado_anterior'] === null ? 'El cliente' : $e($h['usuario_nombre'] ?? 'Usuario eliminado') ?></td>
+                    <td><?= $h['usuario_id'] === null && ($h['estado_anterior'] === null || ($h['estado_anterior'] === 'pendiente' && $h['estado_nuevo'] === 'enviado')) ? 'El cliente' : $e($h['usuario_nombre'] ?? 'Usuario eliminado') ?></td>
                     <td><?= $e($h['motivo'] ?? '—') ?></td>
                 </tr>
             <?php endforeach; ?>
