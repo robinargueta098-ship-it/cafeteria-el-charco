@@ -46,60 +46,15 @@ $etiquetasAccion = [
         <p class="tabla-vacio">No hay registros de auditoría con esos filtros.</p>
     <?php else: ?>
         <table class="tabla tabla-primera-sin-corte">
-            <thead><tr><th>Fecha</th><th>Módulo</th><th>Acción</th><th>Registro</th><th>Cliente</th><th>Detalle</th><th>Usuario</th><th>IP</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Módulo</th><th>Acción</th><th>Qué pasó</th><th>Usuario</th><th>IP</th></tr></thead>
             <tbody>
                 <?php foreach ($registros as $r): ?>
                     <tr>
                         <td><?= htmlspecialchars($r['creado_en'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= htmlspecialchars($r['tabla_afectada'], ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars(\App\Core\AuditoriaTexto::modulo((string) $r['tabla_afectada']), ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($etiquetasAccion[$r['accion']] ?? $r['accion'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td>#<?= (int) $r['registro_id'] ?></td>
-                        <td><?= htmlspecialchars((string) ($r['cliente_nombre'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></td>
-                        <?php
-                        $d = $r['tabla_afectada'] === 'lealtad_movimientos' && $r['valores_despues'] !== null
-                            ? (json_decode((string) $r['valores_despues'], true) ?: []) : [];
-                        $partes = [];
-                        if (isset($d['tipo'])) {
-                            $partes[] = $d['tipo'] === 'ajuste_negativo' ? 'Restar' : 'Sumar';
-                        }
-                        if (isset($d['cantidad'])) {
-                            $partes[] = (int) $d['cantidad'] . ' café(s)';
-                        }
-                        if (!empty($d['motivo'])) {
-                            $partes[] = 'Motivo: ' . $d['motivo'];
-                        }
-                        if ($r['tabla_afectada'] === 'configuracion_sistema' && $r['valores_despues'] !== null) {
-                            $dcfg = json_decode((string) $r['valores_despues'], true) ?: [];
-                            if (!empty($dcfg['detalle']) && is_string($dcfg['detalle'])) {
-                                $partes[] = $dcfg['detalle'];
-                            }
-                        }
-                        // Ediciones: qué campos cambiaron (solo se guardan los que cambiaron).
-                        if ($partes === [] && $r['accion'] === 'editar' && $r['valores_despues'] !== null) {
-                            $campos = array_keys(json_decode((string) $r['valores_despues'], true) ?: []);
-                            $campos = array_values(array_filter($campos, fn ($c) => !in_array($c, ['detalle', 'accion'], true)));
-                            if ($campos !== []) {
-                                $nombresCampos = [
-                                    'nombre' => 'nombre', 'descripcion' => 'descripción', 'precio' => 'precio', 'precio_alt' => 'precio alterno',
-                                    'activo' => 'activo/inactivo', 'orden' => 'orden', 'imagen' => 'imagen', 'categoria_id' => 'categoría',
-                                    'producto_id' => 'producto', 'tipo' => 'tipo', 'valor' => 'valor', 'fecha_inicio' => 'fecha de inicio',
-                                    'fecha_fin' => 'fecha de fin', 'prioridad' => 'prioridad', 'telefono' => 'teléfono', 'email' => 'correo',
-                                    'notas' => 'notas', 'titulo' => 'título', 'temperatura' => 'temperatura', 'rol_id' => 'rol',
-                                    'usuario' => 'usuario', 'etiqueta_personalizada' => 'texto de la etiqueta',
-                                ];
-                                $legibles = array_map(fn ($c) => $nombresCampos[$c] ?? str_replace('_', ' ', (string) $c), array_slice($campos, 0, 6));
-                                $partes[] = 'Cambió: ' . implode(', ', $legibles) . (count($campos) > 6 ? '…' : '');
-                            }
-                        }
-                        if ($r['tabla_afectada'] === 'clientes' && $r['valores_despues'] !== null) {
-                            $dc = json_decode((string) $r['valores_despues'], true) ?: [];
-                            if (($dc['accion'] ?? '') === 'restablecer_pin') {
-                                $partes[] = 'Restableció el PIN (PIN temporal entregado en persona)';
-                            }
-                        }
-                        ?>
-                        <td><?= htmlspecialchars($partes !== [] ? implode(' · ', $partes) : '—', ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= htmlspecialchars((string) ($r['usuario_nombre'] ?? 'Sistema'), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars(\App\Core\AuditoriaTexto::describir($r), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars(\App\Core\AuditoriaTexto::usuario($r), ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string) ($r['ip'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                 <?php endforeach; ?>

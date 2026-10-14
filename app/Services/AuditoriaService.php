@@ -45,6 +45,11 @@ class AuditoriaService
             return;
         }
 
+        // Nombre legible del objeto (usuario, producto, promoción…) para poder decir "qué" se tocó aunque en las
+        // ediciones solo se guarden los campos que cambiaron. Y quién lo hizo, por si ese usuario se elimina después
+        // (la columna usuario_id queda en blanco): sin esto la fila diría solo "Sistema".
+        $objeto = self::etiquetaObjeto($antes, $despues);
+
         if ($accion === 'editar' && is_array($antes) && is_array($despues)) {
             if (array_keys($despues) === ['posicion']) {
                 return;   // mover una posición ▲▼
@@ -54,6 +59,18 @@ class AuditoriaService
             if ($despues === []) {
                 return;   // no cambió nada
             }
+        }
+
+        $meta = array_filter(
+            ['_objeto' => $objeto, '_por' => Auth::usuario()['nombre'] ?? null],
+            fn ($v) => $v !== null && $v !== ''
+        );
+        if ($despues !== null) {
+            $despues += $meta;
+        } elseif ($antes !== null) {
+            $antes += $meta;
+        } else {
+            $despues = $meta;
         }
 
         try {
@@ -81,6 +98,21 @@ class AuditoriaService
         } catch (Throwable $e) {
             Logger::error('No se pudo registrar en bitacora_auditoria: ' . $e->getMessage());
         }
+    }
+
+    /** @return string|null nombre, título, usuario o código del objeto, el primero que exista */
+    private static function etiquetaObjeto(?array $antes, ?array $despues): ?string
+    {
+        foreach ([$despues, $antes] as $datos) {
+            foreach (['nombre', 'titulo', 'usuario', 'codigo'] as $campo) {
+                $valor = $datos[$campo] ?? null;
+                if (is_string($valor) && trim($valor) !== '') {
+                    return mb_substr(trim($valor), 0, 120);
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

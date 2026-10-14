@@ -375,7 +375,7 @@ class LealtadService
 
         AuditoriaService::registrar('recompensas', (int) $recompensa['id'], 'canje',
             ['estado' => 'disponible'],
-            ['estado' => 'canjeada', 'cliente_id' => $clienteId, 'producto_id' => $productoId, 'usuario_id' => $usuarioId]);
+            ['estado' => 'canjeada', 'cliente_id' => $clienteId, 'producto_id' => $productoId, 'usuario_id' => $usuarioId, 'codigo' => $recompensa['codigo'] ?? null]);
 
         $cliente = (new Cliente())->buscarPorId($clienteId);
 

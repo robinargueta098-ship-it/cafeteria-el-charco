@@ -1628,6 +1628,10 @@ Las migraciones `006` y `012` se aplicaron en esta base el 13 de octubre de 2026
 - **Sí se guarda siempre**: crear y eliminar cualquier cosa, consumos/ajustes/canjes de lealtad, restablecer PIN,
   usuarios, y los cambios de configuración (solo las claves que cambiaron).
 - Los registros anteriores a este cambio no se tocaron.
+- **Legible**: la pantalla de Auditoría muestra una frase por registro («Eliminó el usuario «Robin» (Cajero)»,
+  «Editó el producto «Frappé»: precio: Q25 → Q30», «Registró 2 café(s) a «Ana» — Motivo: …»), armada por
+  `AuditoriaTexto::describir()`. Para eso cada registro nuevo guarda dentro del JSON `_objeto` (nombre del objeto) y `_por`
+  (quién lo hizo): si ese usuario se elimina después, la fila dice «Nombre (usuario eliminado)» y no «Sistema».
 
 ### 4.48 Usuario principal protegido
 

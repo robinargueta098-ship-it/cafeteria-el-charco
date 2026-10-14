@@ -173,7 +173,7 @@ class CuponPromocionService
 
         AuditoriaService::registrar('cupones_promocion', (int) $cupon['id'], 'canje',
             ['estado' => 'disponible'],
-            ['estado' => 'canjeado', 'usuario_id' => $usuarioId]);
+            ['estado' => 'canjeado', 'usuario_id' => $usuarioId, 'codigo' => $cupon['codigo'] ?? null, 'promocion' => $cupon['promocion_nombre'] ?? null]);
 
         return [
             'ok'               => true,
@@ -204,7 +204,7 @@ class CuponPromocionService
 
         AuditoriaService::registrar('cupones_promocion', $cuponId, 'editar',
             ['estado' => 'disponible'],
-            ['estado' => 'cancelado', 'motivo' => $motivo]);
+            ['estado' => 'cancelado', 'motivo' => $motivo, 'codigo' => $cupon['codigo'] ?? null]);
 
         return ['ok' => true];
     }
