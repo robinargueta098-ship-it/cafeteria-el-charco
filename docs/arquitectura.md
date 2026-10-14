@@ -1385,7 +1385,7 @@ las dos primeras (las otras son de Administrador). Flecha en la esquina en lugar
 - Las descripciones y la temperatura de los productos se cargaron desde fotos del menú físico: revisar
   contra la carta vigente.
 - Respaldo: el proyecto vive solo en esta computadora; falta un remoto de Git o copia externa.
-- Aplicar `database/migrations/006_columnas_precio_y_cantidad.sql` con un usuario administrador de MySQL (ver §4.39).
+- ~~Aplicar `006_columnas_precio_y_cantidad.sql`~~ — aplicada el 13/10/2026 (ver §4.46).
 - Reiniciar MySQL para que tome efecto el `sql_mode` estricto de `my.ini` (la aplicación ya lo fuerza por conexión, ver §4.39).
 
 ### 4.39 Ronda de corrección de bugs previa al despliegue (QA, 2 de octubre de 2026)
@@ -1615,6 +1615,8 @@ programar cada idea (3x1, combo…), el tipo `personalizada` deja que el adminis
 (`etiqueta_personalizada`, máx. 40; lo muestra `Vista::etiquetaPromocion`). Requiere la migración `012` (ALTER del `ENUM`
 y una columna), que **debe ejecutar un usuario de MySQL con permiso ALTER**. Mientras no se ejecute,
 `Promocion::soportaPersonalizada()` es falso: el formulario no ofrece el tipo y guardar funciona como antes.
+Las migraciones `006` y `012` se aplicaron en esta base el 13 de octubre de 2026 (con copia previa en
+`C:/xamppn/respaldos/bd_completa_antes_de_migraciones_006_012_2026-10-13.sql`).
 
 ## 5. Modelo de datos (entidades y relaciones)
 
