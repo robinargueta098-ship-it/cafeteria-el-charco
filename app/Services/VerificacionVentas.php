@@ -59,7 +59,8 @@ class VerificacionVentas
                 "SELECT p.codigo AS ref, CONCAT(h.estado_anterior, \" -> \", h.estado_nuevo) AS dato
                  FROM pedido_historial h JOIN pedidos p ON p.id = h.pedido_id
                  WHERE h.estado_anterior IS NOT NULL AND NOT (
-                       (h.estado_anterior = 'enviado' AND h.estado_nuevo IN ('confirmado', 'cancelado'))
+                       (h.estado_anterior = 'pendiente' AND h.estado_nuevo IN ('enviado', 'confirmado', 'cancelado'))
+                    OR (h.estado_anterior = 'enviado' AND h.estado_nuevo IN ('confirmado', 'cancelado'))
                     OR (h.estado_anterior = 'confirmado' AND h.estado_nuevo IN ('entregado', 'cancelado'))
                     OR (h.estado_anterior = 'entregado' AND h.estado_nuevo = 'anulado'))",
 

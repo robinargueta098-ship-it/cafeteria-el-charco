@@ -18,6 +18,16 @@ use Throwable;
  */
 class PedidoController extends Controller
 {
+    /** «Sí, ya lo envié»: el pedido pasa de `pendiente` a `enviado`. */
+    public function confirmar(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+
+        $resultado = PedidoService::confirmarEnvio(Entrada::texto($_POST, 'token', ''));
+        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+    }
+
     public function crear(): void
     {
         header('Content-Type: application/json; charset=utf-8');

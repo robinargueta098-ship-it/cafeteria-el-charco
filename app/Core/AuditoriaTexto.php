@@ -85,7 +85,7 @@ class AuditoriaTexto
             }
         }
         if ($tabla === 'pedidos' && isset($despues['estado'])) {
-            $etiquetas = ['enviado' => 'Enviado', 'confirmado' => 'Confirmado', 'entregado' => 'Entregado', 'cancelado' => 'Cancelado', 'anulado' => 'Anulado'];
+            $etiquetas = ['pendiente' => 'Sin confirmar', 'enviado' => 'Enviado', 'confirmado' => 'Confirmado', 'entregado' => 'Entregado', 'cancelado' => 'Cancelado', 'anulado' => 'Anulado'];
             $de = isset($antes['estado']) ? ($etiquetas[$antes['estado']] ?? $antes['estado']) : '';
             $a = $etiquetas[$despues['estado']] ?? $despues['estado'];
             $codigo = (string) ($despues['codigo'] ?? $objeto);

@@ -11,6 +11,7 @@ use Throwable;
 /**
  * Máquina de estados de los pedidos. Se valida SIEMPRE aquí, en el servidor (la interfaz solo oculta botones).
  *
+ *   pendiente  → confirmado | cancelado          (el cliente no confirmó el envío; el personal ya vio su WhatsApp)
  *   enviado    → confirmado
  *   confirmado → entregado                       (guarda entregado_en, hora de Guatemala)
  *   enviado | confirmado → cancelado             (motivo obligatorio)
@@ -26,6 +27,11 @@ class PedidoEstadoService
 
     /** estado actual => [estado nuevo => ['motivo' => bool, 'solo_admin' => bool]] */
     private const TRANSICIONES = [
+        // `pendiente` pasa a `enviado` solo cuando el cliente pulsa «Sí, ya lo envié» (PedidoService::confirmarEnvio).
+        'pendiente'  => [
+            'confirmado' => ['motivo' => false, 'solo_admin' => false],
+            'cancelado'  => ['motivo' => true,  'solo_admin' => false],
+        ],
         'enviado'    => [
             'confirmado' => ['motivo' => false, 'solo_admin' => false],
             'cancelado'  => ['motivo' => true,  'solo_admin' => false],

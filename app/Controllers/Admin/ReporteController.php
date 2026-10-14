@@ -272,6 +272,7 @@ class ReporteController extends Controller
             $par['estado'] = $estado;
         } else {
             $estado = '';
+            $extra = " AND p.estado <> 'pendiente'";   // los «sin confirmar» solo salen si se piden
         }
 
         $stmt = Database::conexion()->prepare(

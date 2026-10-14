@@ -677,6 +677,15 @@
   }
 
   el.yaEnvie.addEventListener('click', function () {
+    // El pedido estaba «pendiente» en el servidor; ahora el cliente confirma que sí envió el mensaje.
+    if (tokenPedido) {
+      var cuerpo = new URLSearchParams();
+      cuerpo.set('csrf_token', datos.csrf || '');
+      cuerpo.set('token', tokenPedido);
+      try {
+        fetch((datos.pedidoUrl || '/pedido') + '/confirmar', { method: 'POST', body: cuerpo, credentials: 'same-origin', keepalive: true });
+      } catch (e) { /* si falla, el pedido sigue pendiente y el personal lo puede confirmar con el código de WhatsApp */ }
+    }
     reiniciarEntendido();
     tokenPedido = '';
     ultimoPedido = null;

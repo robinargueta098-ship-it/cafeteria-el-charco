@@ -7,6 +7,7 @@
  * @var int $pagina
  * @var int $totalPaginas
  * @var int $pendientes
+ * @var int $sinConfirmar
  */
 use App\Core\Dinero;
 use App\Models\Pedido;
@@ -30,6 +31,13 @@ $consulta = function (array $extra = []) use ($filtros) {
         <strong>Ahora hay <?= (int) $pendientes ?> sin confirmar.</strong>
     <?php endif; ?>
 </p>
+
+<?php if ($sinConfirmar > 0 && $filtros['estado'] !== 'pendiente'): ?>
+    <div class="alerta" style="background:#f4ecdf;border:1px solid #d9c9a8;color:#3b2415;">
+        Hay <strong><?= (int) $sinConfirmar ?></strong> pedido(s) que el cliente armó pero <strong>no confirmó</strong> haber enviado por WhatsApp.
+        Si te llegó su mensaje con el código, <a href="/admin/pedidos?estado=pendiente">búscalo aquí</a> y confírmalo.
+    </div>
+<?php endif; ?>
 
 <?php foreach ($avisos as $aviso): ?>
     <div class="alerta alerta-error"><?= htmlspecialchars($aviso, ENT_QUOTES, 'UTF-8') ?></div>

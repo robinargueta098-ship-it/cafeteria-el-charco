@@ -53,7 +53,7 @@ class CsrfMiddleware
         $ruta = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
 
         // El carrito del sitio público guarda el pedido por fetch: responde JSON, no una página.
-        if ($ruta === '/pedido') {
+        if ($ruta === '/pedido' || $ruta === '/pedido/confirmar') {
             header('Content-Type: application/json; charset=utf-8');
             http_response_code(403);
             echo json_encode(['ok' => false, 'error' => 'sesion', 'mensaje' => 'La página estaba desactualizada. Recárgala y vuelve a enviar tu pedido (tu carrito se conserva).'], JSON_UNESCAPED_UNICODE);

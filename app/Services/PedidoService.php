@@ -164,7 +164,7 @@ class PedidoService
                     'subtotal'   => $subtotal,
                     'descuento'  => $descuento,
                     'total'      => $total,
-                    'estado'     => 'enviado',
+                    'estado'     => 'pendiente',
                     'ip'         => $ip,
                     'nota'       => $detalles !== '' ? $detalles : null,
                 ]);
@@ -199,7 +199,11 @@ class PedidoService
                 $pdo->prepare(
                     'INSERT INTO pedido_historial (pedido_id, estado_anterior, estado_nuevo, usuario_id, motivo)
                      VALUES (:pedido_id, NULL, :estado, NULL, :motivo)'
-                )->execute(['pedido_id' => $pedidoId, 'estado' => 'enviado', 'motivo' => 'Pedido enviado por el cliente desde la página']);
+                )->execute([
+                    'pedido_id' => $pedidoId,
+                    'estado'    => 'pendiente',
+                    'motivo'    => 'Pedido guardado al tocar «Enviar por WhatsApp»; falta que el cliente confirme que lo envió',
+                ]);
 
                 $pdo->commit();
 
@@ -243,6 +247,51 @@ class PedidoService
         }
 
         return self::error('servidor', 'No pudimos guardar tu pedido. Tu carrito sigue aquí; inténtalo de nuevo en un momento.');
+    }
+
+    /**
+     * El cliente confirma que SÍ envió el mensaje de WhatsApp («Sí, ya lo envié»): el pedido pasa de `pendiente` a
+     * `enviado`. Idempotente: confirmar dos veces (o un pedido que el personal ya confirmó) no cambia nada.
+     *
+     * @return array{ok:bool,estado?:string}
+     */
+    public static function confirmarEnvio(string $token): array
+    {
+        if (!preg_match('/^[A-Za-z0-9_-]{16,64}$/', $token)) {
+            return ['ok' => false];
+        }
+
+        $pdo = Database::conexion();
+
+        try {
+            $pdo->beginTransaction();
+
+            $stmt = $pdo->prepare("UPDATE pedidos SET estado = 'enviado' WHERE token_idempotencia = :token AND estado = 'pendiente'");
+            $stmt->execute(['token' => $token]);
+
+            if ($stmt->rowCount() === 1) {
+                $pdo->prepare(
+                    "INSERT INTO pedido_historial (pedido_id, estado_anterior, estado_nuevo, usuario_id, motivo)
+                     SELECT id, 'pendiente', 'enviado', NULL, 'El cliente confirmó que envió el mensaje de WhatsApp'
+                     FROM pedidos WHERE token_idempotencia = :token"
+                )->execute(['token' => $token]);
+            }
+
+            $stmt = $pdo->prepare('SELECT estado FROM pedidos WHERE token_idempotencia = :token');
+            $stmt->execute(['token' => $token]);
+            $estado = $stmt->fetchColumn();
+
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            Logger::error('No se pudo confirmar el envío del pedido: ' . $e->getMessage());
+
+            return ['ok' => false];
+        }
+
+        return $estado === false ? ['ok' => false] : ['ok' => true, 'estado' => (string) $estado];
     }
 
     /**

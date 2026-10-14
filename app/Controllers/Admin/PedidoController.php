@@ -57,6 +57,7 @@ class PedidoController extends Controller
             'pagina'        => $resultado['pagina'],
             'totalPaginas'  => $resultado['totalPaginas'],
             'pendientes'    => $modelo->contarPendientesDeConfirmar(),
+            'sinConfirmar'  => $modelo->contarSinConfirmarPorElCliente(),
         ]);
     }
 

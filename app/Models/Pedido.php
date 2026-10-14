@@ -14,9 +14,10 @@ class Pedido
 {
     public const POR_PAGINA = 50;
 
-    public const ESTADOS = ['enviado', 'confirmado', 'entregado', 'cancelado', 'anulado'];
+    public const ESTADOS = ['pendiente', 'enviado', 'confirmado', 'entregado', 'cancelado', 'anulado'];
 
     public const ETIQUETAS_ESTADO = [
+        'pendiente'  => 'Sin confirmar',
         'enviado'    => 'Enviado',
         'confirmado' => 'Confirmado',
         'entregado'  => 'Entregado',
@@ -42,6 +43,9 @@ class Pedido
         if (!empty($filtros['estado']) && in_array($filtros['estado'], self::ESTADOS, true)) {
             $condiciones[] = 'p.estado = :estado';
             $parametros['estado'] = $filtros['estado'];
+        } else {
+            // «Sin confirmar» (el cliente no confirmó que envió el mensaje) no se mezcla con los pedidos reales.
+            $condiciones[] = "p.estado <> 'pendiente'";
         }
         if (!empty($filtros['desde'])) {
             $condiciones[] = 'p.creado_en >= :desde';
@@ -120,6 +124,12 @@ class Pedido
         $stmt->execute(['id' => $pedidoId]);
 
         return $stmt->fetchAll();
+    }
+
+    /** Pedidos que el cliente armó pero no confirmó haber enviado por WhatsApp. */
+    public function contarSinConfirmarPorElCliente(): int
+    {
+        return (int) Database::conexion()->query("SELECT COUNT(*) FROM pedidos WHERE estado = 'pendiente'")->fetchColumn();
     }
 
     /** Cuántos pedidos esperan atención (enviados, todavía sin confirmar). */

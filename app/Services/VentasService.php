@@ -56,7 +56,9 @@ class VentasService
         $stmt->execute($r);
         $porEstado = ['enviado' => 0, 'confirmado' => 0, 'entregado' => 0, 'cancelado' => 0, 'anulado' => 0];
         foreach ($stmt->fetchAll() as $fila) {
-            $porEstado[$fila['estado']] = (int) $fila['n'];
+            if (isset($porEstado[$fila['estado']])) {   // «pendiente» (sin confirmar por el cliente) no es un pedido real todavía
+                $porEstado[$fila['estado']] = (int) $fila['n'];
+            }
         }
         $creados = array_sum($porEstado);
 

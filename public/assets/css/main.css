@@ -345,6 +345,7 @@ table.tabla th {
 }
 
 /* Estados de un pedido */
+.insignia-pedido-pendiente  { background: #f1ede8; color: #6b5a4d; border: 1px dashed #b9a893; }
 .insignia-pedido-enviado    { background: #fdeccb; color: #7a4b00; }
 .insignia-pedido-confirmado { background: #dbe9f6; color: #1f4e79; }
 .insignia-pedido-entregado  { background: #dcebd5; color: #2d5a1f; }

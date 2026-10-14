@@ -1764,6 +1764,22 @@ Termina con «TODO CUADRA» o con la lista exacta; en consola devuelve código 1
 actual, Mes anterior y un rango, las tarjetas contra el valor calculado a mano y contra una consulta SQL escrita aparte; y,
 para el mes actual, tarjeta = suma por día = por categoría = por forma de pago = más vendidos = horas pico = CSV.
 
+### 4.53 Pedido «Sin confirmar»: se vuelve «Enviado» cuando el cliente lo confirma
+
+Al tocar «Enviar por WhatsApp» el pedido se guarda en estado `pendiente` (etiqueta **Sin confirmar**), con historial
+`(nada) → pendiente`. Solo pasa a `enviado` cuando el cliente pulsa «Sí, ya lo envié» en el aviso del carrito:
+`carrito.js` llama a `POST /pedido/confirmar` (JSON, mismo token CSRF e idempotencia) y
+`PedidoService::confirmarEnvio()` hace `UPDATE … WHERE token = ? AND estado = 'pendiente'` + historial
+`pendiente → enviado` (sin usuario). Es idempotente.
+
+- **Panel:** el listado «Todos» oculta los Sin confirmar; se ven con el filtro de estado, y un aviso indica cuántos hay.
+  El personal puede pasarlos a *Confirmado* o *Cancelado* (con motivo) si le llegó el mensaje con el código.
+- **Reportes:** `pendiente` no cuenta en pedidos creados, pendientes ni tasa de cancelación; el reporte de pedidos
+  no los lista salvo que se pida ese estado. Nunca es venta.
+- **Verificación de cuadre:** acepta los saltos `pendiente → enviado | confirmado | cancelado`.
+- **Migración `014_pedido_estado_pendiente.sql`:** agrega `pendiente` al ENUM de `pedidos` y `pedido_historial`
+  (requiere ALTER, se ejecuta con la cuenta administradora, no la de la aplicación).
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```
