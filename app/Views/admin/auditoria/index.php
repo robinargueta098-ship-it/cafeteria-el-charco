@@ -24,7 +24,7 @@ $etiquetasAccion = [
             <select id="tabla" name="tabla">
                 <option value="">Todos</option>
                 <?php foreach ($tablasConocidas as $t): ?>
-                    <option value="<?= $t ?>" <?= $filtros['tabla'] === $t ? 'selected' : '' ?>><?= $t ?></option>
+                    <option value="<?= $t ?>" <?= $filtros['tabla'] === $t ? 'selected' : '' ?>><?= htmlspecialchars(\App\Core\AuditoriaTexto::modulo((string) $t), ENT_QUOTES, 'UTF-8') ?></option>
                 <?php endforeach; ?>
             </select>
         </div>

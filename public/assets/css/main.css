@@ -344,6 +344,21 @@ table.tabla th {
   font-weight: 600;
 }
 
+/* Estados de un pedido */
+.insignia-pedido-enviado    { background: #fdeccb; color: #7a4b00; }
+.insignia-pedido-confirmado { background: #dbe9f6; color: #1f4e79; }
+.insignia-pedido-entregado  { background: #dcebd5; color: #2d5a1f; }
+.insignia-pedido-cancelado  { background: #e6e1dc; color: #5a4a3e; }
+.insignia-pedido-anulado    { background: #f3d2cc; color: #8a2a1a; }
+
+/* Pedidos nuevos (sin confirmar): resaltados en el listado */
+.fila-pedido-nuevo td { background: #fff7e0; }
+.fila-pedido-nuevo td:first-child { box-shadow: inset 4px 0 0 #e0a800; }
+
+.datos-pedido { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+.datos-pedido dt { font-weight: 600; color: #6b5a4d; }
+.datos-pedido dd { margin: 0; }
+
 .insignia-activo {
   background: #e4efdd;
   color: #2f4a22;

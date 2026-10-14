@@ -19,6 +19,7 @@ $seccionActiva = $seccionActiva ?? '';
 // clave => [etiqueta, url, solo_admin]
 $enlaces = [
     'dashboard'      => ['Dashboard', '/admin', false],
+    'pedidos'        => ['Pedidos', '/admin/pedidos', false],
     'productos'      => ['Productos', '/admin/productos', true],
     'categorias'     => ['Categorías', '/admin/categorias', true],
     'galeria'        => ['Galería', '/admin/galeria', true],

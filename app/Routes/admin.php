@@ -19,6 +19,7 @@ use App\Controllers\Admin\CuponPromocionController;
 use App\Controllers\Admin\DashboardController;
 use App\Controllers\Admin\GaleriaController;
 use App\Controllers\Admin\LealtadController;
+use App\Controllers\Admin\PedidoController;
 use App\Controllers\Admin\PortadaController;
 use App\Controllers\Admin\PromocionController;
 use App\Controllers\Admin\ProductoController;
@@ -117,6 +118,11 @@ $router->post('/admin/configuracion/portada/{id}/mover', [PortadaController::cla
 $router->post('/admin/configuracion/portada/{id}/eliminar', [PortadaController::class, 'eliminar']);
 
 // --- Usuarios ---
+// --- Pedidos del carrito (Administrador y Cajero) ---
+$router->get('/admin/pedidos', [PedidoController::class, 'index']);
+$router->get('/admin/pedidos/{id}', [PedidoController::class, 'mostrar']);
+$router->post('/admin/pedidos/{id}/estado', [PedidoController::class, 'cambiarEstado']);
+
 $router->get('/admin/usuarios', [UsuarioController::class, 'index']);
 $router->get('/admin/usuarios/crear', [UsuarioController::class, 'mostrarCrear']);
 $router->post('/admin/usuarios/crear', [UsuarioController::class, 'crear']);

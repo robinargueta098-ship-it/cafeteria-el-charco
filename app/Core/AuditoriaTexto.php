@@ -25,6 +25,7 @@ class AuditoriaTexto
         'cupones_promocion'   => ['el cupón', 'Cupones'],
         'recompensas'         => ['la recompensa', 'Recompensas'],
         'lealtad_movimientos' => ['los cafés', 'Lealtad'],
+        'pedidos'             => ['el pedido', 'Pedidos'],
     ];
 
     private const CAMPOS = [
@@ -81,6 +82,15 @@ class AuditoriaTexto
                 $verbo = ($despues['tipo'] ?? '') === 'ajuste_negativo' ? 'Restó' : 'Sumó';
                 return $verbo . ' ' . (int) ($despues['cantidad'] ?? 0) . ' café(s) (ajuste manual)' . $quien . $motivo;
             }
+        }
+        if ($tabla === 'pedidos' && isset($despues['estado'])) {
+            $etiquetas = ['enviado' => 'Enviado', 'confirmado' => 'Confirmado', 'entregado' => 'Entregado', 'cancelado' => 'Cancelado', 'anulado' => 'Anulado'];
+            $de = isset($antes['estado']) ? ($etiquetas[$antes['estado']] ?? $antes['estado']) : '';
+            $a = $etiquetas[$despues['estado']] ?? $despues['estado'];
+            $codigo = (string) ($despues['codigo'] ?? $objeto);
+
+            return 'Pedido' . ($codigo !== '' ? ' #' . $codigo : '') . ': ' . ($de !== '' ? $de . ' → ' : '') . $a
+                . (!empty($despues['motivo']) ? ' — Motivo: ' . $despues['motivo'] : '');
         }
         if ($tabla === 'recompensas' && $accion === 'canje') {
             $codigo = (string) ($despues['codigo'] ?? '');

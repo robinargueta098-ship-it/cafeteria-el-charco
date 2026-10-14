@@ -1695,6 +1695,33 @@ se pueden borrar**, y no se pueden editar montos, código, forma de pago ni íte
 
 El carrito no aplica descuentos, cupones ni recompensas, por eso `descuento_centavos` es siempre 0 y no hay cortesías hoy.
 
+### 4.51 Pedidos — Fase 3: módulo «Pedidos» del panel
+
+Menú **Pedidos** (Administrador y Cajero): listado con filtros (estado, fechas, código/teléfono/nombre), paginación de 50,
+los «Enviado» arriba y resaltados; detalle con ítems *snapshot*, total e historial completo.
+
+**Máquina de estados** (`PedidoEstadoService`, validada en el servidor):
+
+| De | A | Motivo | Quién |
+|---|---|---|---|
+| enviado | confirmado | — | Admin / Cajero |
+| confirmado | entregado (guarda `entregado_en`, hora de Guatemala) | — | Admin / Cajero |
+| enviado, confirmado | cancelado | obligatorio | Admin / Cajero |
+| entregado | anulado | obligatorio | **solo Administrador** |
+
+Cualquier otro salto se rechaza. `cancelado` y `anulado` son finales. Cada cambio es una transacción
+(`UPDATE … WHERE id = ? AND estado = <el que el usuario vio>`; si no afecta una fila: «el pedido ya cambió»), deja una
+fila en `pedido_historial` y en Auditoría («Pedido #ABC123: Enviado → Confirmado — Motivo: …»).
+
+**No se borra ni se edita**: no hay rutas para eliminar y los disparadores de la base lo impiden (ver §4.50).
+
+**Definición única de venta** (la usan todos los reportes, ver §4.52): una venta es un pedido en estado **ENTREGADO**,
+contabilizada en la fecha de `entregado_en`; el ingreso es `total_centavos`. Anulados, cancelados, enviados y
+confirmados **no** son ventas. Las cortesías (precio 0) no suman ingreso.
+
+**Lealtad**: al entregar un pedido **no** se suman cafés solos; el detalle muestra un enlace a «Registrar consumo» del
+cliente vinculado. La lógica de lealtad no cambió.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```
