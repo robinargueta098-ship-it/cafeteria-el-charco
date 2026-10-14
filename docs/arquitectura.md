@@ -1644,6 +1644,28 @@ recompensas y cupones; la base de datos lo impide con `RESTRICT` y además se pe
 se les desactiva desde «Editar». Los registros de Auditoría de un usuario eliminado quedan con el usuario en blanco
 (`ON DELETE SET NULL`).
 
+### 4.49 Pedidos y reportes — Fase 1: diagnóstico, zona horaria y compatibilidad PHP 7.4
+
+**Diagnóstico del carrito (antes de guardar pedidos)**
+- El carrito es 100 % del navegador (`public/assets/js/carrito.js`): los precios salen de los atributos `data-precio` /
+  `data-alt-precio` del HTML, el mensaje de WhatsApp se arma en JavaScript y **el servidor nunca se enteraba del pedido**.
+- Cada línea del carrito tiene una clave: `12` (producto), `12-alt` (segunda versión: Batido / «sin café») y el sufijo
+  `~c` / `~f` (caliente / frío, según `TemperaturaProductos`). El nombre de cada variante lo fija `Vista::variantesPedido()`
+  (incluye la categoría para evitar ambigüedades).
+- No se aplica ningún descuento, cupón de promoción ni recompensa de lealtad al carrito: las promociones son un anuncio y
+  el canje se hace en el mostrador. Por eso `descuento_centavos` siempre vale 0 y no hay cortesías hoy.
+
+**Zona horaria (regla única: hora de Guatemala, UTC-6, sin horario de verano)**
+- PHP: `date_default_timezone_set('America/Guatemala')` (config.php, ya existía).
+- MySQL/MariaDB: `Database.php` ejecuta `SET time_zone = '-06:00'` al conectar. Antes dependía de la zona del servidor
+  (en la PC local coincidía; en Hostinger suele ser UTC). Comprobado: PHP y `NOW()` dan la misma hora.
+
+**Compatibilidad con PHP 7.4 (Hostinger)**: el código existente usaba construcciones de PHP 8. Se reemplazaron
+`match` (4), los tipos `mixed`, `never` y el retorno `static` (Validator), y los argumentos con nombre; las funciones
+`str_contains` / `str_starts_with` / `str_ends_with` se cubren con un polyfill en `config.php`. El código nuevo se escribe
+en sintaxis 7.4. Verificado con un escáner por tokenizer (sin `match`, nullsafe, atributos, uniones ni argumentos con
+nombre); **no se pudo ejecutar bajo un PHP 7.4 real** (solo hay 8.0 en esta PC), así que conviene una prueba en Hostinger.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```

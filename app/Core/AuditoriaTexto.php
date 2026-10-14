@@ -140,7 +140,7 @@ class AuditoriaTexto
     }
 
     /** Valor corto y legible para una frase. */
-    private static function valor(string $campo, mixed $v): string
+    private static function valor(string $campo, $v): string
     {
         if ($v === null || $v === '') {
             return '(vacío)';
@@ -152,7 +152,9 @@ class AuditoriaTexto
             return (string) $v === '1' ? 'activo' : 'inactivo';
         }
         if ($campo === 'rol_id') {
-            return match ((int) $v) { 1 => 'Administrador', 2 => 'Cajero', default => 'rol ' . (int) $v };
+            $rol = (int) $v;
+
+            return $rol === 1 ? 'Administrador' : ($rol === 2 ? 'Cajero' : 'rol ' . $rol);
         }
         if (in_array($campo, ['precio', 'precio_alt'], true) && is_numeric($v)) {
             return 'Q' . rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.');

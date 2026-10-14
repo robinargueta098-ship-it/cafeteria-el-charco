@@ -75,12 +75,19 @@ class ImagenOptimizada
             return [];
         }
 
-        $imagen = match ($tipo) {
-            IMAGETYPE_JPEG => @imagecreatefromjpeg($rutaOriginal),
-            IMAGETYPE_PNG  => @imagecreatefrompng($rutaOriginal),
-            IMAGETYPE_WEBP => @imagecreatefromwebp($rutaOriginal),
-            default        => false,
-        };
+        switch ($tipo) {
+            case IMAGETYPE_JPEG:
+                $imagen = @imagecreatefromjpeg($rutaOriginal);
+                break;
+            case IMAGETYPE_PNG:
+                $imagen = @imagecreatefrompng($rutaOriginal);
+                break;
+            case IMAGETYPE_WEBP:
+                $imagen = @imagecreatefromwebp($rutaOriginal);
+                break;
+            default:
+                $imagen = false;
+        }
 
         if ($imagen === false) {
             return [];
@@ -142,12 +149,14 @@ class ImagenOptimizada
         $exif = @exif_read_data($ruta);
         $orientacion = (int) ($exif['Orientation'] ?? 1);
 
-        $angulo = match ($orientacion) {
-            3 => 180,
-            6 => -90, // hay que girarla 90° en sentido horario
-            8 => 90,
-            default => 0,
-        };
+        $angulo = 0;
+        if ($orientacion === 3) {
+            $angulo = 180;
+        } elseif ($orientacion === 6) {
+            $angulo = -90; // hay que girarla 90° en sentido horario
+        } elseif ($orientacion === 8) {
+            $angulo = 90;
+        }
 
         if ($angulo === 0) {
             return $imagen;

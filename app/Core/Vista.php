@@ -102,14 +102,20 @@ class Vista
             ? rtrim(rtrim(number_format((float) $promocion['valor'], 2), '0'), '.')
             : null;
 
-        return match ($promocion['tipo']) {
-            'descuento_porcentaje' => $valor . '% de descuento',
-            'descuento_monto'      => 'Q' . $valor . ' de descuento',
-            'dos_por_uno'          => '2x1',
-            'producto_gratis'      => 'Producto gratis',
-            'personalizada'        => trim((string) ($promocion['etiqueta_personalizada'] ?? '')),   // texto libre del administrador
-            default                => '',
-        };
+        switch ($promocion['tipo']) {
+            case 'descuento_porcentaje':
+                return $valor . '% de descuento';
+            case 'descuento_monto':
+                return 'Q' . $valor . ' de descuento';
+            case 'dos_por_uno':
+                return '2x1';
+            case 'producto_gratis':
+                return 'Producto gratis';
+            case 'personalizada':
+                return trim((string) ($promocion['etiqueta_personalizada'] ?? ''));   // texto libre del administrador
+            default:
+                return '';
+        }
     }
 
     /** "Frappés" -> "Frappé", "Batidos" -> "Batido" (singular sencillo para armar el nombre del pedido). */

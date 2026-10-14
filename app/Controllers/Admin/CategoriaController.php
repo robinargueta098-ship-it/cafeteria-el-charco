@@ -187,7 +187,7 @@ class CategoriaController extends Controller
         return $errores;
     }
 
-    private function nuloSiVacio(mixed $valor): ?string
+    private function nuloSiVacio($valor): ?string
     {
         $valor = trim((string) $valor);
         return $valor === '' ? null : $valor;

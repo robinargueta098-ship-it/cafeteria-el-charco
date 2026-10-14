@@ -37,7 +37,10 @@ class Database
                     // Modo estricto SIEMPRE, sin depender de cómo esté configurado el servidor: un valor fuera
                     // de rango o una fecha inválida da error en vez de truncarse en silencio (así local y
                     // producción se comportan igual).
-                    PDO::MYSQL_ATTR_INIT_COMMAND  => "SET SESSION sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'",
+                    // Zona horaria: SIEMPRE hora de Guatemala (UTC-6, sin horario de verano), igual que PHP
+                    // (date_default_timezone_set en config.php). Así NOW()/CURRENT_TIMESTAMP, los TIMESTAMP y las
+                    // fechas de los reportes coinciden sin importar la zona del servidor (Hostinger suele estar en UTC).
+                    PDO::MYSQL_ATTR_INIT_COMMAND  => "SET time_zone = '-06:00', SESSION sql_mode = 'STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'",
                 ]);
             } catch (PDOException $e) {
                 Logger::error('Conexión a base de datos falló: ' . $e->getMessage());

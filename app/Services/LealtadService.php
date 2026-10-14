@@ -94,7 +94,7 @@ class LealtadService
      * @param mixed $entrada valor crudo de $_POST
      * @return array{ok:bool,valor?:int,error?:string}
      */
-    public static function leerCantidad(mixed $entrada, int $maximo, string $accion): array
+    public static function leerCantidad($entrada, int $maximo, string $accion): array
     {
         $texto = is_string($entrada) || is_int($entrada) ? trim((string) $entrada) : '';
 

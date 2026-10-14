@@ -19,3 +19,23 @@ define('UPLOADS_PATH', BASE_PATH . '/public/uploads');
 define('UPLOADS_URL', '/uploads');
 
 date_default_timezone_set(APP_TIMEZONE);
+
+// Compatibilidad con PHP 7.4 (Hostinger puede usarlo): estas tres funciones nacieron en PHP 8.0.
+if (!function_exists('str_contains')) {
+    function str_contains(string $haystack, string $needle): bool
+    {
+        return $needle === '' || strpos($haystack, $needle) !== false;
+    }
+}
+if (!function_exists('str_starts_with')) {
+    function str_starts_with(string $haystack, string $needle): bool
+    {
+        return $needle === '' || strncmp($haystack, $needle, strlen($needle)) === 0;
+    }
+}
+if (!function_exists('str_ends_with')) {
+    function str_ends_with(string $haystack, string $needle): bool
+    {
+        return $needle === '' || substr($haystack, -strlen($needle)) === $needle;
+    }
+}

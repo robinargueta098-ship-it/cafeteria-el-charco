@@ -40,7 +40,7 @@ class UsuarioController extends Controller
         $this->requerirRol(1);
 
         $datos = $this->datosDelFormulario();
-        $errores = $this->validar($datos, requierePassword: true);
+        $errores = $this->validar($datos, true);
 
         if ($errores === []) {
             try {
@@ -101,7 +101,7 @@ class UsuarioController extends Controller
             $datos['usuario'] = (string) $existente['usuario'];
         }
 
-        $errores = $this->validar($datos, requierePassword: false);
+        $errores = $this->validar($datos, false);
 
         // No permitir dejar sin ningún Administrador activo en el sistema.
         $seraAdminActivo = $datos['rol_id'] === 1 && $datos['activo'] === true;

@@ -182,7 +182,7 @@ class ClienteAuth
     }
 
     /** Cierra la sesión del cliente y lo manda al login con un aviso (puesto DESPUÉS de destruir la sesión vieja). */
-    public static function expulsar(string $mensaje): never
+    public static function expulsar(string $mensaje): void
     {
         self::cerrarSesion();
         Session::iniciar();

@@ -141,7 +141,7 @@ class AuditoriaService
         return [$a, $d];
     }
 
-    private static function mismoValor(mixed $x, mixed $y): bool
+    private static function mismoValor($x, $y): bool
     {
         if (is_array($x) || is_array($y)) {
             return json_encode($x) === json_encode($y);

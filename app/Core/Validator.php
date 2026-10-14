@@ -28,7 +28,7 @@ class Validator
         $this->datos = $datos;
     }
 
-    public function requerido(string $campo, string $etiqueta): static
+    public function requerido(string $campo, string $etiqueta)
     {
         $valor = $this->valor($campo);
 
@@ -39,7 +39,7 @@ class Validator
         return $this;
     }
 
-    public function longitudMaxima(string $campo, string $etiqueta, int $maximo): static
+    public function longitudMaxima(string $campo, string $etiqueta, int $maximo)
     {
         $valor = $this->valor($campo);
 
@@ -50,7 +50,7 @@ class Validator
         return $this;
     }
 
-    public function longitudMinima(string $campo, string $etiqueta, int $minimo): static
+    public function longitudMinima(string $campo, string $etiqueta, int $minimo)
     {
         $valor = $this->valor($campo);
 
@@ -61,7 +61,7 @@ class Validator
         return $this;
     }
 
-    public function numerico(string $campo, string $etiqueta): static
+    public function numerico(string $campo, string $etiqueta)
     {
         $valor = $this->valor($campo);
 
@@ -76,7 +76,7 @@ class Validator
      * Dinero con hasta 2 decimales y un máximo: rechaza notación científica ("1e3"), comas, letras
      * y más de 2 decimales (antes MariaDB los redondeaba o recortaba en silencio).
      */
-    public function precio(string $campo, string $etiqueta, float $maximo): static
+    public function precio(string $campo, string $etiqueta, float $maximo)
     {
         $valor = $this->valor($campo);
 
@@ -96,7 +96,7 @@ class Validator
     }
 
     /** Fecha de calendario real en formato AAAA-MM-DD (rechaza "2026-02-30", "ayer" o 0000-00-00). */
-    public function fecha(string $campo, string $etiqueta): static
+    public function fecha(string $campo, string $etiqueta)
     {
         $valor = $this->valor($campo);
 
@@ -114,7 +114,7 @@ class Validator
         return $d !== false && $d->format('Y-m-d') === $fecha && $fecha >= '2000-01-01';
     }
 
-    public function email(string $campo, string $etiqueta): static
+    public function email(string $campo, string $etiqueta)
     {
         $valor = $this->valor($campo);
 
@@ -126,7 +126,7 @@ class Validator
     }
 
     /** @param array<int,mixed> $valoresPermitidos */
-    public function enQueValores(string $campo, string $etiqueta, array $valoresPermitidos): static
+    public function enQueValores(string $campo, string $etiqueta, array $valoresPermitidos)
     {
         $valor = $this->valor($campo);
 
@@ -153,7 +153,7 @@ class Validator
         return $this->errores[0] ?? null;
     }
 
-    private function valor(string $campo): mixed
+    private function valor(string $campo)
     {
         return $this->datos[$campo] ?? null;
     }

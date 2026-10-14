@@ -95,7 +95,7 @@ class SubidaArchivo
      *
      * @return array<int,array<string,mixed>>
      */
-    public static function normalizarMultiples(mixed $entrada): array
+    public static function normalizarMultiples($entrada): array
     {
         if (!is_array($entrada) || !isset($entrada['name']) || !is_array($entrada['name'])) {
             return [];
