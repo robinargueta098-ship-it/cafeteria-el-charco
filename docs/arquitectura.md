@@ -1722,6 +1722,48 @@ confirmados **no** son ventas. Las cortesías (precio 0) no suman ingreso.
 **Lealtad**: al entregar un pedido **no** se suman cafés solos; el detalle muestra un enlace a «Registrar consumo» del
 cliente vinculado. La lógica de lealtad no cambió.
 
+### 4.52 Reportes y verificación de cuadre (Fases 4 y 5)
+
+**Acceso**: menú **Reportes**. Administrador: todo. Cajero: solo *Resumen*, *Pedidos* y *Mis consumos* (únicamente lo que él
+registró), con los teléfonos **enmascarados** (`3357****`) en pantalla y en CSV; cualquier otra URL responde 403 claro.
+
+| Reporte | Contenido |
+|---|---|
+| Resumen | Tarjetas de ventas + gráfico SVG de ventas por día |
+| Ventas (Admin) | Tarjetas; ventas por día (con días en 0), productos más vendidos, por categoría, por forma de pago, horas pico |
+| Pedidos | Pedidos creados en el periodo con su estado actual; filtro por estado |
+| Lealtad (Admin) | Clientes nuevos, consumos, cafés, recompensas, canjes, ajustes, cupones; movimientos cronológicos; agrupar por día/semana/mes/usuario |
+| Clientes (Admin) | Saldo X/umbral, histórico, canjes, último consumo; buscador, orden y filtros (cerca 8-9, con recompensa pendiente, inactivos 30/60/90, top 10 del periodo) |
+| Ajustes y auditoría (Admin) | Ajustes manuales (quién, cuándo, cliente, cantidad, motivo) y otras acciones sensibles |
+| Promociones y menú (Admin) | Promociones vigentes/próximas/vencidas con cupones; productos por categoría (sin foto, inactivos) |
+| Verificación de datos (Admin) | Cuadre de pedidos (ver abajo) |
+
+**Filtros** (`ReportePeriodo`, por GET): Hoy, Ayer, Últimos 7 días, Mes actual, Mes anterior y Rango personalizado (fechas
+reales, inicio ≤ fin, máx. 366 días, fin no futura). Rangos inclusivos de 00:00:00 a 23:59:59, hora de Guatemala.
+
+**Definición de venta**: vive **solo** en `VentasService` (pedido `entregado`, por `entregado_en`, ingreso = `total_centavos`;
+anulado/cancelado/enviado/confirmado no son ventas; cortesías no suman ingreso). Los demás indicadores del resumen:
+*pendientes*, *cancelados* y *anulados* cuentan pedidos **creados** en el periodo según su estado actual; la *tasa de
+cancelación* es cancelados ÷ pedidos creados en el periodo; el *ticket promedio* es ventas ÷ pedidos entregados (redondeo
+half-up al centavo, 0 si no hay). Los reportes por producto/categoría suman los subtotales de las líneas (sin cortesías);
+mientras no existan descuentos de pedido coinciden exactamente con las ventas (hoy `descuento_centavos` siempre es 0).
+
+**CSV** (`Csv`): UTF-8 con BOM, coma, cabeceras en español, nombre con fechas, streaming con `fputcsv`, **todo** el resultado
+filtrado (la pantalla pagina de 50 en 50), montos con dos decimales y sin «Q», y protección contra fórmulas (`=`, `+`, `-`,
+`@`, tab o retorno al inicio de un texto se escriben con `'` delante). La fila de totales de pantalla no va en el CSV (así
+Excel suma bien). Exportar e imprimir quedan en Auditoría («Exportó a CSV…», «Imprimió el reporte…»); la impresión usa
+`@media print` (encabezado con cafetería, reporte, periodo, fecha y usuario; encabezados de tabla repetidos; filas sin
+partir) y se registra al pulsar el botón (Ctrl+P directo no se puede registrar).
+
+**Verificación** (`VerificacionVentas`, `php bin/verificar_ventas.php` o Reportes → Verificación): total ≠ subtotal − descuento,
+subtotal ≠ suma de ítems, ítem ≠ precio × cantidad, pedidos sin ítems, entregados sin `entregado_en`, fecha de entrega en
+pedidos no entregados, estado ≠ último estado del historial, saltos de estado no permitidos, ítems/totales fuera de rango.
+Termina con «TODO CUADRA» o con la lista exacta; en consola devuelve código 1 si hay inconsistencias.
+
+**Pruebas del cuadre independiente**: con datos de prueba de respuesta conocida se compararon, para Hoy, Ayer, 7 días, Mes
+actual, Mes anterior y un rango, las tarjetas contra el valor calculado a mano y contra una consulta SQL escrita aparte; y,
+para el mes actual, tarjeta = suma por día = por categoría = por forma de pago = más vendidos = horas pico = CSV.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```
