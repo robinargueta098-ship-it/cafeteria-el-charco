@@ -294,9 +294,13 @@ function inicializarTipoPromocion() {
   }
 
   var tiposConValor = ['descuento_porcentaje', 'descuento_monto'];
+  var grupoEtiqueta = document.getElementById('grupo-etiqueta');   // solo existe si la base de datos ya soporta "otra promoción"
 
   function actualizar() {
     grupoValor.hidden = tiposConValor.indexOf(select.value) === -1;
+    if (grupoEtiqueta) {
+      grupoEtiqueta.hidden = select.value !== 'personalizada';
+    }
   }
 
   select.addEventListener('change', actualizar);

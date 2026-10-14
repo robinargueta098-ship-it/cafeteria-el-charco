@@ -73,6 +73,9 @@ $nombresDias = [0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 
                     'dos_por_uno'          => '2x1',
                     'producto_gratis'      => 'Producto gratis',
                 ];
+                if (!empty($permitePersonalizada)) {
+                    $tipos['personalizada'] = 'Otra promoción (escribo el texto, ej. 3x1)';
+                }
                 foreach ($tipos as $valorTipo => $etiqueta):
                 ?>
                     <option value="<?= $valorTipo ?>" <?= ($promocion['tipo'] ?? '') === $valorTipo ? 'selected' : '' ?>>
@@ -81,6 +84,16 @@ $nombresDias = [0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 
                 <?php endforeach; ?>
             </select>
         </div>
+
+        <?php if (!empty($permitePersonalizada)): ?>
+        <div class="campo" id="grupo-etiqueta">
+            <label for="etiqueta_personalizada">Texto de la etiqueta</label>
+            <input type="text" id="etiqueta_personalizada" name="etiqueta_personalizada" maxlength="40"
+                   value="<?= htmlspecialchars((string) ($promocion['etiqueta_personalizada'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                   placeholder="Ej. 3x1, Segundo a mitad de precio, Combo desayuno">
+            <span class="campo-ayuda">Es lo que verá el cliente en la etiqueta verde de la promoción (máximo 40 caracteres).</span>
+        </div>
+        <?php endif; ?>
 
         <div class="campo" id="grupo-valor">
             <label for="valor">Valor (% o Q según el tipo)</label>

@@ -107,6 +107,7 @@ class Vista
             'descuento_monto'      => 'Q' . $valor . ' de descuento',
             'dos_por_uno'          => '2x1',
             'producto_gratis'      => 'Producto gratis',
+            'personalizada'        => trim((string) ($promocion['etiqueta_personalizada'] ?? '')),   // texto libre del administrador
             default                => '',
         };
     }

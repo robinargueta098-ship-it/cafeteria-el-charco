@@ -8,6 +8,37 @@ use App\Core\Database;
 
 class Promocion
 {
+    /**
+     * ¿La base de datos ya tiene el tipo "personalizada" y la columna del texto de la etiqueta? (migración 012).
+     * Mientras no, el formulario no ofrece ese tipo y todo funciona como antes.
+     */
+    public static function soportaPersonalizada(): bool
+    {
+        static $soporta = null;
+        if ($soporta !== null) {
+            return $soporta;
+        }
+
+        $soporta = false;
+        try {
+            $tieneColumna = false;
+            $tieneTipo = false;
+            foreach (Database::conexion()->query('SHOW COLUMNS FROM promociones')->fetchAll() as $c) {
+                if ($c['Field'] === 'etiqueta_personalizada') {
+                    $tieneColumna = true;
+                }
+                if ($c['Field'] === 'tipo' && str_contains((string) $c['Type'], "'personalizada'")) {
+                    $tieneTipo = true;
+                }
+            }
+            $soporta = $tieneColumna && $tieneTipo;
+        } catch (\Throwable $e) {
+            $soporta = false;
+        }
+
+        return $soporta;
+    }
+
     /** @return array<int,array<string,mixed>> */
     public function listarTodas(): array
     {
@@ -80,15 +111,20 @@ class Promocion
 
     public function crear(array $datos): int
     {
+        $conEtiqueta = self::soportaPersonalizada();
+        if (!$conEtiqueta) {
+            unset($datos['etiqueta_personalizada']);   // la columna todavía no existe (migración 012 pendiente)
+        }
+
         Database::conexion()->prepare(
             'INSERT INTO promociones
                 (nombre, descripcion, imagen, tipo, valor, categoria_id, producto_id,
                  fecha_inicio, fecha_fin, dias_semana, hora_inicio, hora_fin,
-                 combinable_con_lealtad, prioridad, activo)
+                 combinable_con_lealtad, prioridad, activo' . ($conEtiqueta ? ', etiqueta_personalizada' : '') . ')
              VALUES
                 (:nombre, :descripcion, :imagen, :tipo, :valor, :categoria_id, :producto_id,
                  :fecha_inicio, :fecha_fin, :dias_semana, :hora_inicio, :hora_fin,
-                 :combinable_con_lealtad, :prioridad, :activo)'
+                 :combinable_con_lealtad, :prioridad, :activo' . ($conEtiqueta ? ', :etiqueta_personalizada' : '') . ')'
         )->execute($datos);
 
         return (int) Database::conexion()->lastInsertId();
@@ -96,13 +132,19 @@ class Promocion
 
     public function actualizar(int $id, array $datos): void
     {
+        $conEtiqueta = self::soportaPersonalizada();
+        if (!$conEtiqueta) {
+            unset($datos['etiqueta_personalizada']);
+        }
+
         Database::conexion()->prepare(
             'UPDATE promociones SET
                 nombre = :nombre, descripcion = :descripcion, imagen = :imagen, tipo = :tipo, valor = :valor,
                 categoria_id = :categoria_id, producto_id = :producto_id,
                 fecha_inicio = :fecha_inicio, fecha_fin = :fecha_fin,
                 dias_semana = :dias_semana, hora_inicio = :hora_inicio, hora_fin = :hora_fin,
-                combinable_con_lealtad = :combinable_con_lealtad, prioridad = :prioridad, activo = :activo
+                combinable_con_lealtad = :combinable_con_lealtad, prioridad = :prioridad, activo = :activo'
+                . ($conEtiqueta ? ', etiqueta_personalizada = :etiqueta_personalizada' : '') . '
              WHERE id = :id'
         )->execute($datos + ['id' => $id]);
     }

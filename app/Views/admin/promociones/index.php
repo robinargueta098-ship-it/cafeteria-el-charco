@@ -7,6 +7,7 @@ $etiquetasTipo = [
     'descuento_monto'      => 'Descuento fijo',
     'dos_por_uno'          => '2x1',
     'producto_gratis'      => 'Producto gratis',
+    'personalizada'        => 'Otra',
 ];
 $hoy = date('Y-m-d');
 ?>
@@ -42,7 +43,7 @@ $hoy = date('Y-m-d');
                         </td>
                         <td><?= htmlspecialchars($p['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td>
-                            <?= htmlspecialchars($etiquetasTipo[$p['tipo']] ?? $p['tipo'], ENT_QUOTES, 'UTF-8') ?>
+                            <?= htmlspecialchars($p['tipo'] === 'personalizada' ? (string) ($p['etiqueta_personalizada'] ?? 'Otra') : ($etiquetasTipo[$p['tipo']] ?? $p['tipo']), ENT_QUOTES, 'UTF-8') ?>
                             <?php if ($p['valor'] !== null): ?>
                                 (<?= $p['tipo'] === 'descuento_porcentaje' ? (int) $p['valor'] . '%' : 'Q' . number_format((float) $p['valor'], 2) ?>)
                             <?php endif; ?>

@@ -1608,6 +1608,14 @@ teléfono). Sin cambios de esquema (la cuenta de la aplicación no tiene `ALTER`
   `011`). Las temporadas sin lugar elegido van al final por fecha de inicio. `Temporada::mover()` guarda el orden completo.
 - Cada movimiento queda en Auditoría («posición» antes y después).
 
+### 4.46 Promoción «otra» (texto libre)
+
+Las promociones son un anuncio: el tipo solo decide la etiqueta que ve el cliente (no calculan precios). Para no tener que
+programar cada idea (3x1, combo…), el tipo `personalizada` deja que el administrador escriba el texto de la etiqueta
+(`etiqueta_personalizada`, máx. 40; lo muestra `Vista::etiquetaPromocion`). Requiere la migración `012` (ALTER del `ENUM`
+y una columna), que **debe ejecutar un usuario de MySQL con permiso ALTER**. Mientras no se ejecute,
+`Promocion::soportaPersonalizada()` es falso: el formulario no ofrece el tipo y guardar funciona como antes.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```

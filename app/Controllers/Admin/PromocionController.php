@@ -18,6 +18,13 @@ use App\Services\AuditoriaService;
 class PromocionController extends Controller
 {
     private const TIPOS_VALIDOS = ['descuento_porcentaje', 'descuento_monto', 'dos_por_uno', 'producto_gratis'];
+    private const MAX_ETIQUETA = 40;
+
+    /** Los tipos de siempre; "personalizada" (texto libre) solo cuando la base de datos ya lo soporta (migración 012). */
+    private function tiposValidos(): array
+    {
+        return Promocion::soportaPersonalizada() ? array_merge(self::TIPOS_VALIDOS, ['personalizada']) : self::TIPOS_VALIDOS;
+    }
     private const TIPOS_CON_VALOR = ['descuento_porcentaje', 'descuento_monto'];
 
     public function index(): void
@@ -191,6 +198,7 @@ class PromocionController extends Controller
             'errores'       => $errores,
             'categorias'    => (new Categoria())->listarActivas(),
             'productos'     => (new Producto())->listarActivos(),
+            'permitePersonalizada' => Promocion::soportaPersonalizada(),
         ]);
     }
 
@@ -213,6 +221,8 @@ class PromocionController extends Controller
             'nombre'                 => trim(Entrada::texto($_POST, 'nombre', '')),
             'descripcion'            => trim(Entrada::texto($_POST, 'descripcion', '')) ?: null,
             'tipo'                   => $tipo,
+            // Solo para el tipo "otra promoción": el texto que se muestra como etiqueta (ej. "3x1").
+            'etiqueta_personalizada' => $tipo === 'personalizada' ? (trim(Entrada::texto($_POST, 'etiqueta_personalizada', '')) ?: null) : null,
             // El valor solo aplica a descuentos; en 2x1/producto gratis se ignora aunque venga en el POST.
             'valor'                  => in_array($tipo, self::TIPOS_CON_VALOR, true) && $valor !== '' ? $valor : null,
             'categoria_id'           => $categoriaId ?: null,
@@ -241,12 +251,18 @@ class PromocionController extends Controller
             ->fecha('fecha_inicio', 'Fecha de inicio')
             ->requerido('fecha_fin', 'Fecha de fin')
             ->fecha('fecha_fin', 'Fecha de fin')
-            ->enQueValores('tipo', 'Tipo', self::TIPOS_VALIDOS);
+            ->enQueValores('tipo', 'Tipo', $this->tiposValidos());
 
         $errores = $validador->errores();
 
-        if (!in_array($datos['tipo'], self::TIPOS_VALIDOS, true)) {
+        if (!in_array($datos['tipo'], $this->tiposValidos(), true)) {
             $errores[] = 'Selecciona un tipo de promoción válido.';
+        } elseif ($datos['tipo'] === 'personalizada') {
+            if ($datos['etiqueta_personalizada'] === null) {
+                $errores[] = 'Escribe el texto de la etiqueta de la promoción (ej. «3x1»).';
+            } elseif (mb_strlen($datos['etiqueta_personalizada']) > self::MAX_ETIQUETA) {
+                $errores[] = 'El texto de la etiqueta no puede pasar de ' . self::MAX_ETIQUETA . ' caracteres.';
+            }
         } elseif (in_array($datos['tipo'], self::TIPOS_CON_VALOR, true)) {
             if ($datos['valor'] === null || !is_numeric($datos['valor']) || (float) $datos['valor'] <= 0) {
                 $errores[] = 'Ingresa un valor numérico mayor que cero para este tipo de promoción.';
