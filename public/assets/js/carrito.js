@@ -313,8 +313,19 @@
     return lineas.join('\n');
   }
 
+  // En teléfono, wa.me abre directo la aplicación. En computadora, wa.me pasa por una página de WhatsApp que lanza
+  // sola la aplicación de escritorio (si está instalada) antes de elegir: ahí se usa WhatsApp Web directamente.
+  function esTelefono() {
+    var ua = navigator.userAgent || '';
+    return /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  }
+
   function enlaceWhatsapp(pedido) {
-    return 'https://wa.me/' + datos.whatsapp + '?text=' + encodeURIComponent(construirMensaje(pedido));
+    var texto = encodeURIComponent(construirMensaje(pedido));
+    if (esTelefono()) {
+      return 'https://wa.me/' + datos.whatsapp + '?text=' + texto;
+    }
+    return 'https://web.whatsapp.com/send?phone=' + datos.whatsapp + '&text=' + texto;
   }
 
   // Identificador de este envío (UUID-like). Se conserva mientras no cambie el pedido: reintentos y doble clic = un solo pedido.
