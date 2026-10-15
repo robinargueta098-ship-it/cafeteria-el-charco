@@ -25,3 +25,6 @@ Thumbs.db
 
 # Sesiones PHP propias (datos de sesión, no van a git)
 /storage/sessions/*
+
+# Paquete para subir al servidor (contiene hashes de contraseñas): nunca en git
+/entrega/
