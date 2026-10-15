@@ -6,7 +6,6 @@ namespace App\Controllers\Admin;
 
 use App\Core\Auth;
 use App\Core\Controller;
-use App\Core\Csv;
 use App\Core\Xlsx;
 use App\Core\Dinero;
 use App\Core\Entrada;
@@ -24,7 +23,7 @@ use App\Core\Database;
 /**
  * Módulo «Reportes». Administrador: todo. Cajero: solo Resumen, Pedidos y sus propios Consumos (con los teléfonos
  * enmascarados). Cada reporte arma una estructura de secciones (tarjetas, gráfico, tablas) que dibuja la vista
- * `admin/reportes/reporte` y que también alimenta la exportación a CSV, así pantalla y CSV nunca difieren.
+ * `admin/reportes/reporte` y que también alimenta la exportación a Excel, así pantalla y Excel nunca difieren.
  *
  * Las VENTAS salen siempre de VentasService (una sola definición). Compatible con PHP 7.4.
  */
@@ -68,8 +67,8 @@ class ReporteController extends Controller
         $periodo = ReportePeriodo::resolver($_GET);
         $reporte = $this->construir($seccion, $periodo, $esAdmin, (int) $usuario['id']);
 
-        // --- Exportación a CSV: TODO el resultado filtrado, no solo la página ---
-        if (in_array(Entrada::texto($_GET, 'formato', ''), ['csv', 'xlsx'], true)) {
+        // --- Exportación a Excel: TODO el resultado filtrado, no solo la página ---
+        if (Entrada::texto($_GET, 'formato', '') === 'xlsx') {
             $this->exportar($seccion, $reporte, $periodo);
         }
 
@@ -655,19 +654,14 @@ class ReporteController extends Controller
             $tablaId = $claves[0];
         }
         $tabla = $reporte['tablas'][$tablaId];
-        $xlsx = Entrada::texto($_GET, 'formato', '') === 'xlsx';
 
         AuditoriaService::registrar('reportes', 0, 'editar', null, [
-            'detalle' => 'Exportó a ' . ($xlsx ? 'Excel' : 'CSV') . ' el reporte «' . self::SECCIONES[$seccion][0] . '» — ' . (isset($tabla['titulo']) ? $tabla['titulo'] : $tablaId)
+            'detalle' => 'Exportó a Excel el reporte «' . self::SECCIONES[$seccion][0] . '» — ' . (isset($tabla['titulo']) ? $tabla['titulo'] : $tablaId)
                 . ' (' . $periodo['etiqueta'] . ', ' . count($tabla['filas']) . ' filas)',
         ]);
 
         $base = 'reporte_' . $seccion . '_' . $tablaId . '_' . $periodo['desde'] . '_a_' . $periodo['hasta'];
-        if ($xlsx) {
-            Xlsx::enviar($base . '.xlsx', isset($tabla['titulo']) ? (string) $tabla['titulo'] : self::SECCIONES[$seccion][0], $tabla['columnas'], $tabla['filas']);
-        } else {
-            Csv::enviar($base . '.csv', $tabla['columnas'], $tabla['filas']);
-        }
+        Xlsx::enviar($base . '.xlsx', isset($tabla['titulo']) ? (string) $tabla['titulo'] : self::SECCIONES[$seccion][0], $tabla['columnas'], $tabla['filas']);
         exit;
     }
 

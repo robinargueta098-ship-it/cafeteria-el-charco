@@ -1782,10 +1782,10 @@ Al tocar «Enviar por WhatsApp» el pedido se guarda en estado `pendiente` (etiq
 
 ### 4.54 Exportación a Excel (.xlsx)
 
-Cada tabla de Reportes ofrece **Exportar a Excel** (`?formato=xlsx`) además de CSV. `App\Core\Xlsx` arma el libro con
+Cada tabla de Reportes ofrece **Exportar a Excel** (`?formato=xlsx`); ya no hay exportación a CSV. `App\Core\Xlsx` arma el libro con
 `ZipArchive` (sin librerías): encabezado en negrita, fila fija, filtros, anchos de columna, montos y enteros como
-números (sumables) y el texto como texto literal, así que no hay inyección de fórmulas. Mismos datos, columnas, roles
-(el Cajero ve teléfonos enmascarados) y registro en Auditoría que el CSV. Requiere la extensión `zip` de PHP.
+números (sumables) y el texto como texto literal, así que no hay inyección de fórmulas. Roles (el Cajero ve teléfonos
+enmascarados) y registro en Auditoría iguales que en pantalla. Requiere la extensión `zip` de PHP.
 
 ## 5. Modelo de datos (entidades y relaciones)
 

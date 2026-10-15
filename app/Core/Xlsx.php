@@ -12,7 +12,7 @@ use ZipArchive;
  * filtros, anchos de columna y montos como NÚMEROS con dos decimales (se pueden sumar). El texto se escribe como
  * texto literal (inlineStr), así que un valor que empiece con = + - @ nunca se interpreta como fórmula.
  *
- * Mismas columnas y tipos que Csv::enviar (texto | entero | dinero | porcentaje | fecha). Requiere la extensión zip.
+ * Tipos de columna (texto | entero | dinero | porcentaje | fecha). Requiere la extensión zip.
  * Compatible con PHP 7.4.
  */
 class Xlsx

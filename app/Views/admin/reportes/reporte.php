@@ -190,7 +190,6 @@ if (!empty($reporte['grafico']) && $reporte['grafico']['puntos'] !== []):
             <h3 style="margin:0;"><?= $e($tabla['titulo']) ?></h3>
             <?php if ($tabla['filas'] !== [] || !empty($tabla['total_filas'])): ?>
                 <a class="btn btn-secundario btn-pequeno no-imprimir" href="<?= $enlace(['formato' => 'xlsx', 'tabla' => $id, 'pagina' => '']) ?>">Exportar a Excel</a>
-                <a class="btn btn-secundario btn-pequeno no-imprimir" href="<?= $enlace(['formato' => 'csv', 'tabla' => $id, 'pagina' => '']) ?>">CSV</a>
             <?php endif; ?>
         </div>
         <?php if (!empty($tabla['nota'])): ?><p class="campo-ayuda"><?= $e($tabla['nota']) ?></p><?php endif; ?>
