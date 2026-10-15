@@ -117,5 +117,6 @@ foreach ($horarios as $h) {
 <?php endif; ?>
 
 <script src="<?= htmlspecialchars(Vista::asset('/assets/js/sitio.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars(Vista::asset('/assets/js/ver-clave.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body>
 </html>

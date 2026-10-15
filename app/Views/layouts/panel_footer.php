@@ -9,5 +9,6 @@ if ($borradorFormulario !== null): ?>
 <script>window.__BORRADOR = <?= json_encode($borradorFormulario, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;</script>
 <?php endif; ?>
 <script src="<?= htmlspecialchars(\App\Core\Vista::asset('/assets/js/admin.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars(\App\Core\Vista::asset('/assets/js/ver-clave.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body>
 </html>
