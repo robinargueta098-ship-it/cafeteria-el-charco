@@ -621,7 +621,7 @@ class ReporteController extends Controller
 
         return [
             'titulo'     => 'Verificación de datos',
-            'ayuda'      => 'Comprueba que los números de los pedidos cuadren entre sí. La misma revisión se puede correr por consola: php bin/verificar_ventas.php',
+            'ayuda'      => 'Comprueba que los números de los pedidos cuadren entre sí.',
             'usaPeriodo' => false,
             'mensaje'    => ['tipo' => $filas === [] ? 'exito' : 'error', 'texto' => $filas === [] ? 'TODO CUADRA (' . $resultado['pedidos'] . ' pedidos revisados).' : count($filas) . ' inconsistencia(s) encontradas.'],
             'tarjetas'   => [],
