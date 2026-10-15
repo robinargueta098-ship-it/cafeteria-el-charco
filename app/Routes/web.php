@@ -18,6 +18,7 @@ $router->get('/', [HomeController::class, 'index']);
 // --- Carrito: guardar el pedido (responde JSON; el navegador abre WhatsApp después) ---
 $router->post('/pedido', [PedidoController::class, 'crear']);
 $router->post('/pedido/confirmar', [PedidoController::class, 'confirmar']);
+$router->get('/pedido/token', [PedidoController::class, 'token']);
 
 // --- Cuenta simple del cliente (teléfono + PIN) ---
 $router->get('/cuenta/registro', [CuentaController::class, 'mostrarRegistro']);

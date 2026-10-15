@@ -1802,6 +1802,12 @@ dirección, forma de pago, productos y total; no tiene filtros, búsqueda ni his
 (`PedidoEstadoService`: solo `confirmado → entregado`; el detalle de cualquier otro pedido responde 404). Todo cambio
 queda en el historial del pedido con su nombre. Para crearlo: Usuarios → Nuevo → rol Repartidor.
 
+### 4.56 El carrito renueva solo su token de seguridad
+
+Iniciar sesión en el panel desde el mismo navegador cambia el token CSRF de la sesión, y la página pública abierta
+quedaba con uno viejo («La página estaba desactualizada…»). Ahora `carrito.js`, al recibir `error: 'sesion'`, pide el
+vigente a `GET /pedido/token` y reintenta una vez (envío y confirmación «Sí, ya lo envié»), sin recargar ni perder el carrito.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```

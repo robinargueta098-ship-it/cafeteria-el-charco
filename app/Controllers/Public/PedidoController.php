@@ -6,6 +6,7 @@ namespace App\Controllers\Public;
 
 use App\Core\ClienteAuth;
 use App\Core\Controller;
+use App\Core\Csrf;
 use App\Core\Entrada;
 use App\Core\Logger;
 use App\Models\Cliente;
@@ -18,6 +19,15 @@ use Throwable;
  */
 class PedidoController extends Controller
 {
+    /** Token CSRF vigente: si el cliente inició sesión en el panel desde el mismo navegador, el de la página abierta quedó viejo. */
+    public function token(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+
+        echo json_encode(['csrf' => Csrf::token()]);
+    }
+
     /** «Sí, ya lo envié»: el pedido pasa de `pendiente` a `enviado`. */
     public function confirmar(): void
     {

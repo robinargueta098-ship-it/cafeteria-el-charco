@@ -683,7 +683,19 @@
       cuerpo.set('csrf_token', datos.csrf || '');
       cuerpo.set('token', tokenPedido);
       try {
-        fetch((datos.pedidoUrl || '/pedido') + '/confirmar', { method: 'POST', body: cuerpo, credentials: 'same-origin', keepalive: true });
+        fetch((datos.pedidoUrl || '/pedido') + '/confirmar', { method: 'POST', body: cuerpo, credentials: 'same-origin', keepalive: true })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (j && j.error === 'sesion') {   // token viejo: se renueva y se confirma otra vez
+              renovarCsrf().then(function (ok) {
+                if (!ok) { return; }
+                var otra = new URLSearchParams();
+                otra.set('csrf_token', datos.csrf);
+                otra.set('token', cuerpo.get('token'));
+                fetch((datos.pedidoUrl || '/pedido') + '/confirmar', { method: 'POST', body: otra, credentials: 'same-origin', keepalive: true });
+              });
+            }
+          }, function () { /* sin conexión: el pedido sigue pendiente */ });
       } catch (e) { /* si falla, el pedido sigue pendiente y el personal lo puede confirmar con el código de WhatsApp */ }
     }
     reiniciarEntendido();
@@ -749,6 +761,15 @@
   }
 
   // Guarda el pedido en el servidor y SOLO si quedó guardado abre WhatsApp, con el código y los totales reales.
+  function renovarCsrf() {
+    return fetch((datos.pedidoUrl || '/pedido') + '/token', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j && typeof j.csrf === 'string' && j.csrf) { datos.csrf = j.csrf; return true; }
+        return false;
+      }, function () { return false; });
+  }
+
   function enviarPedido(ventana, esReintento) {
     if (enviando) { return; }
     enviando = true;
@@ -795,6 +816,17 @@
         reiniciarEntendido();
         sincronizarEnviar();
         mostrarModo('confirmar');
+        return;
+      }
+
+      // La sesión cambió desde que se abrió la página (p. ej. se inició sesión en el panel): se pide un token
+      // nuevo y se reintenta una vez, sin que el cliente tenga que recargar.
+      if (resp && resp.error === 'sesion' && !esReintento) {
+        renovarCsrf().then(function (ok) {
+          if (ok) { enviarPedido(ventana, true); return; }
+          cerrarVentana(ventana);
+          mostrarErrorEnvio(resp.mensaje || 'La página estaba desactualizada. Recárgala y vuelve a enviar tu pedido.');
+        });
         return;
       }
 
