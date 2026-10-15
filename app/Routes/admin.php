@@ -25,6 +25,7 @@ use App\Controllers\Admin\PortadaController;
 use App\Controllers\Admin\PromocionController;
 use App\Controllers\Admin\ProductoController;
 use App\Controllers\Admin\RecompensaController;
+use App\Controllers\Admin\RolController;
 use App\Controllers\Admin\TemporadaController;
 use App\Controllers\Admin\UsuarioController;
 
@@ -129,6 +130,8 @@ $router->get('/admin/pedidos', [PedidoController::class, 'index']);
 $router->get('/admin/pedidos/{id}', [PedidoController::class, 'mostrar']);
 $router->post('/admin/pedidos/{id}/estado', [PedidoController::class, 'cambiarEstado']);
 
+$router->get('/admin/roles', [RolController::class, 'index']);
+$router->post('/admin/roles/{id}', [RolController::class, 'guardar']);
 $router->get('/admin/usuarios', [UsuarioController::class, 'index']);
 $router->get('/admin/usuarios/crear', [UsuarioController::class, 'mostrarCrear']);
 $router->post('/admin/usuarios/crear', [UsuarioController::class, 'crear']);

@@ -8,6 +8,7 @@ use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Entrada;
 use App\Core\Flash;
+use App\Core\Permisos;
 use App\Core\Validator;
 use App\Models\Pedido;
 use App\Services\PedidoEstadoService;
@@ -20,7 +21,7 @@ class PedidoController extends Controller
 {
     public function index(): void
     {
-        $this->requerirRol(1, 2, 3);
+        $this->requerirPermiso('pedidos', 'ver');
 
         $esRepartidor = (int) Auth::usuario()['rol_id'] === 3;
 
@@ -70,7 +71,7 @@ class PedidoController extends Controller
 
     public function mostrar(string $id): void
     {
-        $this->requerirRol(1, 2, 3);
+        $this->requerirPermiso('pedidos', 'ver');
 
         $usuario = Auth::usuario();
         $esRepartidor = (int) $usuario['rol_id'] === 3;
@@ -87,14 +88,16 @@ class PedidoController extends Controller
             'pedido'        => $pedido,
             'items'         => $modelo->items((int) $id),
             'historial'     => $modelo->historial((int) $id),
-            'acciones'      => PedidoEstadoService::disponibles((string) $pedido['estado'], (int) $usuario['rol_id']),
+            'acciones'      => Permisos::puede('pedidos', 'editar')
+                ? PedidoEstadoService::disponibles((string) $pedido['estado'], (int) $usuario['rol_id'])
+                : [],
             'esRepartidor'  => $esRepartidor,
         ]);
     }
 
     public function cambiarEstado(string $id): void
     {
-        $this->requerirRol(1, 2, 3);
+        $this->requerirPermiso('pedidos', 'editar');
 
         $usuario = Auth::usuario();
         $resultado = PedidoEstadoService::cambiar(

@@ -46,7 +46,7 @@ class ReporteController extends Controller
 
     public function mostrar(string $seccion = 'resumen'): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('reportes', 'ver');
 
         $usuario = Auth::usuario();
         $esAdmin = (int) $usuario['rol_id'] === 1;
@@ -101,7 +101,7 @@ class ReporteController extends Controller
     /** POST: registra en Auditoría que se imprimió un reporte (la impresión la hace el navegador). */
     public function registrarImpresion(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('reportes', 'ver');
         header('Content-Type: application/json; charset=utf-8');
 
         $seccion = Entrada::texto($_POST, 'seccion', '');

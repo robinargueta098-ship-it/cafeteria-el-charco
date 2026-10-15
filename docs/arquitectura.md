@@ -1821,6 +1821,21 @@ haberlo enviado por WhatsApp), `enviado` → **Nuevo** (el cliente sí lo envió
 `confirmado` → Confirmado, `entregado` → Entregado, `cancelado` → Cancelado, `anulado` → Anulado. Los valores internos
 (base de datos, código) no cambian; solo el texto mostrado (`Pedido::ETIQUETAS_ESTADO`).
 
+### 4.59 Roles y permisos configurables
+
+El Administrador decide en **Roles y permisos** (`/admin/roles`) qué módulos ve o edita cada rol (Cajero, Repartidor):
+**Sin acceso**, **Solo ver** o **Ver y editar**. Se guarda en `rol_permisos` (migración `016_permisos_por_rol.sql`,
+valores iniciales = lo que cada rol ya podía hacer) y se aplica de inmediato, sin que la persona vuelva a entrar.
+
+- Módulos delegables: Pedidos, Reportes (Pedidos y Mis consumos), Clientes, Lealtad, Escanear código, Recompensas,
+  Cupones, Productos, Categorías, Galería, Temporadas y Promociones. Reportes y Recompensas son solo de consulta.
+- **Nunca delegables:** Usuarios, Configuración, Auditoría y Roles y permisos; tampoco corregir saldos, eliminar
+  clientes ni los reportes de Ventas, Lealtad, Clientes, Ajustes, Catálogo y Verificación.
+- «Solo ver» muestra listados y detalles; formularios y acciones (crear, editar, cambiar estado) responden 403 en el servidor.
+- El Repartidor conserva su vista restringida de Pedidos (solo confirmados; solo puede marcar entregado) aunque se le den
+  más módulos. Cada cambio de permisos queda en Auditoría con el detalle.
+- Implementación: `App\Core\Permisos` (niveles y valores por defecto) y `Controller::requerirPermiso($modulo, $nivel)`.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```

@@ -16,7 +16,7 @@ class ClienteController extends Controller
 {
     public function index(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('clientes', 'ver');
 
         $termino = trim(Entrada::texto($_GET, 'q', ''));
 
@@ -29,13 +29,13 @@ class ClienteController extends Controller
 
     public function mostrarCrear(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('clientes', 'editar');
         $this->vista('admin/clientes/formulario', ['seccionActiva' => 'clientes', 'cliente' => null, 'errores' => []]);
     }
 
     public function crear(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('clientes', 'editar');
 
         $datos = $this->datosDelFormulario();
         $errores = $this->validar($datos);
@@ -64,7 +64,7 @@ class ClienteController extends Controller
 
     public function mostrarEditar(string $id): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('clientes', 'editar');
 
         $cliente = (new Cliente())->buscarPorId((int) $id);
         if ($cliente === null) {
@@ -76,7 +76,7 @@ class ClienteController extends Controller
 
     public function actualizar(string $id): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('clientes', 'editar');
 
         $modelo = new Cliente();
         $existente = $modelo->buscarPorId((int) $id);

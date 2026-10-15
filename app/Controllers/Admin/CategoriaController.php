@@ -16,7 +16,7 @@ class CategoriaController extends Controller
 {
     public function index(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('categorias', 'ver');
 
         $this->vista('admin/categorias/index', [
             'seccionActiva' => 'categorias',
@@ -26,7 +26,7 @@ class CategoriaController extends Controller
 
     public function mostrarCrear(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('categorias', 'editar');
 
         $this->vista('admin/categorias/formulario', [
             'seccionActiva' => 'categorias',
@@ -37,7 +37,7 @@ class CategoriaController extends Controller
 
     public function crear(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('categorias', 'editar');
 
         $datos = $this->datosDelFormulario();
         $errores = $this->validar($datos);
@@ -63,7 +63,7 @@ class CategoriaController extends Controller
 
     public function mostrarEditar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('categorias', 'editar');
 
         $categoria = (new Categoria())->buscarPorId((int) $id);
         if ($categoria === null) {
@@ -80,7 +80,7 @@ class CategoriaController extends Controller
 
     public function actualizar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('categorias', 'editar');
 
         $modelo = new Categoria();
         $existente = $modelo->buscarPorId((int) $id);
@@ -112,7 +112,7 @@ class CategoriaController extends Controller
 
     public function eliminar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('categorias', 'editar');
 
         $modelo = new Categoria();
         $categoria = $modelo->buscarPorId((int) $id);

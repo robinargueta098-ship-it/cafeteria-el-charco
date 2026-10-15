@@ -10,6 +10,7 @@
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Flash;
+use App\Core\Permisos;
 use App\Core\Vista;
 
 $usuarioActual = Auth::usuario();
@@ -17,30 +18,26 @@ $esAdministrador = $usuarioActual !== null && $usuarioActual['rol_id'] === 1;
 $esRepartidor = $usuarioActual !== null && $usuarioActual['rol_id'] === 3;
 $seccionActiva = $seccionActiva ?? '';
 
-// clave => [etiqueta, url, solo_admin]
+// clave => [etiqueta, url, módulo]. Módulo 'admin' = solo Administrador; null = siempre; otro = según «Roles y permisos».
 $enlaces = [
-    'dashboard'      => ['Dashboard', '/admin', false],
-    'pedidos'        => ['Pedidos', '/admin/pedidos', false],
-    'reportes'       => ['Reportes', '/admin/reportes', false],
-    'productos'      => ['Productos', '/admin/productos', true],
-    'categorias'     => ['Categorías', '/admin/categorias', true],
-    'galeria'        => ['Galería', '/admin/galeria', true],
-    'temporadas'     => ['Temporadas', '/admin/temporadas', true],
-    'promociones'    => ['Promociones', '/admin/promociones', true],
-    'clientes'       => ['Clientes', '/admin/clientes', false],
-    'lealtad'        => ['Lealtad', '/admin/lealtad', false],
-    'canjear'        => ['Escanear código', '/admin/lealtad/canjear', false],
-    'recompensas'    => ['Recompensas', '/admin/recompensas', false],
-    'cupones'        => ['Cupones', '/admin/cupones', false],
-    'configuracion'  => ['Configuración', '/admin/configuracion', true],
-    'usuarios'       => ['Usuarios', '/admin/usuarios', true],
-    'auditoria'      => ['Auditoría', '/admin/auditoria', true],
+    'dashboard'      => ['Dashboard', '/admin', null],
+    'pedidos'        => [$esRepartidor ? 'Entregas' : 'Pedidos', '/admin/pedidos', 'pedidos'],
+    'reportes'       => ['Reportes', '/admin/reportes', 'reportes'],
+    'productos'      => ['Productos', '/admin/productos', 'productos'],
+    'categorias'     => ['Categorías', '/admin/categorias', 'categorias'],
+    'galeria'        => ['Galería', '/admin/galeria', 'galeria'],
+    'temporadas'     => ['Temporadas', '/admin/temporadas', 'temporadas'],
+    'promociones'    => ['Promociones', '/admin/promociones', 'promociones'],
+    'clientes'       => ['Clientes', '/admin/clientes', 'clientes'],
+    'lealtad'        => ['Lealtad', '/admin/lealtad', 'lealtad'],
+    'canjear'        => ['Escanear código', '/admin/lealtad/canjear', 'canjear'],
+    'recompensas'    => ['Recompensas', '/admin/recompensas', 'recompensas'],
+    'cupones'        => ['Cupones', '/admin/cupones', 'cupones'],
+    'configuracion'  => ['Configuración', '/admin/configuracion', 'admin'],
+    'usuarios'       => ['Usuarios', '/admin/usuarios', 'admin'],
+    'roles'          => ['Roles y permisos', '/admin/roles', 'admin'],
+    'auditoria'      => ['Auditoría', '/admin/auditoria', 'admin'],
 ];
-
-if ($esRepartidor) {
-    // El Repartidor solo ve sus entregas.
-    $enlaces = ['pedidos' => ['Entregas', '/admin/pedidos', false]];
-}
 
 $flash = Flash::tomar();
 ?>
@@ -62,8 +59,12 @@ $flash = Flash::tomar();
         <div class="panel-sidebar-marca">Cafetería El Charco</div>
         <nav aria-label="Navegación del panel">
             <ul class="panel-nav">
-                <?php foreach ($enlaces as $clave => [$etiqueta, $url, $soloAdmin]): ?>
-                    <?php if ($soloAdmin && !$esAdministrador) continue; ?>
+                <?php foreach ($enlaces as $clave => [$etiqueta, $url, $modulo]): ?>
+                    <?php
+                    if ($modulo === 'admin' && !$esAdministrador) { continue; }
+                    if ($modulo !== null && $modulo !== 'admin' && !Permisos::puede($modulo, 'ver')) { continue; }
+                    if ($clave === 'dashboard' && $esRepartidor) { continue; }   // el Repartidor entra directo a sus pantallas
+                    ?>
                     <li>
                         <a href="<?= htmlspecialchars($url, ENT_QUOTES, 'UTF-8') ?>"
                            class="<?= $clave === $seccionActiva ? 'activo' : '' ?>">

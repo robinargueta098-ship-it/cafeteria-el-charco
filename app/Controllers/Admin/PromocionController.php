@@ -29,7 +29,7 @@ class PromocionController extends Controller
 
     public function index(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('promociones', 'ver');
 
         $this->vista('admin/promociones/index', [
             'seccionActiva' => 'promociones',
@@ -39,13 +39,13 @@ class PromocionController extends Controller
 
     public function mostrarCrear(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('promociones', 'editar');
         $this->formulario(null, []);
     }
 
     public function crear(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('promociones', 'editar');
 
         $datos = $this->datosDelFormulario();
         $errores = $this->validar($datos);
@@ -78,7 +78,7 @@ class PromocionController extends Controller
     /** Sube o baja una posición en el orden en que se muestran en el sitio (flechas ▲▼ del listado). */
     public function mover(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('promociones', 'editar');
 
         $direccion = Entrada::texto($_POST, 'direccion', '');
         if (!in_array($direccion, ['subir', 'bajar'], true)) {
@@ -99,7 +99,7 @@ class PromocionController extends Controller
 
     public function mostrarEditar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('promociones', 'editar');
 
         $promocion = (new Promocion())->buscarPorId((int) $id);
         if ($promocion === null) {
@@ -111,7 +111,7 @@ class PromocionController extends Controller
 
     public function actualizar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('promociones', 'editar');
 
         $modelo = new Promocion();
         $existente = $modelo->buscarPorId((int) $id);
@@ -155,7 +155,7 @@ class PromocionController extends Controller
 
     public function eliminar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('promociones', 'editar');
 
         $modelo = new Promocion();
         $promocion = $modelo->buscarPorId((int) $id);

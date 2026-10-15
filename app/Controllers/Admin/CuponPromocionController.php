@@ -22,7 +22,7 @@ class CuponPromocionController extends Controller
 {
     public function index(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('cupones', 'ver');
 
         $this->vista('admin/lealtad/cupones', [
             'seccionActiva' => 'cupones',
@@ -32,7 +32,7 @@ class CuponPromocionController extends Controller
 
     public function cancelar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('cupones', 'editar');
 
         $cupon = (new CuponPromocion())->buscarPorId((int) $id);
         if ($cupon === null) {

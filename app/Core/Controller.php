@@ -27,6 +27,21 @@ abstract class Controller
         RoleMiddleware::requerir(...$rolesPermitidos);
     }
 
+    /**
+     * Exige sesión activa y que el rol tenga el nivel ('ver' o 'editar') sobre el módulo, según lo que el
+     * Administrador configuró en «Roles y permisos». El Administrador siempre pasa (App\Core\Permisos).
+     */
+    protected function requerirPermiso(string $modulo, string $nivel = 'ver'): void
+    {
+        AuthMiddleware::manejar();
+
+        if (!Permisos::puede($modulo, $nivel)) {
+            http_response_code(403);
+            require APP_PATH . '/Views/errores/403.php';
+            exit;
+        }
+    }
+
     protected function vista(string $vista, array $datos = []): void
     {
         $directorioVistas = realpath(APP_PATH . '/Views');

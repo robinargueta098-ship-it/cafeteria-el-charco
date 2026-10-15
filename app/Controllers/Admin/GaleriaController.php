@@ -24,7 +24,7 @@ class GaleriaController extends Controller
 
     public function index(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('galeria', 'ver');
 
         $modelo = new Galeria();
 
@@ -37,14 +37,14 @@ class GaleriaController extends Controller
 
     public function mostrarCrear(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('galeria', 'editar');
         $this->vistaSubir([]);
     }
 
     /** Sube una o varias fotos de una vez; cada una se valida por separado. */
     public function crear(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('galeria', 'editar');
 
         $archivos = SubidaArchivo::normalizarMultiples($_FILES['imagenes'] ?? null);
 
@@ -102,7 +102,7 @@ class GaleriaController extends Controller
     /** Sube o baja una foto una posición (flechas ▲▼ del listado). */
     public function mover(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('galeria', 'editar');
 
         $direccion = Entrada::texto($_POST, 'direccion', '');
         if (!in_array($direccion, ['subir', 'bajar'], true)) {
@@ -123,7 +123,7 @@ class GaleriaController extends Controller
 
     public function mostrarEditar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('galeria', 'editar');
 
         $foto = (new Galeria())->buscarPorId((int) $id);
         if ($foto === null) {
@@ -135,7 +135,7 @@ class GaleriaController extends Controller
 
     public function actualizar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('galeria', 'editar');
 
         $modelo = new Galeria();
         $existente = $modelo->buscarPorId((int) $id);
@@ -187,7 +187,7 @@ class GaleriaController extends Controller
 
     public function eliminar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('galeria', 'editar');
 
         $modelo = new Galeria();
         $foto = $modelo->buscarPorId((int) $id);

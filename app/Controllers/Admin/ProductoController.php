@@ -20,7 +20,7 @@ class ProductoController extends Controller
 {
     public function index(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('productos', 'ver');
 
         $this->vista('admin/productos/index', [
             'seccionActiva' => 'productos',
@@ -30,13 +30,13 @@ class ProductoController extends Controller
 
     public function mostrarCrear(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('productos', 'editar');
         $this->formulario(null, []);
     }
 
     public function crear(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('productos', 'editar');
 
         $datos = $this->datosDelFormulario();
         $errores = $this->validar($datos);
@@ -72,7 +72,7 @@ class ProductoController extends Controller
 
     public function mostrarEditar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('productos', 'editar');
 
         $modelo = new Producto();
         $producto = $modelo->buscarPorId((int) $id);
@@ -87,7 +87,7 @@ class ProductoController extends Controller
 
     public function actualizar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('productos', 'editar');
 
         $modelo = new Producto();
         $existente = $modelo->buscarPorId((int) $id);
@@ -136,7 +136,7 @@ class ProductoController extends Controller
     /** "Eliminar" un producto en realidad alterna su estado activo/inactivo (nunca borrado físico, ver docs/arquitectura.md §8). */
     public function alternarEstado(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('productos', 'editar');
 
         $modelo = new Producto();
         $producto = $modelo->buscarPorId((int) $id);

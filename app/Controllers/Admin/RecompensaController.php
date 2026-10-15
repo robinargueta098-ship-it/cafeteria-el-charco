@@ -14,7 +14,7 @@ class RecompensaController extends Controller
 
     public function index(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('recompensas', 'ver');
 
         $estado = Entrada::texto($_GET, 'estado', '');
         $filtros = in_array($estado, self::ESTADOS_VALIDOS, true) ? ['estado' => $estado] : [];

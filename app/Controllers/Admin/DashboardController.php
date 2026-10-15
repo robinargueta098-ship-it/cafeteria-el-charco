@@ -6,6 +6,7 @@ namespace App\Controllers\Admin;
 
 use App\Core\Auth;
 use App\Core\Controller;
+use App\Core\Permisos;
 use App\Models\BitacoraAuditoria;
 use App\Models\Cliente;
 use App\Models\Producto;
@@ -19,7 +20,7 @@ class DashboardController extends Controller
 
         $usuario = Auth::usuario();
         if ((int) $usuario['rol_id'] === 3) {
-            $this->redirigir('/admin/pedidos');
+            $this->redirigir(Permisos::primeraRuta(3));
         }
         $esAdministrador = $usuario['rol_id'] === 1;
 

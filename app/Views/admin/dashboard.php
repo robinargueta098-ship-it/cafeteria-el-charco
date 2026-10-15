@@ -5,22 +5,28 @@
  * @var int $clientesTotal
  * @var int $recompensasDisponibles
  */
+use App\Core\Permisos;
+
 require APP_PATH . '/Views/layouts/panel_header.php';
 ?>
 
 <h1>Bienvenido, <?= htmlspecialchars($usuario['nombre'], ENT_QUOTES, 'UTF-8') ?></h1>
 
 <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
+    <?php if (Permisos::puede('clientes', 'ver')): ?>
     <a class="tarjeta tarjeta-enlace" href="/admin/clientes" style="flex:1;min-width:180px;">
         <div style="font-size:2rem;font-weight:700;"><?= $clientesTotal ?></div>
         <div>Clientes registrados</div>
         <span class="tarjeta-enlace-flecha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 17 17 7M8 7h9v9"/></svg></span>
     </a>
+    <?php endif; ?>
+    <?php if (Permisos::puede('recompensas', 'ver')): ?>
     <a class="tarjeta tarjeta-enlace" href="/admin/recompensas?estado=disponible" style="flex:1;min-width:180px;">
         <div style="font-size:2rem;font-weight:700;"><?= $recompensasDisponibles ?></div>
         <div>Con recompensa disponible</div>
         <span class="tarjeta-enlace-flecha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 17 17 7M8 7h9v9"/></svg></span>
     </a>
+    <?php endif; ?>
     <?php if ($esAdmin): ?>
         <a class="tarjeta tarjeta-enlace" href="/admin/productos" style="flex:1;min-width:180px;">
             <div style="font-size:2rem;font-weight:700;"><?= $productosActivos ?></div>

@@ -21,7 +21,7 @@ class LealtadController extends Controller
 {
     public function index(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('lealtad', 'ver');
 
         $termino = trim(Entrada::texto($_GET, 'q', ''));
 
@@ -34,7 +34,7 @@ class LealtadController extends Controller
 
     public function mostrarCliente(string $id): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('lealtad', 'ver');
 
         $cliente = (new Cliente())->buscarPorId((int) $id);
         if ($cliente === null) {
@@ -52,7 +52,7 @@ class LealtadController extends Controller
 
     public function registrarConsumo(string $id): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('lealtad', 'editar');
 
         $cliente = (new Cliente())->buscarPorId((int) $id);
         if ($cliente === null) {
@@ -132,7 +132,7 @@ class LealtadController extends Controller
      */
     public function restablecerPin(string $id): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('lealtad', 'editar');
 
         $modelo = new Cliente();
         $cliente = $modelo->buscarPorId((int) $id);
@@ -162,7 +162,7 @@ class LealtadController extends Controller
      */
     public function mostrarCanjear(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('canjear', 'ver');
 
         // Resultado de la consulta anterior (se guarda al responder un POST y se muestra UNA
         // sola vez): al recargar, la pantalla vuelve limpia en vez de repetir el envío.
@@ -215,7 +215,7 @@ class LealtadController extends Controller
      */
     public function consultarCodigo(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('canjear', 'ver');
 
         $entrada = Entrada::texto($_POST, 'codigo', '');
         $telefono = Cliente::normalizarTelefono(Entrada::texto($_POST, 'telefono', ''));
@@ -280,7 +280,7 @@ class LealtadController extends Controller
      */
     public function sumarConsumoPorQr(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('canjear', 'editar');
 
         $codigoQr = Cliente::normalizarCodigoQr(Entrada::texto($_POST, 'codigo_qr', ''));
         $motivo = 'Escaneo de QR personal'; // compra normal: no se le pide motivo al cajero
@@ -325,7 +325,7 @@ class LealtadController extends Controller
      */
     public function confirmarCanje(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('canjear', 'editar');
 
         $codigo = Recompensa::normalizarCodigo(Entrada::texto($_POST, 'codigo', ''));
         $clienteId = (int) ($_POST['cliente_id'] ?? 0);
@@ -352,7 +352,7 @@ class LealtadController extends Controller
      */
     public function confirmarCanjeCupon(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirPermiso('canjear', 'editar');
 
         $codigo = Recompensa::normalizarCodigo(Entrada::texto($_POST, 'codigo', ''));
         $usuario = Auth::usuario();

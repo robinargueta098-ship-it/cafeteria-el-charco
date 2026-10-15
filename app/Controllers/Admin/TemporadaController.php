@@ -16,7 +16,7 @@ class TemporadaController extends Controller
 {
     public function index(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('temporadas', 'ver');
 
         $this->vista('admin/temporadas/index', [
             'seccionActiva' => 'temporadas',
@@ -26,7 +26,7 @@ class TemporadaController extends Controller
 
     public function mostrarCrear(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('temporadas', 'editar');
         $this->vista('admin/temporadas/formulario', [
             'seccionActiva' => 'temporadas', 'temporada' => null, 'errores' => [],
         ]);
@@ -34,7 +34,7 @@ class TemporadaController extends Controller
 
     public function crear(): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('temporadas', 'editar');
 
         $datos = $this->datosDelFormulario();
         $errores = $this->validar($datos);
@@ -69,7 +69,7 @@ class TemporadaController extends Controller
     /** Sube o baja una posición en el orden en que se muestran en el sitio (flechas ▲▼ del listado). */
     public function mover(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('temporadas', 'editar');
 
         $direccion = Entrada::texto($_POST, 'direccion', '');
         if (!in_array($direccion, ['subir', 'bajar'], true)) {
@@ -90,7 +90,7 @@ class TemporadaController extends Controller
 
     public function mostrarEditar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('temporadas', 'editar');
 
         $temporada = (new Temporada())->buscarPorId((int) $id);
         if ($temporada === null) {
@@ -104,7 +104,7 @@ class TemporadaController extends Controller
 
     public function actualizar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('temporadas', 'editar');
 
         $modelo = new Temporada();
         $existente = $modelo->buscarPorId((int) $id);
@@ -150,7 +150,7 @@ class TemporadaController extends Controller
 
     public function eliminar(string $id): void
     {
-        $this->requerirRol(1);
+        $this->requerirPermiso('temporadas', 'editar');
 
         $modelo = new Temporada();
         $temporada = $modelo->buscarPorId((int) $id);

@@ -402,6 +402,21 @@ INSERT INTO roles (nombre, descripcion) VALUES
   ('Cajero', 'Pedidos, Clientes, Lealtad, Recompensas y Cupones; Reportes limitados'),
   ('Repartidor', 'Solo ve los pedidos confirmados por entregar y los marca como entregados');
 
+-- Permisos por rol y módulo (se configuran en «Roles y permisos»). El Administrador siempre puede todo.
+-- Los valores iniciales reproducen lo que Cajero y Repartidor ya podían hacer (migración 016).
+CREATE TABLE rol_permisos (
+  rol_id  INT UNSIGNED NOT NULL,
+  modulo  VARCHAR(30)  NOT NULL,
+  nivel   ENUM('ninguno','ver','editar') NOT NULL DEFAULT 'ninguno',
+  PRIMARY KEY (rol_id, modulo),
+  CONSTRAINT fk_rol_permisos_rol FOREIGN KEY (rol_id) REFERENCES roles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO rol_permisos (rol_id, modulo, nivel) VALUES
+  (2, 'pedidos', 'editar'), (2, 'reportes', 'ver'), (2, 'clientes', 'editar'), (2, 'lealtad', 'editar'),
+  (2, 'canjear', 'editar'), (2, 'recompensas', 'ver'), (2, 'cupones', 'ver'),
+  (3, 'pedidos', 'editar');
+
 -- Usuario administrador inicial.
 -- Contraseña generada aleatoriamente y NO se guarda en este archivo ni
 -- en el repositorio: se entrega una única vez fuera de git y debe
