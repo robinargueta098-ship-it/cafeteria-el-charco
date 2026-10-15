@@ -16,6 +16,9 @@ class Auth
 {
     private const MAX_INTENTOS_CUENTA = 5;
     private const BLOQUEO_MINUTOS = 15;
+    /** Segundos sin actividad en el panel antes de pedir iniciar sesión de nuevo. */
+    private const INACTIVIDAD_ADMIN = 7200;       // Administrador: 2 horas
+    private const INACTIVIDAD_PERSONAL = 28800;   // Cajero y Repartidor: 8 horas (todo el turno)
 
     private const MAX_INTENTOS_IP = 20;
     private const VENTANA_IP_MINUTOS = 15;
@@ -69,6 +72,7 @@ class Auth
         $_SESSION['usuario_id']     = (int) $registro['id'];
         $_SESSION['usuario_nombre'] = $registro['nombre'];
         $_SESSION['usuario_rol']    = (int) $registro['rol_id'];
+        $_SESSION['ultima_actividad'] = time();
 
         $modelo->registrarAccesoExitoso((int) $registro['id']);
 
@@ -92,6 +96,17 @@ class Auth
         if ($revisadoPara === $_SESSION['usuario_id']) {
             return true;
         }
+
+        // Vencimiento por inactividad, según el rol que tenía al iniciar sesión (Administrador 2 h; Cajero y
+        // Repartidor 8 h: trabajan todo el turno). Cada petición del panel reinicia el contador.
+        $ahora = time();
+        $limite = ((int) ($_SESSION['usuario_rol'] ?? 0)) === 1 ? self::INACTIVIDAD_ADMIN : self::INACTIVIDAD_PERSONAL;
+        if (isset($_SESSION['ultima_actividad']) && $ahora - (int) $_SESSION['ultima_actividad'] > $limite) {
+            Session::destruir();
+            Session::iniciar();
+            return false;
+        }
+        $_SESSION['ultima_actividad'] = $ahora;
 
         $registro = (new Usuario())->buscarPorId((int) $_SESSION['usuario_id']);
 

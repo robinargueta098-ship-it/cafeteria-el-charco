@@ -1808,6 +1808,12 @@ Iniciar sesión en el panel desde el mismo navegador cambia el token CSRF de la 
 quedaba con uno viejo («La página estaba desactualizada…»). Ahora `carrito.js`, al recibir `error: 'sesion'`, pide el
 vigente a `GET /pedido/token` y reintenta una vez (envío y confirmación «Sí, ya lo envié»), sin recargar ni perder el carrito.
 
+### 4.57 Vencimiento de sesión por rol
+
+La sesión del panel vence por **inactividad**: Administrador a las **2 horas**, Cajero y Repartidor a las **8 horas**
+(todo el turno). Cada petición del panel reinicia el contador (`Auth::verificado`, `ultima_actividad` en la sesión).
+Además, la cookie es de navegador (se pierde al cerrarlo) y un usuario desactivado pierde el acceso al instante.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```
