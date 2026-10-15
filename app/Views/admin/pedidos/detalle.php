@@ -4,6 +4,7 @@
  * @var array<int,array<string,mixed>> $items
  * @var array<int,array<string,mixed>> $historial
  * @var array<string,array{motivo:bool,solo_admin:bool}> $acciones
+ * @var bool $esRepartidor
  */
 use App\Core\Csrf;
 use App\Core\Dinero;
@@ -18,7 +19,7 @@ $textosBoton = ['confirmado' => 'Confirmar pedido', 'entregado' => 'Marcar como 
 
 <div class="panel-encabezado">
     <h1>Pedido #<?= $e($pedido['codigo']) ?></h1>
-    <a class="btn btn-secundario" href="/admin/pedidos">← Volver a Pedidos</a>
+    <a class="btn btn-secundario" href="/admin/pedidos">← Volver<?= $esRepartidor ? ' a mis entregas' : ' a Pedidos' ?></a>
 </div>
 
 <div class="tarjeta" style="margin-bottom:16px;">
@@ -36,7 +37,7 @@ $textosBoton = ['confirmado' => 'Confirmar pedido', 'entregado' => 'Marcar como 
         <dt>Forma de pago</dt><dd><?= $e(Pedido::ETIQUETAS_PAGO[$pedido['forma_pago']] ?? $pedido['forma_pago']) ?></dd>
         <?php if (!empty($pedido['nota'])): ?><dt>Detalles del cliente</dt><dd><?= $e($pedido['nota']) ?></dd><?php endif; ?>
     </dl>
-    <?php if ($estado === 'entregado' && !empty($pedido['cliente_id'])): ?>
+    <?php if (!$esRepartidor && $estado === 'entregado' && !empty($pedido['cliente_id'])): ?>
         <p style="margin-bottom:0;">
             Este pedido es de un cliente con cuenta de lealtad
             (<?= $e($pedido['cliente_cuenta_nombre'] ?? '') ?>). Los cafés <strong>no se suman solos</strong>:
@@ -97,6 +98,7 @@ $textosBoton = ['confirmado' => 'Confirmar pedido', 'entregado' => 'Marcar como 
     </div>
 <?php endif; ?>
 
+<?php if (!$esRepartidor): ?>
 <div class="tarjeta tabla-contenedor">
     <h2 style="margin-top:0;">Historial</h2>
     <table class="tabla">
@@ -116,5 +118,6 @@ $textosBoton = ['confirmado' => 'Confirmar pedido', 'entregado' => 'Marcar como 
         </tbody>
     </table>
 </div>
+<?php endif; ?>
 
 <?php require APP_PATH . '/Views/layouts/panel_footer.php'; ?>

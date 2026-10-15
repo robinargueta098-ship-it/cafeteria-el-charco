@@ -399,7 +399,8 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- Roles del panel (ver docs/arquitectura.md §3.2 para el detalle de permisos)
 INSERT INTO roles (nombre, descripcion) VALUES
   ('Administrador', 'Acceso total a todos los módulos del panel'),
-  ('Cajero', 'Solo Clientes, Lealtad y Recompensas');
+  ('Cajero', 'Pedidos, Clientes, Lealtad, Recompensas y Cupones; Reportes limitados'),
+  ('Repartidor', 'Solo ve los pedidos confirmados por entregar y los marca como entregados');
 
 -- Usuario administrador inicial.
 -- Contraseña generada aleatoriamente y NO se guarda en este archivo ni

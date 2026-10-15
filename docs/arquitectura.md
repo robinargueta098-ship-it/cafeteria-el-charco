@@ -1787,6 +1787,21 @@ Cada tabla de Reportes ofrece **Exportar a Excel** (`?formato=xlsx`); ya no hay 
 números (sumables) y el texto como texto literal, así que no hay inyección de fórmulas. Roles (el Cajero ve teléfonos
 enmascarados) y registro en Auditoría iguales que en pantalla. Requiere la extensión `zip` de PHP.
 
+### 4.55 Roles del panel (Administrador, Cajero, Repartidor)
+
+| Módulo | Administrador (1) | Cajero (2) | Repartidor (3) |
+|---|---|---|---|
+| Dashboard | Sí | Sí | Entra directo a «Entregas» |
+| Pedidos | Todos los estados; confirma, entrega, cancela, anula | Todos los estados; confirma, entrega, cancela (con motivo) | Solo **confirmados**; únicamente «Marcar como entregado» |
+| Reportes | Todos, con exportación a Excel | Pedidos y Mis consumos (teléfonos enmascarados) | No |
+| Clientes, Lealtad, Escanear, Recompensas, Cupones | Sí (ajustes de saldo solo Admin) | Sí (sin corregir saldos) | No |
+| Productos, Categorías, Galería, Temporadas, Promociones, Configuración, Usuarios, Auditoría | Sí | No | No |
+
+El Repartidor (migración `015_rol_repartidor.sql`) ve en «Entregas» los pedidos confirmados con cliente, teléfono,
+dirección, forma de pago, productos y total; no tiene filtros, búsqueda ni historial. Se valida en el servidor
+(`PedidoEstadoService`: solo `confirmado → entregado`; el detalle de cualquier otro pedido responde 404). Todo cambio
+queda en el historial del pedido con su nombre. Para crearlo: Usuarios → Nuevo → rol Repartidor.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```

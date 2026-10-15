@@ -8,6 +8,7 @@
  * @var int $totalPaginas
  * @var int $pendientes
  * @var int $sinConfirmar
+ * @var bool $esRepartidor
  */
 use App\Core\Dinero;
 use App\Models\Pedido;
@@ -22,17 +23,21 @@ $consulta = function (array $extra = []) use ($filtros) {
 ?>
 
 <div class="panel-encabezado">
-    <h1>Pedidos</h1>
+    <h1><?= $esRepartidor ? 'Entregas pendientes' : 'Pedidos' ?></h1>
 </div>
 
+<?php if ($esRepartidor): ?>
+    <p class="campo-ayuda" style="margin-top:0;">Pedidos confirmados que faltan por entregar. Al entregar uno, márcalo como entregado.</p>
+<?php else: ?>
 <p class="campo-ayuda" style="margin-top:0;">
     Pedidos hechos desde la página web (carrito). Los <strong>Enviados</strong> esperan que los confirmes.
     <?php if ($pendientes > 0): ?>
         <strong>Ahora hay <?= (int) $pendientes ?> sin confirmar.</strong>
     <?php endif; ?>
 </p>
+<?php endif; ?>
 
-<?php if ($sinConfirmar > 0 && $filtros['estado'] !== 'pendiente'): ?>
+<?php if (!$esRepartidor && $sinConfirmar > 0 && $filtros['estado'] !== 'pendiente'): ?>
     <div class="alerta" style="background:#f4ecdf;border:1px solid #d9c9a8;color:#3b2415;">
         Hay <strong><?= (int) $sinConfirmar ?></strong> pedido(s) que el cliente armó pero <strong>no confirmó</strong> haber enviado por WhatsApp.
         Si te llegó su mensaje con el código, <a href="/admin/pedidos?estado=pendiente">búscalo aquí</a> y confírmalo.
@@ -43,6 +48,7 @@ $consulta = function (array $extra = []) use ($filtros) {
     <div class="alerta alerta-error"><?= htmlspecialchars($aviso, ENT_QUOTES, 'UTF-8') ?></div>
 <?php endforeach; ?>
 
+<?php if (!$esRepartidor): ?>
 <div class="tarjeta" style="margin-bottom:16px;">
     <form method="get" action="/admin/pedidos" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
         <div class="campo" style="margin-bottom:0;">
@@ -70,6 +76,7 @@ $consulta = function (array $extra = []) use ($filtros) {
         <a class="btn btn-secundario" href="/admin/pedidos">Limpiar</a>
     </form>
 </div>
+<?php endif; ?>
 
 <div class="tarjeta tabla-contenedor">
     <?php if ($filas === []): ?>

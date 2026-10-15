@@ -24,6 +24,7 @@ use Throwable;
 class PedidoEstadoService
 {
     public const MOTIVO_MAX = 255;
+    public const ROL_REPARTIDOR = 3;
 
     /** estado actual => [estado nuevo => ['motivo' => bool, 'solo_admin' => bool]] */
     private const TRANSICIONES = [
@@ -55,6 +56,10 @@ class PedidoEstadoService
     public static function disponibles(string $estadoActual, int $rolId): array
     {
         $r = [];
+        if ($rolId === self::ROL_REPARTIDOR) {
+            // El Repartidor solo entrega: confirmado → entregado. No cancela, no confirma, no anula.
+            return $estadoActual === 'confirmado' ? ['entregado' => ['motivo' => false, 'solo_admin' => false]] : [];
+        }
         foreach (isset(self::TRANSICIONES[$estadoActual]) ? self::TRANSICIONES[$estadoActual] : [] as $nuevo => $regla) {
             if ($regla['solo_admin'] && $rolId !== 1) {
                 continue;
@@ -76,6 +81,10 @@ class PedidoEstadoService
             return ['ok' => false, 'error' => 'Ese cambio de estado no está permitido.'];
         }
         $regla = self::TRANSICIONES[$estadoVisto][$nuevo];
+
+        if ($rolId === self::ROL_REPARTIDOR && !($estadoVisto === 'confirmado' && $nuevo === 'entregado')) {
+            return ['ok' => false, 'error' => 'Solo puedes marcar como entregados los pedidos confirmados.'];
+        }
 
         if ($regla['solo_admin'] && $rolId !== 1) {
             return ['ok' => false, 'error' => 'Solo un Administrador puede anular un pedido entregado.'];

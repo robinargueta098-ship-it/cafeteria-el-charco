@@ -15,9 +15,12 @@ class DashboardController extends Controller
 {
     public function index(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirRol(1, 2, 3);
 
         $usuario = Auth::usuario();
+        if ((int) $usuario['rol_id'] === 3) {
+            $this->redirigir('/admin/pedidos');
+        }
         $esAdministrador = $usuario['rol_id'] === 1;
 
         $datos = [

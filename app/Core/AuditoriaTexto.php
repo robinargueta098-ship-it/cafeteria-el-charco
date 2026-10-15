@@ -165,7 +165,7 @@ class AuditoriaTexto
         if ($campo === 'rol_id') {
             $rol = (int) $v;
 
-            return $rol === 1 ? 'Administrador' : ($rol === 2 ? 'Cajero' : 'rol ' . $rol);
+            return $rol === 1 ? 'Administrador' : ($rol === 2 ? 'Cajero' : ($rol === 3 ? 'Repartidor' : 'rol ' . $rol));
         }
         if (in_array($campo, ['precio', 'precio_alt'], true) && is_numeric($v)) {
             return 'Q' . rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.');

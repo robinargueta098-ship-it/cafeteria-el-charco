@@ -14,6 +14,7 @@ use App\Core\Vista;
 
 $usuarioActual = Auth::usuario();
 $esAdministrador = $usuarioActual !== null && $usuarioActual['rol_id'] === 1;
+$esRepartidor = $usuarioActual !== null && $usuarioActual['rol_id'] === 3;
 $seccionActiva = $seccionActiva ?? '';
 
 // clave => [etiqueta, url, solo_admin]
@@ -35,6 +36,11 @@ $enlaces = [
     'usuarios'       => ['Usuarios', '/admin/usuarios', true],
     'auditoria'      => ['Auditoría', '/admin/auditoria', true],
 ];
+
+if ($esRepartidor) {
+    // El Repartidor solo ve sus entregas.
+    $enlaces = ['pedidos' => ['Entregas', '/admin/pedidos', false]];
+}
 
 $flash = Flash::tomar();
 ?>

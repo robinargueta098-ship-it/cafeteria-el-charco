@@ -20,7 +20,9 @@ class PedidoController extends Controller
 {
     public function index(): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirRol(1, 2, 3);
+
+        $esRepartidor = (int) Auth::usuario()['rol_id'] === 3;
 
         $filtros = [
             'estado' => Entrada::texto($_GET, 'estado', ''),
@@ -32,6 +34,10 @@ class PedidoController extends Controller
 
         if (!in_array($filtros['estado'], Pedido::ESTADOS, true)) {
             $filtros['estado'] = '';
+        }
+        if ($esRepartidor) {
+            // El Repartidor solo ve lo que le toca entregar: sin filtros ni búsqueda.
+            $filtros = ['estado' => 'confirmado', 'desde' => '', 'hasta' => '', 'q' => ''];
         }
         foreach (['desde' => 'La fecha «desde»', 'hasta' => 'La fecha «hasta»'] as $campo => $etiqueta) {
             if ($filtros[$campo] !== '' && !Validator::esFechaValida($filtros[$campo])) {
@@ -58,20 +64,23 @@ class PedidoController extends Controller
             'totalPaginas'  => $resultado['totalPaginas'],
             'pendientes'    => $modelo->contarPendientesDeConfirmar(),
             'sinConfirmar'  => $modelo->contarSinConfirmarPorElCliente(),
+            'esRepartidor'  => $esRepartidor,
         ]);
     }
 
     public function mostrar(string $id): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirRol(1, 2, 3);
+
+        $usuario = Auth::usuario();
+        $esRepartidor = (int) $usuario['rol_id'] === 3;
 
         $modelo = new Pedido();
         $pedido = $modelo->buscarPorId((int) $id);
-        if ($pedido === null) {
+        // El Repartidor solo puede abrir pedidos confirmados (los que tiene que entregar).
+        if ($pedido === null || ($esRepartidor && $pedido['estado'] !== 'confirmado')) {
             $this->error404();
         }
-
-        $usuario = Auth::usuario();
 
         $this->vista('admin/pedidos/detalle', [
             'seccionActiva' => 'pedidos',
@@ -79,12 +88,13 @@ class PedidoController extends Controller
             'items'         => $modelo->items((int) $id),
             'historial'     => $modelo->historial((int) $id),
             'acciones'      => PedidoEstadoService::disponibles((string) $pedido['estado'], (int) $usuario['rol_id']),
+            'esRepartidor'  => $esRepartidor,
         ]);
     }
 
     public function cambiarEstado(string $id): void
     {
-        $this->requerirRol(1, 2);
+        $this->requerirRol(1, 2, 3);
 
         $usuario = Auth::usuario();
         $resultado = PedidoEstadoService::cambiar(
@@ -102,6 +112,7 @@ class PedidoController extends Controller
             Flash::error($resultado['error']);
         }
 
-        $this->redirigir('/admin/pedidos/' . (int) $id);
+        // Al terminar una entrega, el Repartidor vuelve a su lista (el pedido ya no le aparece).
+        $this->redirigir($resultado['ok'] && (int) $usuario['rol_id'] === 3 ? '/admin/pedidos' : '/admin/pedidos/' . (int) $id);
     }
 }
