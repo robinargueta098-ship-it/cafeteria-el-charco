@@ -23,6 +23,10 @@ class BitacoraAuditoria
             $condiciones[] = 'b.tabla_afectada = :tabla';
             $parametros['tabla'] = $filtros['tabla'];
         }
+        if (!empty($filtros['excluir_tabla'])) {
+            $condiciones[] = 'b.tabla_afectada <> :excluir_tabla';
+            $parametros['excluir_tabla'] = $filtros['excluir_tabla'];
+        }
         if (!empty($filtros['accion'])) {
             $condiciones[] = 'b.accion = :accion';
             $parametros['accion'] = $filtros['accion'];

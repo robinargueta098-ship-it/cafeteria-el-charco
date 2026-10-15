@@ -39,11 +39,9 @@ class AuditoriaService
         int $registroId,
         string $accion,
         ?array $antes = null,
-        ?array $despues = null
+        ?array $despues = null,
+        ?int $usuarioId = null
     ): void {
-        if ($accion === 'login') {
-            return;
-        }
 
         // Nombre legible del objeto (usuario, producto, promoción…) para poder decir "qué" se tocó aunque en las
         // ediciones solo se guarden los campos que cambiaron. Y quién lo hizo, por si ese usuario se elimina después
@@ -75,6 +73,7 @@ class AuditoriaService
 
         try {
             $usuario = Auth::usuario();
+            $usuarioId = $usuarioId ?? ($usuario['id'] ?? null);
 
             // JSON_INVALID_UTF8_SUBSTITUTE evita que json_encode() falle
             // silenciosamente (devolviendo false) si algún valor trae
@@ -90,7 +89,7 @@ class AuditoriaService
                 'tabla'       => $tabla,
                 'registro_id' => $registroId,
                 'accion'      => $accion,
-                'usuario_id'  => $usuario['id'] ?? null,
+                'usuario_id'  => $usuarioId,
                 'antes'       => $antes !== null ? json_encode($antes, $banderas) : null,
                 'despues'     => $despues !== null ? json_encode($despues, $banderas) : null,
                 'ip'          => $_SERVER['REMOTE_ADDR'] ?? null,
@@ -98,6 +97,47 @@ class AuditoriaService
         } catch (Throwable $e) {
             Logger::error('No se pudo registrar en bitacora_auditoria: ' . $e->getMessage());
         }
+    }
+
+    /** «Chrome en Windows», «Safari en iPhone»… para identificar desde qué aparato se entró. */
+    public static function dispositivo(?string $userAgent): string
+    {
+        $ua = (string) $userAgent;
+        if ($ua === '') {
+            return 'dispositivo desconocido';
+        }
+
+        if (stripos($ua, 'Edg/') !== false) {
+            $navegador = 'Edge';
+        } elseif (stripos($ua, 'OPR/') !== false || stripos($ua, 'Opera') !== false) {
+            $navegador = 'Opera';
+        } elseif (stripos($ua, 'Firefox/') !== false || stripos($ua, 'FxiOS') !== false) {
+            $navegador = 'Firefox';
+        } elseif (stripos($ua, 'Chrome/') !== false || stripos($ua, 'CriOS') !== false) {
+            $navegador = 'Chrome';
+        } elseif (stripos($ua, 'Safari/') !== false) {
+            $navegador = 'Safari';
+        } else {
+            $navegador = 'navegador desconocido';
+        }
+
+        if (stripos($ua, 'iPhone') !== false) {
+            $sistema = 'iPhone';
+        } elseif (stripos($ua, 'iPad') !== false) {
+            $sistema = 'iPad';
+        } elseif (stripos($ua, 'Android') !== false) {
+            $sistema = 'Android';
+        } elseif (stripos($ua, 'Windows') !== false) {
+            $sistema = 'Windows';
+        } elseif (stripos($ua, 'Macintosh') !== false || stripos($ua, 'Mac OS') !== false) {
+            $sistema = 'Mac';
+        } elseif (stripos($ua, 'Linux') !== false) {
+            $sistema = 'Linux';
+        } else {
+            $sistema = 'sistema desconocido';
+        }
+
+        return $navegador . ' en ' . $sistema;
     }
 
     /** @return string|null nombre, título, usuario o código del objeto, el primero que exista */

@@ -28,6 +28,7 @@ class AuditoriaTexto
         'pedidos'             => ['el pedido', 'Pedidos'],
         'reportes'            => ['el reporte', 'Reportes'],
         'roles'               => ['el rol', 'Roles y permisos'],
+        'sesiones'            => ['la sesión', 'Inicios de sesión'],
     ];
 
     private const CAMPOS = [
@@ -84,6 +85,21 @@ class AuditoriaTexto
                 $verbo = ($despues['tipo'] ?? '') === 'ajuste_negativo' ? 'Restó' : 'Sumó';
                 return $verbo . ' ' . (int) ($despues['cantidad'] ?? 0) . ' café(s) (ajuste manual)' . $quien . $motivo;
             }
+        }
+        if ($tabla === 'sesiones') {
+            $evento = (string) ($despues['evento'] ?? 'inicio');
+            $donde = !empty($despues['dispositivo']) ? ' — desde ' . $despues['dispositivo'] : '';
+            if ($evento === 'cierre') {
+                return 'Cerró sesión' . $donde;
+            }
+            if ($evento === 'fallido') {
+                $motivos = ['contrasena' => 'contraseña incorrecta', 'bloqueado' => 'cuenta bloqueada temporalmente', 'inactivo' => 'cuenta desactivada'];
+                $motivo = $motivos[(string) ($despues['motivo'] ?? '')] ?? 'no se pudo iniciar';
+
+                return 'Intento fallido de inicio de sesión de «' . ($despues['usuario'] ?? $objeto) . '» (' . $motivo . ')' . $donde;
+            }
+
+            return 'Inició sesión' . $donde;
         }
         if ($tabla === 'pedidos' && isset($despues['estado'])) {
             $etiquetas = ['pendiente' => 'Sin enviar', 'enviado' => 'Nuevo', 'confirmado' => 'Confirmado', 'entregado' => 'Entregado', 'cancelado' => 'Cancelado', 'anulado' => 'Anulado'];

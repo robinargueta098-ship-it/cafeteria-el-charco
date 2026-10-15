@@ -1836,6 +1836,15 @@ valores iniciales = lo que cada rol ya podía hacer) y se aplica de inmediato, s
   más módulos. Cada cambio de permisos queda en Auditoría con el detalle.
 - Implementación: `App\Core\Permisos` (niveles y valores por defecto) y `Controller::requerirPermiso($modulo, $nivel)`.
 
+### 4.60 Inicios de sesión en Auditoría
+
+Auditoría vuelve a registrar los accesos al panel (módulo «Inicios de sesión», `tabla_afectada = 'sesiones'`,
+acción `login`): **inicio de sesión**, **cierre de sesión** e **intento fallido** (contraseña incorrecta, cuenta
+bloqueada o desactivada), cada uno con usuario, fecha, IP y dispositivo («Chrome en Windows», «Safari en iPhone»).
+Los intentos contra nombres que no existen no se anotan (ruido de robots) y nunca se guarda la contraseña escrita.
+Aparecen filtrando por ese módulo o por la acción «Inicio de sesión»; no se mezclan en la «Actividad reciente» del
+panel de inicio. Las sesiones que vencen por inactividad no generan registro de cierre.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```

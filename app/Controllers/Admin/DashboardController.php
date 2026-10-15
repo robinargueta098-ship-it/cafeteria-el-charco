@@ -35,7 +35,7 @@ class DashboardController extends Controller
         if ($esAdministrador) {
             $datos['productosActivos'] = (new Producto())->contarActivos();
             $datos['promocionesVigentes'] = (new Promocion())->contarVigentesHoy();
-            $datos['ultimaActividad'] = (new BitacoraAuditoria())->listar([], 1)['registros'];
+            $datos['ultimaActividad'] = (new BitacoraAuditoria())->listar(['excluir_tabla' => 'sesiones'], 1)['registros'];
             $datos['ultimaActividad'] = array_slice($datos['ultimaActividad'], 0, 5);
         }
 

@@ -40,11 +40,27 @@ class AuthController extends Controller
             ->longitudMaxima('password', 'Contraseña', 255);
 
         if (!$validador->esValido() || !Auth::intentar($datos['usuario'], $datos['password'])) {
+            // Se anotan los intentos fallidos contra cuentas que existen (no contra nombres inventados por robots).
+            if (Auth::$ultimoUsuarioId !== null) {
+                AuditoriaService::registrar('sesiones', (int) Auth::$ultimoUsuarioId, 'login', null, [
+                    'evento'      => 'fallido',
+                    'motivo'      => (string) Auth::$ultimoMotivo,
+                    'usuario'     => $datos['usuario'],
+                    'dispositivo' => AuditoriaService::dispositivo($_SERVER['HTTP_USER_AGENT'] ?? null),
+                ], (int) Auth::$ultimoUsuarioId);
+            }
             $this->vista('admin/login', ['error' => 'Usuario o contraseña incorrectos.']);
             return;
         }
 
-        // Los inicios de sesión ya no se guardan en Auditoría (solo ruido); los intentos fallidos quedan en intentos_login.
+        $sesion = Auth::usuario();
+        if ($sesion !== null) {
+            AuditoriaService::registrar('sesiones', (int) $sesion['id'], 'login', null, [
+                'evento'      => 'inicio',
+                'usuario'     => $datos['usuario'],
+                'dispositivo' => AuditoriaService::dispositivo($_SERVER['HTTP_USER_AGENT'] ?? null),
+            ]);
+        }
 
         // Si la sesión venció a mitad de un formulario, se vuelve a esa pantalla (con lo escrito) y no al inicio.
         $this->redirigir(BorradorFormulario::destinoPendiente() ?? '/admin');
@@ -52,6 +68,14 @@ class AuthController extends Controller
 
     public function cerrarSesion(): void
     {
+        $sesion = Auth::usuario();
+        if ($sesion !== null) {
+            AuditoriaService::registrar('sesiones', (int) $sesion['id'], 'login', null, [
+                'evento'      => 'cierre',
+                'usuario'     => (string) $sesion['nombre'],
+                'dispositivo' => AuditoriaService::dispositivo($_SERVER['HTTP_USER_AGENT'] ?? null),
+            ]);
+        }
         Auth::cerrarSesion();
         $this->redirigir('/admin/login');
     }

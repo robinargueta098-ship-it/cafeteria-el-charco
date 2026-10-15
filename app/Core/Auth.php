@@ -31,8 +31,15 @@ class Auth
      */
     private const HASH_FICTICIO = '$2y$10$Ldk/pjo2TTJuHMgYMjS/feP6CrMWdTyM8VMXO9mIj6wag3v.7iOMW';
 
+    /** Motivo del último intento fallido ('contrasena', 'bloqueado', 'inactivo', 'ip', 'desconocido') y la cuenta, si existe. */
+    public static $ultimoMotivo = null;
+    public static $ultimoUsuarioId = null;
+
     public static function intentar(string $usuario, string $password): bool
     {
+        self::$ultimoMotivo = null;
+        self::$ultimoUsuarioId = null;
+
         $ip = self::ipCliente();
         $userAgent = self::agenteUsuario();
         $intentos = new IntentoLogin();
@@ -42,6 +49,7 @@ class Auth
         // abajo no protege contra esto).
         if ($intentos->contarFallidosRecientesPorIp($ip, self::VENTANA_IP_MINUTOS) >= self::MAX_INTENTOS_IP) {
             Logger::error("Login bloqueado por exceso de intentos desde la IP {$ip}");
+            self::$ultimoMotivo = 'ip';
             return false;
         }
 
@@ -59,6 +67,12 @@ class Auth
         $intentos->registrar($usuario, $valido, $ip, $userAgent);
 
         if (!$valido) {
+            if (!$registro) {
+                self::$ultimoMotivo = 'desconocido';
+            } else {
+                self::$ultimoUsuarioId = (int) $registro['id'];
+                self::$ultimoMotivo = !(int) $registro['activo'] ? 'inactivo' : (self::estaBloqueado($registro) ? 'bloqueado' : 'contrasena');
+            }
             if ($registro) {
                 $modelo->registrarIntentoFallido((int) $registro['id'], self::MAX_INTENTOS_CUENTA, self::BLOQUEO_MINUTOS);
             }
