@@ -189,7 +189,8 @@ if (!empty($reporte['grafico']) && $reporte['grafico']['puntos'] !== []):
         <div class="reporte-tabla-cabecera">
             <h3 style="margin:0;"><?= $e($tabla['titulo']) ?></h3>
             <?php if ($tabla['filas'] !== [] || !empty($tabla['total_filas'])): ?>
-                <a class="btn btn-secundario btn-pequeno no-imprimir" href="<?= $enlace(['formato' => 'csv', 'tabla' => $id, 'pagina' => '']) ?>">Exportar CSV</a>
+                <a class="btn btn-secundario btn-pequeno no-imprimir" href="<?= $enlace(['formato' => 'xlsx', 'tabla' => $id, 'pagina' => '']) ?>">Exportar a Excel</a>
+                <a class="btn btn-secundario btn-pequeno no-imprimir" href="<?= $enlace(['formato' => 'csv', 'tabla' => $id, 'pagina' => '']) ?>">CSV</a>
             <?php endif; ?>
         </div>
         <?php if (!empty($tabla['nota'])): ?><p class="campo-ayuda"><?= $e($tabla['nota']) ?></p><?php endif; ?>
@@ -226,7 +227,7 @@ if (!empty($reporte['grafico']) && $reporte['grafico']['puntos'] !== []):
             </table>
 
             <?php if (!empty($tabla['paginas']) && $tabla['paginas'] > 1): ?>
-                <p class="campo-ayuda no-imprimir"><?= (int) $tabla['total_filas'] ?> filas; el CSV incluye todas.</p>
+                <p class="campo-ayuda no-imprimir"><?= (int) $tabla['total_filas'] ?> filas; la exportación incluye todas.</p>
                 <div class="no-imprimir" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
                     <?php for ($p = 1; $p <= $tabla['paginas']; $p++): ?>
                         <a class="btn <?= $p === $tabla['pagina'] ? '' : 'btn-secundario' ?> btn-pequeno" href="<?= $enlace(['pagina' => $p === 1 ? '' : (string) $p]) ?>"><?= $p ?></a>

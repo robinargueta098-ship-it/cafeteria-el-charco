@@ -7,6 +7,7 @@ namespace App\Controllers\Admin;
 use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Csv;
+use App\Core\Xlsx;
 use App\Core\Dinero;
 use App\Core\Entrada;
 use App\Core\ReportePeriodo;
@@ -68,7 +69,7 @@ class ReporteController extends Controller
         $reporte = $this->construir($seccion, $periodo, $esAdmin, (int) $usuario['id']);
 
         // --- Exportación a CSV: TODO el resultado filtrado, no solo la página ---
-        if (Entrada::texto($_GET, 'formato', '') === 'csv') {
+        if (in_array(Entrada::texto($_GET, 'formato', ''), ['csv', 'xlsx'], true)) {
             $this->exportar($seccion, $reporte, $periodo);
         }
 
@@ -654,14 +655,19 @@ class ReporteController extends Controller
             $tablaId = $claves[0];
         }
         $tabla = $reporte['tablas'][$tablaId];
+        $xlsx = Entrada::texto($_GET, 'formato', '') === 'xlsx';
 
         AuditoriaService::registrar('reportes', 0, 'editar', null, [
-            'detalle' => 'Exportó a CSV el reporte «' . self::SECCIONES[$seccion][0] . '» — ' . (isset($tabla['titulo']) ? $tabla['titulo'] : $tablaId)
+            'detalle' => 'Exportó a ' . ($xlsx ? 'Excel' : 'CSV') . ' el reporte «' . self::SECCIONES[$seccion][0] . '» — ' . (isset($tabla['titulo']) ? $tabla['titulo'] : $tablaId)
                 . ' (' . $periodo['etiqueta'] . ', ' . count($tabla['filas']) . ' filas)',
         ]);
 
-        $nombre = 'reporte_' . $seccion . '_' . $tablaId . '_' . $periodo['desde'] . '_a_' . $periodo['hasta'] . '.csv';
-        Csv::enviar($nombre, $tabla['columnas'], $tabla['filas']);
+        $base = 'reporte_' . $seccion . '_' . $tablaId . '_' . $periodo['desde'] . '_a_' . $periodo['hasta'];
+        if ($xlsx) {
+            Xlsx::enviar($base . '.xlsx', isset($tabla['titulo']) ? (string) $tabla['titulo'] : self::SECCIONES[$seccion][0], $tabla['columnas'], $tabla['filas']);
+        } else {
+            Csv::enviar($base . '.csv', $tabla['columnas'], $tabla['filas']);
+        }
         exit;
     }
 

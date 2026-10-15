@@ -1780,6 +1780,13 @@ Al tocar «Enviar por WhatsApp» el pedido se guarda en estado `pendiente` (etiq
 - **Migración `014_pedido_estado_pendiente.sql`:** agrega `pendiente` al ENUM de `pedidos` y `pedido_historial`
   (requiere ALTER, se ejecuta con la cuenta administradora, no la de la aplicación).
 
+### 4.54 Exportación a Excel (.xlsx)
+
+Cada tabla de Reportes ofrece **Exportar a Excel** (`?formato=xlsx`) además de CSV. `App\Core\Xlsx` arma el libro con
+`ZipArchive` (sin librerías): encabezado en negrita, fila fija, filtros, anchos de columna, montos y enteros como
+números (sumables) y el texto como texto literal, así que no hay inyección de fórmulas. Mismos datos, columnas, roles
+(el Cajero ve teléfonos enmascarados) y registro en Auditoría que el CSV. Requiere la extensión `zip` de PHP.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```
