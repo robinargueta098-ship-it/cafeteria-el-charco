@@ -17,8 +17,8 @@ class Pedido
     public const ESTADOS = ['pendiente', 'enviado', 'confirmado', 'entregado', 'cancelado', 'anulado'];
 
     public const ETIQUETAS_ESTADO = [
-        'pendiente'  => 'Sin confirmar',
-        'enviado'    => 'Enviado',
+        'pendiente'  => 'Sin enviar',
+        'enviado'    => 'Nuevo',
         'confirmado' => 'Confirmado',
         'entregado'  => 'Entregado',
         'cancelado'  => 'Cancelado',

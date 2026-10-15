@@ -159,7 +159,7 @@ class ReporteController extends Controller
 
         return [
             'titulo'   => 'Resumen',
-            'ayuda'    => 'Ventas = pedidos ENTREGADOS, contados en el día en que se entregaron. Los pedidos enviados, confirmados, cancelados o anulados no suman. Incluye solo pedidos hechos desde la página web.',
+            'ayuda'    => 'Ventas = pedidos ENTREGADOS, contados en el día en que se entregaron. Los pedidos nuevos, confirmados, cancelados o anulados no suman. Incluye solo pedidos hechos desde la página web.',
             'tarjetas' => $this->tarjetasVentas($r),
             'grafico'  => ['titulo' => 'Ventas por día', 'puntos' => $puntos],
             'tablas'   => [],
@@ -175,7 +175,7 @@ class ReporteController extends Controller
             ['etiqueta' => 'Ventas totales', 'valor' => Dinero::formato($r['ventas_centavos']), 'nota' => 'Pedidos entregados en el periodo'],
             ['etiqueta' => 'Pedidos entregados', 'valor' => (string) $r['pedidos'], 'nota' => 'Número de ventas'],
             ['etiqueta' => 'Ticket promedio', 'valor' => Dinero::formato($r['ticket_promedio_centavos']), 'nota' => 'Ventas ÷ pedidos entregados'],
-            ['etiqueta' => 'Pedidos pendientes', 'valor' => (string) $r['pendientes'], 'nota' => 'Enviados o confirmados, creados en el periodo'],
+            ['etiqueta' => 'Pedidos pendientes', 'valor' => (string) $r['pendientes'], 'nota' => 'Nuevos o confirmados, creados en el periodo'],
             ['etiqueta' => 'Cancelados', 'valor' => (string) $r['cancelados'], 'nota' => 'Creados en el periodo'],
             ['etiqueta' => 'Anulados', 'valor' => (string) $r['anulados'], 'nota' => 'Entregados que luego se anularon (creados en el periodo)'],
             ['etiqueta' => 'Tasa de cancelación', 'valor' => $tasa, 'nota' => 'Cancelados ÷ pedidos creados en el periodo (' . $r['creados'] . ')'],

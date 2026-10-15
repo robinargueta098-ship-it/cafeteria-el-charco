@@ -30,16 +30,16 @@ $consulta = function (array $extra = []) use ($filtros) {
     <p class="campo-ayuda" style="margin-top:0;">Pedidos confirmados que faltan por entregar. Al entregar uno, márcalo como entregado.</p>
 <?php else: ?>
 <p class="campo-ayuda" style="margin-top:0;">
-    Pedidos hechos desde la página web (carrito). Los <strong>Enviados</strong> esperan que los confirmes.
+    Pedidos hechos desde la página web (carrito). Los pedidos <strong>Nuevos</strong> esperan que los confirmes.
     <?php if ($pendientes > 0): ?>
-        <strong>Ahora hay <?= (int) $pendientes ?> sin confirmar.</strong>
+        <strong>Ahora hay <?= (int) $pendientes ?> nuevo(s) por confirmar.</strong>
     <?php endif; ?>
 </p>
 <?php endif; ?>
 
 <?php if (!$esRepartidor && $sinConfirmar > 0 && $filtros['estado'] !== 'pendiente'): ?>
     <div class="alerta" style="background:#f4ecdf;border:1px solid #d9c9a8;color:#3b2415;">
-        Hay <strong><?= (int) $sinConfirmar ?></strong> pedido(s) que el cliente armó pero <strong>no confirmó</strong> haber enviado por WhatsApp.
+        Hay <strong><?= (int) $sinConfirmar ?></strong> pedido(s) <strong>sin enviar</strong>: el cliente los armó pero no confirmó haberlos enviado por WhatsApp.
         Si te llegó su mensaje con el código, <a href="/admin/pedidos?estado=pendiente">búscalo aquí</a> y confírmalo.
     </div>
 <?php endif; ?>

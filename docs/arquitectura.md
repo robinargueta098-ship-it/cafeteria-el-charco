@@ -1814,6 +1814,13 @@ La sesión del panel vence por **inactividad**: Administrador a las **2 horas**,
 (todo el turno). Cada petición del panel reinicia el contador (`Auth::verificado`, `ultima_actividad` en la sesión).
 Además, la cookie es de navegador (se pierde al cerrarlo) y un usuario desactivado pierde el acceso al instante.
 
+### 4.58 Nombres de estado que ve el personal
+
+Para no confundir, las etiquetas del panel son: `pendiente` → **Sin enviar** (el cliente armó el pedido pero no confirmó
+haberlo enviado por WhatsApp), `enviado` → **Nuevo** (el cliente sí lo envió; espera que lo confirmen),
+`confirmado` → Confirmado, `entregado` → Entregado, `cancelado` → Cancelado, `anulado` → Anulado. Los valores internos
+(base de datos, código) no cambian; solo el texto mostrado (`Pedido::ETIQUETAS_ESTADO`).
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```
