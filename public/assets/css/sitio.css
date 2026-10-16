@@ -2334,3 +2334,16 @@ html.carrito-abierto body {
   font-size: 2rem;
   font-weight: 700;
 }
+
+/* En el celular, al tocar un enlace o botón el navegador dibuja un recuadro gris de resaltado; ya tienen sus
+   propios estados (hover/foco), así que se quita para que no se vea un cuadro raro al abrir Instagram, WhatsApp, etc. */
+.sitio-body a,
+.sitio-body button,
+.sitio-body .btn {
+  -webkit-tap-highlight-color: transparent;
+}
+.sitio-body a:focus-visible,
+.sitio-body button:focus-visible {
+  outline: 2px solid var(--color-verde, #4f6b3a);
+  outline-offset: 2px;
+}
