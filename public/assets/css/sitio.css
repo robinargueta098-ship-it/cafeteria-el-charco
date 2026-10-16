@@ -2384,8 +2384,10 @@ html.carrito-abierto body {
 .carrito-cerrado[hidden] { display: none; }
 .carrito-cerrado p { margin: 8px 0 16px; }
 
-/* «De temporada»: la tarjeta y su texto suben al entrar, como en el resto de la página; solo la FOTO no sube ni se
-   agranda por dentro de la tarjeta (aparece con un fundido), porque eso hacía que la imagen se moviera en vertical. */
+/* «De temporada»: ni la sección ni la foto suben al entrar (sin movimiento vertical al bajar por la página).
+   La tarjeta y su texto sí suben, con estilo, en las que van apareciendo al deslizar el carrusel hacia la derecha
+   (sitio.js no anima las tarjetas que ya se ven al abrir). */
+#temporada.por-revelar,
 #temporada .img-por-cargar {
   transform: none;
 }

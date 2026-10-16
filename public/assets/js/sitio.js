@@ -79,6 +79,12 @@ function inicializarRevelado() {
   });
 
   tarjetas.forEach(function (tarjeta, indice) {
+    // «De temporada»: las tarjetas que ya se ven al abrir el carrusel NO suben (así no hay movimiento vertical al
+    // bajar por la página); solo suben, con su texto, las que van apareciendo al deslizar hacia la derecha.
+    var pistaTemporada = tarjeta.closest('#temporada .temporadas-lista');
+    if (pistaTemporada && tarjeta.getBoundingClientRect().left - pistaTemporada.getBoundingClientRect().left < pistaTemporada.clientWidth - 40) {
+      return;
+    }
     tarjeta.classList.add('por-revelar');
     tarjeta.style.transitionDelay = ((indice % 4) * 110) + 'ms';
     observador.observe(tarjeta);
