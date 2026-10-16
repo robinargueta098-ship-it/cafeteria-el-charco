@@ -2383,16 +2383,3 @@ html.carrito-abierto body {
 }
 .carrito-cerrado[hidden] { display: none; }
 .carrito-cerrado p { margin: 8px 0 16px; }
-
-/* Carruseles del teléfono (temporadas, promociones y categorías del menú): solo se deslizan de lado.
-   Con overflow-x en "auto" el navegador deja también el eje vertical en "auto", y las tarjetas se movían unos
-   píxeles hacia arriba y abajo al arrastrar. Se bloquea el vertical y el gesto se limita a horizontal. */
-@media (max-width: 767px) {
-  .tarjetas-deslizables,
-  .temporadas-lista--varias,
-  .menu-categoria .tarjetas-grid {
-    overflow-y: hidden;
-    overscroll-behavior-y: none;
-    touch-action: pan-x pan-y;
-  }
-}
