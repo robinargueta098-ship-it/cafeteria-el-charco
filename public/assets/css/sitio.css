@@ -2383,3 +2383,11 @@ html.carrito-abierto body {
 }
 .carrito-cerrado[hidden] { display: none; }
 .carrito-cerrado p { margin: 8px 0 16px; }
+
+/* «De temporada»: la sección, sus tarjetas y sus fotos aparecen con un fundido, SIN subir ni agrandarse
+   (el efecto de subida de las demás secciones hacía que las tarjetas se movieran en vertical al llegar a ellas). */
+#temporada.por-revelar,
+#temporada .tarjeta-producto.por-revelar,
+#temporada .img-por-cargar {
+  transform: none;
+}
