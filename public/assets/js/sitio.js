@@ -332,8 +332,7 @@ function inicializarRevelaFotos() {
     return;
   }
 
-  // «De temporada» queda fuera: sus fotos se ven siempre, sin efecto de entrada (ver #temporada en sitio.css).
-  var fotos = document.querySelectorAll('section:not(#temporada) .tarjeta-producto > img, section:not(#temporada) .tarjeta-producto > picture img');
+  var fotos = document.querySelectorAll('.tarjeta-producto > img, .tarjeta-producto > picture img');
   if (fotos.length === 0) {
     return;
   }

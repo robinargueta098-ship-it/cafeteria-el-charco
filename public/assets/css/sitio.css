@@ -2384,12 +2384,12 @@ html.carrito-abierto body {
 .carrito-cerrado[hidden] { display: none; }
 .carrito-cerrado p { margin: 8px 0 16px; }
 
-/* «De temporada»: la sección, las tarjetas y las fotos están siempre en su lugar (antes las tarjetas fuera de la
-   vista esperaban abajo y se «nivelaban» al deslizar). Lo único que se anima es el TEXTO de cada tarjeta: sube con
-   un fundido al llegar a la vista (sitio.js le pone la clase por-revelar; el estilo es el de siempre). */
+/* «De temporada»: la sección y las tarjetas están siempre en su lugar (antes las tarjetas fuera de la vista esperaban
+   abajo y se «nivelaban» al deslizar). Se animan solo el TEXTO y la FOTO de cada tarjeta: suben con un fundido, dentro
+   del marco de la tarjeta (que recorta lo que sobra), al llegar a la vista; la tarjeta no se mueve. Las fotos cargan
+   de inmediato (sin carga diferida) para que las cuatro tarjetas midan lo mismo desde el principio. */
 #temporada.por-revelar,
-#temporada .tarjeta-producto.por-revelar,
-#temporada .img-por-cargar {
+#temporada .tarjeta-producto.por-revelar {
   opacity: 1;
   transform: none;
   transition: none;
