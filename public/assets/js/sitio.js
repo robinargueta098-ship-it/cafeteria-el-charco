@@ -78,6 +78,14 @@ function inicializarRevelado() {
     observador.observe(seccion);
   });
 
+  // «De temporada»: la tarjeta y la foto se quedan quietas; solo el TEXTO sube con su fundido, el de cada tarjeta
+  // al llegar a la vista (también al deslizar el carrusel hacia la derecha).
+  Array.prototype.forEach.call(document.querySelectorAll('#temporada .tarjeta-producto-cuerpo'), function (cuerpo, indice) {
+    cuerpo.classList.add('por-revelar');
+    cuerpo.style.transitionDelay = ((indice % 4) * 110) + 'ms';
+    observador.observe(cuerpo);
+  });
+
   tarjetas.forEach(function (tarjeta, indice) {
     tarjeta.classList.add('por-revelar');
     tarjeta.style.transitionDelay = ((indice % 4) * 110) + 'ms';
