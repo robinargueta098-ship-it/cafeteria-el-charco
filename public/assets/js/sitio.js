@@ -52,7 +52,7 @@ function inicializarRevelado() {
   // Las tarjetas de las primeras secciones (todo menos el menú completo) entran además una
   // tras otra, un poco escalonadas: es el movimiento de "bienvenida" del inicio de la página.
   var tarjetas = Array.prototype.slice.call(
-    document.querySelectorAll('section.sitio-seccion:not(#menu) .tarjeta-producto, #nosotros .texto-largo-item')
+    document.querySelectorAll('section.sitio-seccion:not(#menu):not(#temporada) .tarjeta-producto, #nosotros .texto-largo-item')
   );
 
   if (secciones.length === 0) {
@@ -79,12 +79,6 @@ function inicializarRevelado() {
   });
 
   tarjetas.forEach(function (tarjeta, indice) {
-    // «De temporada»: las tarjetas que ya se ven al abrir el carrusel NO suben (así no hay movimiento vertical al
-    // bajar por la página); solo suben, con su texto, las que van apareciendo al deslizar hacia la derecha.
-    var pistaTemporada = tarjeta.closest('#temporada .temporadas-lista');
-    if (pistaTemporada && tarjeta.getBoundingClientRect().left - pistaTemporada.getBoundingClientRect().left < pistaTemporada.clientWidth - 40) {
-      return;
-    }
     tarjeta.classList.add('por-revelar');
     tarjeta.style.transitionDelay = ((indice % 4) * 110) + 'ms';
     observador.observe(tarjeta);
@@ -330,7 +324,8 @@ function inicializarRevelaFotos() {
     return;
   }
 
-  var fotos = document.querySelectorAll('.tarjeta-producto > img, .tarjeta-producto > picture img');
+  // «De temporada» queda fuera: sus fotos se ven siempre, sin efecto de entrada (ver #temporada en sitio.css).
+  var fotos = document.querySelectorAll('section:not(#temporada) .tarjeta-producto > img, section:not(#temporada) .tarjeta-producto > picture img');
   if (fotos.length === 0) {
     return;
   }

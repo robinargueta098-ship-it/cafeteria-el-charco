@@ -223,7 +223,7 @@ $tarjetaProducto = function (array $p) use ($temperaturasProductos) {
             <article class="tarjeta-producto tarjeta-temporada">
                 <?php if (!empty($t['imagen'])): ?>
                     <img src="<?= UPLOADS_URL ?>/temporadas/<?= htmlspecialchars($t['imagen'], ENT_QUOTES, 'UTF-8') ?>" alt=""
-                         loading="lazy" decoding="async">
+                         decoding="async">
                 <?php endif; ?>
                 <div class="tarjeta-producto-cuerpo">
                     <p class="tarjeta-producto-nombre"><?= htmlspecialchars($t['nombre'], ENT_QUOTES, 'UTF-8') ?></p>
