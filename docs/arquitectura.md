@@ -1845,6 +1845,22 @@ Los intentos contra nombres que no existen no se anotan (ruido de robots) y nunc
 Aparecen filtrando por ese módulo o por la acción «Inicio de sesión»; no se mezclan en la «Actividad reciente» del
 panel de inicio. Las sesiones que vencen por inactividad no generan registro de cierre.
 
+### 4.61 Días sin pedidos y pausa manual
+
+Configuración → Carrito de pedidos permite **quitar cualquier día de la semana** de la recepción de pedidos por la
+página (p. ej. sábado y domingo si no trabaja el repartidor) y **pausar los pedidos de inmediato** con un mensaje opcional
+(imprevistos, falta de personal). Claves en `configuracion_sistema`: `pedidos_dias` (0=domingo … 6=sábado, separados por
+coma; migración `017_pedidos_por_dia.sql`), `pedidos_pausados` y `pedidos_mensaje`.
+
+- **Regla única** en `App\Core\PedidosDisponibles` (día en la zona horaria del negocio). El **servidor** la aplica en
+  `PedidoService::crear` (error `pedidos_cerrados`): aunque alguien manipule la página, no entra un pedido. El carrito
+  (`carrito.js`) aplica la misma regla y se actualiza solo pasada la medianoche o al activar la pausa.
+- Con los pedidos cerrados el **menú se sigue viendo**; se oculta «+ Agregar», aparece un aviso en el menú («Hoy no
+  recibimos pedidos a domicilio. Volvemos a recibirlos el lunes.») y el carrito muestra solo ese aviso con «Seguir
+  viendo el menú». El botón directo de WhatsApp para consultas no se afecta.
+- Un pedido ya guardado puede reintentarse (idempotencia) aunque el día esté cerrado. El horario de atención por horas
+  sigue siendo solo informativo.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```

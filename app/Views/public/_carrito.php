@@ -20,6 +20,7 @@ $datosCarrito = [
     'sitio'    => $nombreCarrito,
     'zona'     => APP_TIMEZONE,
     'horario'  => HorarioAtencion::paraCarrito($horarios),
+    'pedidos'  => \App\Core\PedidosDisponibles::paraCarrito($config),
     'pedidoUrl' => '/pedido',
     'csrf'      => \App\Core\Csrf::token(),
 ];
@@ -38,6 +39,11 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
         </header>
 
         <div class="carrito-cuerpo">
+            <div class="carrito-cerrado" id="carrito-cerrado" role="status" hidden>
+                <strong>Pedidos no disponibles</strong>
+                <p id="carrito-cerrado-texto"></p>
+                <button type="button" class="btn btn-secundario" id="carrito-cerrado-cerrar">Seguir viendo el menú</button>
+            </div>
             <div class="carrito-aviso" id="carrito-aviso" role="status" hidden></div>
             <p class="carrito-vacio" id="carrito-vacio">Tu carrito está vacío. Agrega productos del menú con el botón <strong>+ Agregar</strong>.</p>
             <ul class="carrito-lista" id="carrito-lista"></ul>

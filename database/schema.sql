@@ -549,6 +549,11 @@ INSERT INTO configuracion_sistema (clave, valor, descripcion) VALUES
 -- Horario semanal: se crean las 7 filas marcadas como "cerrado/sin
 -- configurar" (no se inventan horarios). El negocio los completa desde
 -- el panel en la Fase 6.
+INSERT INTO configuracion_sistema (clave, valor, descripcion) VALUES
+  ('pedidos_dias', '0,1,2,3,4,5,6', 'Días en que se reciben pedidos por la página (0=domingo .. 6=sábado, separados por coma)'),
+  ('pedidos_pausados', '0', 'Pausa manual de los pedidos por la página: 1 = pausados, 0 = activos'),
+  ('pedidos_mensaje', '', 'Mensaje que ve el cliente cuando los pedidos están pausados (vacío = mensaje por defecto)');
+
 INSERT INTO horarios_atencion (dia_semana, cerrado) VALUES
   (0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1);
 

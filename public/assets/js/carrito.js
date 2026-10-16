@@ -35,6 +35,11 @@
     panel: document.getElementById('carrito-panel'),
     contador: document.getElementById('carrito-contador'),
     aviso: document.getElementById('carrito-aviso'),
+    cerrado: document.getElementById('carrito-cerrado'),
+    cerradoTexto: document.getElementById('carrito-cerrado-texto'),
+    cerradoCerrar: document.getElementById('carrito-cerrado-cerrar'),
+    avisoMenu: document.getElementById('pedidos-aviso'),
+    avisoMenuTexto: document.getElementById('pedidos-aviso-texto'),
     vacio: document.getElementById('carrito-vacio'),
     lista: document.getElementById('carrito-lista'),
     pie: document.getElementById('carrito-pie'),
@@ -254,6 +259,72 @@
     };
   }
 
+  // ---- Días sin pedidos y pausa manual (Configuración → Carrito de pedidos) ----
+  var cierreServidor = '';       // mensaje que mandó el servidor si rechazó un pedido por estar cerrado
+  var cerradoVisto = null;
+
+  /** Próximo día en que se reciben pedidos: «mañana (lunes)», «el miércoles»; '' si ningún día está activo. */
+  function proximoDiaPedidos(dias, hoy) {
+    for (var desplazamiento = 1; desplazamiento <= 7; desplazamiento++) {
+      var dia = (hoy + desplazamiento) % 7;
+      if (dias.indexOf(dia) !== -1) {
+        return desplazamiento === 1 ? 'mañana (' + NOMBRES_DIA[dia] + ')' : 'el ' + NOMBRES_DIA[dia];
+      }
+    }
+    return '';
+  }
+
+  /** @return {{abierto:boolean, mensaje:string}} misma regla que App\Core\PedidosDisponibles (PHP). */
+  function estadoPedidos() {
+    var cfg = datos.pedidos;
+    if (cierreServidor) {
+      return { abierto: false, mensaje: cierreServidor };
+    }
+    if (!cfg) {
+      return { abierto: true, mensaje: '' };
+    }
+    if (cfg.pausa) {
+      return { abierto: false, mensaje: cfg.mensajePausa || 'Por el momento no estamos recibiendo pedidos por la página.' };
+    }
+    var hoy = enZonaDelNegocio(ahora()).dia;
+    var dias = cfg.dias || [];
+    if (dias.indexOf(hoy) !== -1) {
+      return { abierto: true, mensaje: '' };
+    }
+    if (dias.length === 0) {
+      return { abierto: false, mensaje: 'Por ahora no recibimos pedidos por la página.' };
+    }
+    var proximo = proximoDiaPedidos(dias, hoy);
+    return { abierto: false, mensaje: 'Hoy no recibimos pedidos a domicilio.' + (proximo ? ' Volvemos a recibirlos ' + proximo + '.' : '') };
+  }
+
+  /** Muestra u oculta todo lo que depende de si hoy se reciben pedidos. Se llama al pintar y cada 30 s. */
+  function aplicarPedidos() {
+    var estado = estadoPedidos();
+    document.documentElement.classList.toggle('pedidos-cerrados', !estado.abierto);
+
+    if (el.avisoMenu) {
+      el.avisoMenu.hidden = estado.abierto;
+      if (el.avisoMenuTexto && !estado.abierto) { el.avisoMenuTexto.textContent = estado.mensaje; }
+    }
+    if (el.cerrado) {
+      el.cerrado.hidden = estado.abierto || modoActual !== 'pedido';
+      if (el.cerradoTexto) { el.cerradoTexto.textContent = estado.mensaje; }
+    }
+    if (!estado.abierto && modoActual === 'pedido') {
+      // Con pedidos cerrados el carrito no muestra productos ni formulario: solo el aviso.
+      el.vacio.hidden = true;
+      el.lista.hidden = true;
+      el.formulario.hidden = true;
+      el.pie.hidden = true;
+      el.aviso.hidden = true;
+    } else {
+      el.lista.hidden = false;
+    }
+    cerradoVisto = estado.abierto;
+    return estado;
+  }
+
   function pintarAviso() {
     var estado = estadoHorario();
     if (estado.abierto) {
@@ -467,6 +538,7 @@
 
     var hayItems = articulos > 0;
     el.vacio.hidden = hayItems;
+    window.setTimeout(aplicarPedidos, 0);   // después de que terminen las demás líneas de pintar()
     el.pie.hidden = !hayItems || modoActual !== 'pedido';
     el.formulario.hidden = !hayItems;
     el.total.textContent = dinero(totalPedido());
@@ -537,6 +609,7 @@
     } else {
       el.pie.hidden = totalArticulos() === 0;
     }
+    aplicarPedidos();
   }
 
   function modoInicial() {
@@ -596,6 +669,10 @@
 
     var boton = objetivo.closest('[data-agregar]');
     if (!boton) {
+      return;
+    }
+    if (!estadoPedidos().abierto) {   // los botones ya van ocultos; esto protege si algo los muestra
+      abrirPanel();
       return;
     }
     var clave = boton.getAttribute('data-clave');
@@ -830,6 +907,15 @@
         return;
       }
 
+      // El servidor no recibe pedidos hoy (día sin pedidos o pausa manual): se muestra el motivo en el carrito.
+      if (resp && resp.error === 'pedidos_cerrados') {
+        cerrarVentana(ventana);
+        cierreServidor = resp.mensaje || 'Por ahora no recibimos pedidos por la página.';
+        pintar();
+        mostrarModo('pedido');
+        return;
+      }
+
       // La sesión cambió desde que se abrió la página (p. ej. se inició sesión en el panel): se pide un token
       // nuevo y se reintenta una vez, sin que el cliente tenga que recargar.
       if (resp && resp.error === 'sesion' && !esReintento) {
@@ -919,11 +1005,22 @@
     if (!el.panel.hidden) {
       pintarAviso();
     }
+    // Pasada la medianoche (o si se activa la pausa) la página se actualiza sola.
+    var antes = cerradoVisto;
+    var estado = aplicarPedidos();
+    if (antes !== null && antes !== estado.abierto) {
+      pintar();
+    }
   }, 30000);
 
   // Para pruebas y soporte: ver el mensaje exacto sin abrir WhatsApp.
   window.elcharcoCarrito = { mensaje: construirMensaje, estado: estadoHorario, items: function () { return JSON.parse(JSON.stringify(items)); } };
 
+  if (el.cerradoCerrar) {
+    el.cerradoCerrar.addEventListener('click', cerrarPanel);
+  }
+
   leer();
   pintar();
+  aplicarPedidos();
 })();

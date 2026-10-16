@@ -306,6 +306,12 @@ $tarjetaProducto = function (array $p) use ($temperaturasProductos) {
     <div class="sitio-contenedor">
         <h2>Nuestro menú</h2>
 
+        <?php /* Siempre en la página (oculto si hoy se reciben pedidos): carrito.js lo muestra solo si cambia el día o se pausa. */ ?>
+        <div class="pedidos-aviso" role="status" id="pedidos-aviso"<?= $pedidosEstado['abierto'] ? ' hidden' : '' ?>>
+            <strong id="pedidos-aviso-texto"><?= htmlspecialchars($pedidosEstado['mensaje'], ENT_QUOTES, 'UTF-8') ?></strong>
+            <span>Puedes ver el menú completo; los pedidos por la página se reanudan en cuanto estén disponibles.</span>
+        </div>
+
         <?php if ($menu === []): ?>
             <p class="sitio-seccion-intro">El menú se está preparando.</p>
         <?php else: ?>

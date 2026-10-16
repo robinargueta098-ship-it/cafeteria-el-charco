@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Core\Database;
 use App\Core\Dinero;
 use App\Core\Logger;
+use App\Core\PedidosDisponibles;
 use App\Core\TemperaturaProductos;
 use App\Core\Vista;
 use App\Models\Configuracion;
@@ -93,6 +94,12 @@ class PedidoService
             }
 
             return self::error('token_reutilizado', 'Tu carrito cambió. Vuelve a tocar «Enviar pedido por WhatsApp».');
+        }
+
+        // Días sin pedidos / pausa manual (Configuración → Carrito de pedidos). Se valida aquí, no solo en la página.
+        $disponibilidad = PedidosDisponibles::estado((new Configuracion())->obtenerTodas());
+        if (!$disponibilidad['abierto']) {
+            return self::error('pedidos_cerrados', $disponibilidad['mensaje']);
         }
 
         if ($formaPago === null) {

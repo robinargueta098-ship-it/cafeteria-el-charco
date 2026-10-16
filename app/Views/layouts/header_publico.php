@@ -2,9 +2,11 @@
 /**
  * @var array<string,string> $config
  */
+use App\Core\PedidosDisponibles;
 use App\Core\Vista;
 use App\Core\WhatsApp;
 
+$pedidosEstado = PedidosDisponibles::estado($config);
 $nombreSitio = $config['nombre_sitio'] ?? 'Cafetería El Charco';
 $descripcionCorta = $config['descripcion_corta'] ?? '';
 $logo = $config['logo'] ?? '';
@@ -18,7 +20,7 @@ $rutaPagina = rtrim((string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/')
 $anclaInicio = $rutaPagina === '' ? '' : '/';
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es"<?= $pedidosEstado['abierto'] ? '' : ' class="pedidos-cerrados"' ?>>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

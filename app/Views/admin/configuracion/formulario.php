@@ -347,6 +347,37 @@ $totalPortada = count($portada);
             <p class="campo-ayuda">El cliente debe marcar «Entendido» para poder enviar el pedido. Si lo dejas vacío se usa: «<?= htmlspecialchars(\App\Models\Configuracion::AVISO_UBICACION_DEFECTO, ENT_QUOTES, 'UTF-8') ?>»</p>
         </div>
 
+        <?php
+        $diasPedidos = \App\Core\PedidosDisponibles::diasActivos($config);
+        $nombresPedidos = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 0 => 'Domingo'];
+        $estadoPedidosHoy = \App\Core\PedidosDisponibles::estado($config);
+        ?>
+        <h3 style="margin-bottom:6px;">¿Cuándo se reciben pedidos por la página?</h3>
+        <input type="hidden" name="pedidos_config_enviada" value="1">
+        <p class="campo-ayuda" style="margin-top:0;">
+            Los días que desmarques el menú se sigue viendo, pero no se puede agregar al carrito ni enviar pedidos
+            (por ejemplo, los días en que no trabaja el repartidor). El cliente ve el aviso y el próximo día en que se reciben.
+        </p>
+        <div class="campo" style="display:flex;gap:8px 18px;flex-wrap:wrap;">
+            <?php foreach ($nombresPedidos as $numeroPedido => $etiquetaPedido): ?>
+                <label style="display:inline-flex;align-items:center;gap:6px;font-weight:600;">
+                    <input type="checkbox" name="pedidos_dia[<?= (int) $numeroPedido ?>]" value="1" <?= in_array($numeroPedido, $diasPedidos, true) ? 'checked' : '' ?>>
+                    <?= htmlspecialchars($etiquetaPedido, ENT_QUOTES, 'UTF-8') ?>
+                </label>
+            <?php endforeach; ?>
+        </div>
+        <div class="campo">
+            <label style="display:inline-flex;align-items:center;gap:8px;font-weight:600;">
+                <input type="checkbox" name="pedidos_pausa" value="1" <?= \App\Core\PedidosDisponibles::pausado($config) ? 'checked' : '' ?>>
+                Pausar los pedidos ahora mismo (imprevistos o falta de personal)
+            </label>
+            <label for="pedidos_mensaje" style="margin-top:10px;">Mensaje para el cliente mientras estén pausados (opcional)</label>
+            <input type="text" id="pedidos_mensaje" name="pedidos_mensaje" maxlength="200"
+                   value="<?= htmlspecialchars($config['pedidos_mensaje'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                   placeholder="<?= htmlspecialchars(\App\Core\PedidosDisponibles::MENSAJE_PAUSA_DEFECTO, ENT_QUOTES, 'UTF-8') ?>">
+            <p class="campo-ayuda">Hoy: <strong><?= $estadoPedidosHoy['abierto'] ? 'se reciben pedidos' : htmlspecialchars($estadoPedidosHoy['mensaje'], ENT_QUOTES, 'UTF-8') ?></strong></p>
+        </div>
+
         <h2>Horario de atención</h2>
         <div class="campo">
             <label for="horario_agrupar">Cómo se muestra en el sitio</label>

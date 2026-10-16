@@ -15,6 +15,7 @@ use App\Core\Validator;
 use App\Models\Configuracion;
 use App\Models\Galeria;
 use App\Models\HorarioAtencion;
+use App\Core\PedidosDisponibles;
 use App\Models\PortadaImagen;
 use App\Services\AuditoriaService;
 
@@ -28,6 +29,7 @@ class ConfiguracionController extends Controller
         'facebook_nombre', 'facebook_url',
         'umbral_lealtad', 'google_maps_embed', 'mapa_coordenadas', 'google_calificacion',
         'google_calificacion_url', 'carrito_aviso_ubicacion', 'sobre_nosotros_foto_pie', 'horario_agrupar',
+        'pedidos_dias', 'pedidos_pausados', 'pedidos_mensaje',
     ];
 
     /**
@@ -85,6 +87,20 @@ class ConfiguracionController extends Controller
         // SOLO se actualiza lo que realmente llega en la petición. Un ajuste que no viene en el envío
         // (formulario incompleto, petición manipulada, pestaña vieja…) se deja exactamente como estaba:
         // antes se tomaba como "vacío" y se borraba (nombre, WhatsApp, mapa, redes, horarios…).
+        // «Carrito de pedidos»: las casillas sin marcar no viajan en el envío, por eso el formulario manda una marca y
+        // aquí se arman los valores (días en que se reciben pedidos y pausa manual).
+        if (isset($_POST['pedidos_config_enviada'])) {
+            $marcados = [];
+            $diasPost = isset($_POST['pedidos_dia']) && is_array($_POST['pedidos_dia']) ? $_POST['pedidos_dia'] : [];
+            foreach (range(0, 6) as $d) {
+                if (isset($diasPost[$d])) {
+                    $marcados[] = $d;
+                }
+            }
+            $_POST['pedidos_dias'] = implode(',', $marcados);
+            $_POST['pedidos_pausados'] = isset($_POST['pedidos_pausa']) ? '1' : '0';
+        }
+
         $datos = [];
         $errores = [];
         $omitidos = [];
@@ -218,6 +234,14 @@ class ConfiguracionController extends Controller
                   SobreNosotros::CLAVE_FOTO_PIE => 'Sobre nosotros: pie de foto (texto visible debajo de la foto)'] as $claveNueva => $descripcionNueva) {
             if (array_key_exists($claveNueva, $datos)) {
                 $configModelo->asegurar($claveNueva, '', $descripcionNueva);
+            }
+        }
+
+        foreach ([PedidosDisponibles::CLAVE_DIAS => [PedidosDisponibles::DIAS_TODOS, 'Días en que se reciben pedidos por la página (0=domingo .. 6=sábado, separados por coma)'],
+                  PedidosDisponibles::CLAVE_PAUSA => ['0', 'Pausa manual de los pedidos por la página: 1 = pausados, 0 = activos'],
+                  PedidosDisponibles::CLAVE_MENSAJE => ['', 'Mensaje que ve el cliente cuando los pedidos están pausados (vacío = mensaje por defecto)']] as $clavePedido => $porDefecto) {
+            if (array_key_exists($clavePedido, $datos)) {
+                $configModelo->asegurar($clavePedido, $porDefecto[0], $porDefecto[1]);
             }
         }
 
@@ -444,6 +468,8 @@ class ConfiguracionController extends Controller
             ->longitudMaxima('google_maps_embed', 'Enlace de Google Maps', 255)
             ->longitudMaxima('carrito_aviso_ubicacion', 'Aviso de ubicación del carrito', 300)
             ->longitudMaxima('sobre_nosotros_foto_pie', 'Pie de foto de «Sobre nosotros»', SobreNosotros::MAX_PIE)
+            ->longitudMaxima('pedidos_mensaje', 'Mensaje de pedidos pausados', 200)
+            ->enQueValores('pedidos_pausados', 'Pausa de pedidos', ['0', '1'])
             ->enQueValores('horario_agrupar', 'Forma de mostrar el horario', ['0', '1']);
 
         $errores = $validador->errores();
