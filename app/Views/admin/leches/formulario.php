@@ -28,7 +28,7 @@ $e = function ($v) { return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); 
 
         <div class="campo">
             <label for="nombre">Nombre</label>
-            <input type="text" id="nombre" name="nombre" maxlength="40" required placeholder="Ej. Avena"
+            <input type="text" id="nombre" name="nombre" maxlength="40" required placeholder="Ej. Leche de avena"
                    value="<?= $e($leche['nombre'] ?? '') ?>">
         </div>
 
@@ -43,6 +43,12 @@ $e = function ($v) { return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); 
             <input type="checkbox" id="activo" name="activo" value="1" <?= (!$esEdicion || (int) ($leche['activo'] ?? 1) === 1) ? 'checked' : '' ?>>
             <label for="activo" style="margin:0;">Activa (se ofrece en el sitio)</label>
         </div>
+
+        <div class="campo campo-checkbox">
+            <input type="checkbox" id="solo_productos" name="solo_productos" value="1" <?= !empty($leche['solo_productos']) ? 'checked' : '' ?>>
+            <label for="solo_productos" style="margin:0;">Se ofrece solo en algunos productos (como «Agua»)</label>
+        </div>
+        <span class="campo-ayuda" style="display:block;margin:-6px 0 14px;">Si la marcas, después eliges en qué productos se ofrece desde la pantalla Leches. Si no, se ofrece en todos los productos que permiten leche.</span>
 
         <button type="submit" class="btn"><?= $esEdicion ? 'Guardar cambios' : 'Agregar leche' ?></button>
         <a href="/admin/leches" class="btn btn-secundario">Cancelar</a>

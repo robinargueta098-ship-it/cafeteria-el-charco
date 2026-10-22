@@ -43,22 +43,22 @@ class Leche
         return (int) $stmt->fetchColumn() > 0;
     }
 
-    /** @param array{nombre:string,precio_extra:string,activo:int} $datos */
+    /** @param array{nombre:string,precio_extra:string,activo:int,solo_productos:int} $datos */
     public function crear(array $datos): int
     {
         $pdo = Database::conexion();
         $siguiente = (int) $pdo->query('SELECT COALESCE(MAX(orden), 0) + 1 FROM leches')->fetchColumn();
-        $pdo->prepare('INSERT INTO leches (nombre, precio_extra, activo, orden) VALUES (:nombre, :precio_extra, :activo, :orden)')
+        $pdo->prepare('INSERT INTO leches (nombre, precio_extra, activo, solo_productos, orden) VALUES (:nombre, :precio_extra, :activo, :solo_productos, :orden)')
             ->execute($datos + ['orden' => $siguiente]);
 
         return (int) $pdo->lastInsertId();
     }
 
-    /** @param array{nombre:string,precio_extra:string,activo:int} $datos */
+    /** @param array{nombre:string,precio_extra:string,activo:int,solo_productos:int} $datos */
     public function actualizar(int $id, array $datos): void
     {
         Database::conexion()
-            ->prepare('UPDATE leches SET nombre = :nombre, precio_extra = :precio_extra, activo = :activo WHERE id = :id')
+            ->prepare('UPDATE leches SET nombre = :nombre, precio_extra = :precio_extra, activo = :activo, solo_productos = :solo_productos WHERE id = :id')
             ->execute($datos + ['id' => $id]);
     }
 

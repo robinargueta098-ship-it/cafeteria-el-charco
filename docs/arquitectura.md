@@ -1882,6 +1882,18 @@ una **línea más del pedido**: «Envío a domicilio» con su costo, o en gratis
 siendo la suma de las líneas, los reportes cuadran sin cambios (el envío aparece como categoría «Envío») y el mensaje de
 WhatsApp lleva la leche de cada bebida y «Envío a domicilio: Q5.00 / GRATIS».
 
+### 4.63 «Preparar con»: leches y agua (migración 019)
+
+El selector del producto se llama **Preparar con** y ofrece leches y también **Agua**. Cada opción de `leches` puede ser
+normal (`solo_productos = 0`: se ofrece en todos los productos que permiten leche) o **restringida** (`solo_productos = 1`:
+solo en los productos que se marcan para ella en Leches; lista por opción en `configuracion_sistema.leche_opciones_productos`,
+`{"id de la opción": [id de productos]}`). `App\Core\OpcionesProducto::disponibles()` decide qué opciones ve cada producto,
+y es la misma regla en el sitio, el carrito y el servidor. Por defecto: las cuatro leches (entera, deslactosada, de
+almendras, descremada) en Café (menos Espresso y Americano), Bebidas con café (menos Affogato y Carajillo) y Bebidas sin café;
+**Agua** solo en el **Americano** (por su descripción: «espresso suavizado con agua caliente»). Un producto con una sola
+opción muestra el selector con esa opción; uno sin ninguna no lo muestra. En el mensaje de WhatsApp se lee «(Leche de
+almendras)» o «(Agua)».
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```

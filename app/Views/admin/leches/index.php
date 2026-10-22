@@ -3,6 +3,7 @@
  * @var array<int,array<string,mixed>> $leches
  * @var array<string,array<int,array<string,mixed>>> $porCategoria
  * @var array<int,int> $conLeche
+ * @var array<int,array<int,int>> $listasOpcion productos de cada opción restringida (id de opción => ids)
  */
 use App\Core\Csrf;
 use App\Core\Permisos;
@@ -14,12 +15,12 @@ $puedeEditar = Permisos::puede('leches', 'editar');
 ?>
 
 <div class="panel-encabezado">
-    <h1>Leches</h1>
+    <h1>Leches y agua</h1>
     <?php if ($puedeEditar): ?><a class="btn" href="/admin/leches/crear">+ Nueva leche</a><?php endif; ?>
 </div>
 
 <p class="campo-ayuda" style="margin-top:0;">
-    Son las leches que el cliente elige en el carrito para las bebidas que la permiten. «Extra» es lo que se suma al precio
+    Son las opciones de «Preparar con» que el cliente elige en el carrito (leches, agua…). «Extra» es lo que se suma al precio
     de la bebida (Q0.00 = sin costo). Si cambias un precio, se refleja de inmediato en el sitio y en los pedidos nuevos;
     los pedidos ya hechos conservan el precio con que se guardaron. Una leche desactivada deja de ofrecerse.
 </p>
@@ -29,7 +30,7 @@ $puedeEditar = Permisos::puede('leches', 'editar');
         <p class="tabla-vacio">Todavía no hay leches. Agrega la primera con «+ Nueva leche».</p>
     <?php else: ?>
         <table class="tabla">
-            <thead><tr><th>Orden</th><th>Leche</th><th>Extra</th><th>Estado</th><?php if ($puedeEditar): ?><th>Acciones</th><?php endif; ?></tr></thead>
+            <thead><tr><th>Orden</th><th>Opción</th><th>Extra</th><th>Se ofrece en</th><th>Estado</th><?php if ($puedeEditar): ?><th>Acciones</th><?php endif; ?></tr></thead>
             <tbody>
                 <?php foreach ($leches as $i => $l): ?>
                     <tr>
@@ -49,6 +50,13 @@ $puedeEditar = Permisos::puede('leches', 'editar');
                         </td>
                         <td><strong><?= $e($l['nombre']) ?></strong></td>
                         <td><?= (float) $l['precio_extra'] > 0 ? '+Q' . number_format((float) $l['precio_extra'], 2) : 'Sin costo' ?></td>
+                        <td>
+                            <?php if ((int) $l['solo_productos'] === 1): ?>
+                                <?= count($listasOpcion[(int) $l['id']] ?? []) ?> producto(s) elegidos
+                            <?php else: ?>
+                                Todos los productos con leche
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <?php if ((int) $l['activo'] === 1): ?>
                                 <span class="insignia insignia-activo">Activa</span>
@@ -77,11 +85,11 @@ $puedeEditar = Permisos::puede('leches', 'editar');
     <?php endif; ?>
 </div>
 
-<form method="post" action="/admin/leches/productos" class="tarjeta">
+<form method="post" action="/admin/leches/productos" class="tarjeta" style="margin-bottom:20px;">
     <?= Csrf::campo() ?>
     <h2 style="margin-top:0;">¿En qué productos se puede elegir la leche?</h2>
     <p class="campo-ayuda" style="margin-top:0;">
-        Marca solo las bebidas que llevan leche (café con leche, lattes, chocolate…). El cliente verá la lista de leches
+        Marca solo las bebidas que llevan leche (café con leche, lattes, chocolate…). El cliente verá las leches
         en esos productos y el extra se suma al total. También puedes cambiarlo desde la ficha de cada producto.
     </p>
 
@@ -108,6 +116,33 @@ $puedeEditar = Permisos::puede('leches', 'editar');
         <button type="submit" class="btn">Guardar productos con leche</button>
     <?php endif; ?>
 </form>
+
+<?php foreach ($leches as $opcion): ?>
+    <?php if ((int) $opcion['solo_productos'] !== 1) { continue; } ?>
+    <form method="post" action="/admin/leches/<?= (int) $opcion['id'] ?>/productos" class="tarjeta" style="margin-bottom:20px;">
+        <?= Csrf::campo() ?>
+        <h2 style="margin-top:0;">«<?= $e($opcion['nombre']) ?>»: ¿en qué productos se ofrece?</h2>
+        <p class="campo-ayuda" style="margin-top:0;">
+            Marca las bebidas que se pueden preparar con esta opción. En esos productos aparece como una opción más de «Preparar con».
+        </p>
+        <?php foreach ($porCategoria as $categoria => $productos): ?>
+            <fieldset style="border:1px solid #e5d9c5;border-radius:10px;padding:12px 14px;margin:0 0 12px;">
+                <legend style="font-weight:700;padding:0 6px;"><?= $e($categoria) ?></legend>
+                <div style="display:flex;flex-wrap:wrap;gap:6px 22px;">
+                    <?php foreach ($productos as $p): ?>
+                        <label style="display:inline-flex;align-items:center;gap:6px;<?= (int) $p['activo'] === 1 ? '' : 'opacity:.55;' ?>">
+                            <input type="checkbox" name="producto[<?= (int) $p['id'] ?>]" value="1" <?= isset($listasOpcion[(int) $opcion['id']][(int) $p['id']]) ? 'checked' : '' ?> <?= $puedeEditar ? '' : 'disabled' ?>>
+                            <?= $e($p['nombre']) ?>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </fieldset>
+        <?php endforeach; ?>
+        <?php if ($puedeEditar): ?>
+            <button type="submit" class="btn">Guardar productos de «<?= $e($opcion['nombre']) ?>»</button>
+        <?php endif; ?>
+    </form>
+<?php endforeach; ?>
 
 <script>
     // «Marcar toda la categoría»

@@ -568,6 +568,7 @@ CREATE TABLE IF NOT EXISTS leches (
   nombre         VARCHAR(40) NOT NULL,
   precio_extra   DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Lo que se suma al precio del producto (Q0.00 = sin costo)',
   activo         TINYINT(1) NOT NULL DEFAULT 1,
+  solo_productos TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = se ofrece solo en los productos que se marquen para esta opción (Leches → opción)',
   orden          SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   creado_en      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -686,8 +687,9 @@ DELIMITER ;
 -- ---------------------------------------------------------------------
 -- Leches y envío (migración 018): datos iniciales
 -- ---------------------------------------------------------------------
-INSERT INTO leches (nombre, precio_extra, activo, orden) VALUES
-  ('Entera', 0.00, 1, 1), ('Deslactosada', 2.00, 1, 2), ('Almendras', 3.00, 1, 3), ('Descremada', 0.00, 1, 4);
+INSERT INTO leches (nombre, precio_extra, activo, solo_productos, orden) VALUES
+  ('Leche entera', 0.00, 1, 0, 1), ('Leche deslactosada', 2.00, 1, 0, 2), ('Leche de almendras', 3.00, 1, 0, 3),
+  ('Leche descremada', 0.00, 1, 0, 4), ('Agua', 0.00, 1, 1, 5);
 
 INSERT INTO configuracion_sistema (clave, valor, descripcion) VALUES
   ('envio_activo', '1', 'Cobrar envío a domicilio en los pedidos del carrito: 1 = sí, 0 = no'),
@@ -704,4 +706,10 @@ SELECT 'leche_productos', COALESCE(CONCAT('[', GROUP_CONCAT(p.id ORDER BY p.id S
        'Productos que permiten elegir leche (lista de id en JSON)'
 FROM productos p JOIN categorias c ON c.id = p.categoria_id
 WHERE c.nombre IN ('Café', 'Bebidas con café', 'Bebidas sin café')
-  AND p.nombre NOT LIKE 'Affogato%' AND p.nombre NOT LIKE 'Carajillo%' AND p.nombre NOT LIKE 'Espresso%';
+  AND p.nombre NOT LIKE 'Affogato%' AND p.nombre NOT LIKE 'Carajillo%' AND p.nombre NOT LIKE 'Espresso%' AND p.nombre NOT LIKE 'Americano%';
+
+-- Opciones restringidas: «Agua» se ofrece solo en el Americano (espresso suavizado con agua caliente).
+INSERT INTO configuracion_sistema (clave, valor, descripcion)
+SELECT 'leche_opciones_productos',
+       COALESCE(CONCAT('{"', (SELECT id FROM leches WHERE nombre = 'Agua' LIMIT 1), '":[', (SELECT GROUP_CONCAT(id) FROM productos WHERE nombre = 'Americano'), ']}'), '{}'),
+       'Productos en los que se ofrece cada opción de preparación restringida (id de la opción => lista de id de productos, en JSON)';

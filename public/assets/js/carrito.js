@@ -76,7 +76,10 @@
   //   "12~c~l3" con la leche número 3 (la leche va siempre al final)
   Array.prototype.forEach.call(document.querySelectorAll('[data-agregar]'), function (boton) {
     var base = boton.getAttribute('data-clave');
-    var conLeche = boton.getAttribute('data-leche') === '1' && lechesActivas.length > 0;
+    // Opciones de «Preparar con» que ofrece ESTE producto (leches y/o agua), según el panel.
+    var idsOpciones = (boton.getAttribute('data-opciones') || '').split(',');
+    var opcionesProducto = lechesActivas.filter(function (o) { return idsOpciones.indexOf(String(o.id)) !== -1; });
+    var conLeche = boton.getAttribute('data-leche') === '1' && opcionesProducto.length > 0;
     var esBebida = boton.getAttribute('data-bebida') === '1';
     var claveAlt = boton.getAttribute('data-alt-clave');
     var temp = boton.getAttribute('data-temp') || '';
@@ -95,7 +98,7 @@
       temps.forEach(function (t) {
         var sufijo = t ? '~' + t : '';
         var otra = versiones[1 - i];
-        (conLeche ? lechesActivas : [null]).forEach(function (l) {
+        (conLeche ? opcionesProducto : [null]).forEach(function (l) {
           var sufLeche = l ? '~l' + l.id : '';
           catalogo[v.clave + sufijo + sufLeche] = {
             nombre: v.nombre + (t ? ' - ' + NOMBRES_TEMP[t] : ''),
@@ -108,7 +111,7 @@
             lecheExtra: l ? l.extra : 0,
             bebida: esBebida,
             // las demás leches de esta misma bebida (para cambiarla desde el carrito)
-            leches: conLeche ? lechesActivas.map(function (x) {
+            leches: conLeche ? opcionesProducto.map(function (x) {
               return { clave: v.clave + sufijo + '~l' + x.id, texto: x.nombre + (x.extra > 0 ? ' +' + dinero(x.extra) : '') };
             }) : []
           };
@@ -403,7 +406,7 @@
     lineas.push('', '*Detalle del pedido:*');
     if (pedido && pedido.items) {
       pedido.items.forEach(function (it) {
-        lineas.push('- ' + it.cantidad + ' x ' + limpiar(it.nombre) + (it.leche ? ' (Leche ' + limpiar(it.leche) + ')' : '') + ' - ' + it.precio + ' c/u = ' + it.subtotal);
+        lineas.push('- ' + it.cantidad + ' x ' + limpiar(it.nombre) + (it.leche ? ' (' + limpiar(it.leche) + ')' : '') + ' - ' + it.precio + ' c/u = ' + it.subtotal);
       });
       if (pedido.envio && (pedido.envio.centavos > 0 || pedido.envio.gratis)) {
         lineas.push('- Envio a domicilio: ' + pedido.envio.texto);
@@ -412,7 +415,7 @@
       claves().forEach(function (c) {
         var p = catalogo[c];
         var cantidad = items[c];
-        lineas.push('- ' + cantidad + ' x ' + limpiar(p.nombre) + (p.leche ? ' (Leche ' + limpiar(p.leche) + ')' : '') + ' - ' + dinero(p.precio) + ' c/u = ' + dinero(cantidad * p.precio));
+        lineas.push('- ' + cantidad + ' x ' + limpiar(p.nombre) + (p.leche ? ' (' + limpiar(p.leche) + ')' : '') + ' - ' + dinero(p.precio) + ' c/u = ' + dinero(cantidad * p.precio));
       });
       var envioMensaje = envioActual();
       if (envioMensaje.aplica) {
@@ -552,7 +555,7 @@
 
       // Producto con leche: se puede cambiar la leche aquí (cada una con lo que suma al precio).
       if (p.leches && p.leches.length > 1) {
-        info.appendChild(selector(p.leches.map(function (l) { return { clave: l.clave, texto: l.texto }; }), 'Leche'));
+        info.appendChild(selector(p.leches.map(function (l) { return { clave: l.clave, texto: l.texto }; }), 'Preparación'));
       }
 
       // Producto que se puede pedir caliente o frío: se puede cambiar aquí.
@@ -769,9 +772,9 @@
     } else if (boton.getAttribute('data-temp') === 'frio') {
       clave += '~f';
     }
-    if (boton.getAttribute('data-leche') === '1' && lechesActivas.length > 0) {
+    if (boton.getAttribute('data-leche') === '1') {
       var selectorLeche = boton.closest('.tarjeta-producto').querySelector('.leche-select');
-      clave += '~l' + (selectorLeche ? selectorLeche.value : String(lechesActivas[0].id));
+      clave += '~l' + (selectorLeche ? selectorLeche.value : (boton.getAttribute('data-opciones') || '').split(',')[0]);
     }
     var cuantos = cantidadDeTarjeta(boton);
     cambiar(clave, cuantos);

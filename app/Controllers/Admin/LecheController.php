@@ -9,6 +9,7 @@ use App\Core\Dinero;
 use App\Core\Entrada;
 use App\Core\Flash;
 use App\Core\LechesProductos;
+use App\Core\OpcionesProducto;
 use App\Core\Validator;
 use App\Models\Configuracion;
 use App\Models\Leche;
@@ -37,6 +38,7 @@ class LecheController extends Controller
             'leches'        => (new Leche())->listarTodas(),
             'porCategoria'  => $porCategoria,
             'conLeche'      => LechesProductos::mapa((new Configuracion())->obtenerTodas()),
+            'listasOpcion'  => OpcionesProducto::listas((new Configuracion())->obtenerTodas()),
         ]);
     }
 
@@ -117,7 +119,7 @@ class LecheController extends Controller
         }
 
         $nuevo = (int) $leche['activo'] === 1 ? 0 : 1;
-        $modelo->actualizar((int) $id, ['nombre' => $leche['nombre'], 'precio_extra' => $leche['precio_extra'], 'activo' => $nuevo]);
+        $modelo->actualizar((int) $id, ['nombre' => $leche['nombre'], 'precio_extra' => $leche['precio_extra'], 'activo' => $nuevo, 'solo_productos' => (int) $leche['solo_productos']]);
         AuditoriaService::registrar('leches', (int) $id, 'editar', ['activo' => (int) $leche['activo'], 'nombre' => $leche['nombre']], ['activo' => $nuevo, 'nombre' => $leche['nombre']]);
 
         Flash::exito($nuevo === 1 ? 'Leche activada.' : 'Leche desactivada: ya no se ofrece en el sitio.');
@@ -156,6 +158,29 @@ class LecheController extends Controller
         $this->redirigir('/admin/leches');
     }
 
+    /** Guarda en qué productos se ofrece una opción restringida (p. ej. Agua). */
+    public function guardarProductosOpcion(string $id): void
+    {
+        $this->requerirPermiso('leches', 'editar');
+
+        $opcion = (new Leche())->buscarPorId((int) $id);
+        if ($opcion === null) {
+            $this->error404();
+            return;
+        }
+
+        $marcados = isset($_POST['producto']) && is_array($_POST['producto']) ? array_keys($_POST['producto']) : [];
+        OpcionesProducto::guardarLista((int) $id, $marcados);
+        $despues = count(OpcionesProducto::listas((new Configuracion())->obtenerTodas())[(int) $id] ?? []);
+
+        AuditoriaService::registrar('leches', (int) $id, 'editar', null, [
+            'detalle' => 'Cambió los productos en los que se ofrece «' . $opcion['nombre'] . '» (' . $despues . ' productos)',
+        ]);
+
+        Flash::exito('Listo: «' . $opcion['nombre'] . '» se ofrece en ' . $despues . ' producto(s).');
+        $this->redirigir('/admin/leches');
+    }
+
     /** Guarda qué productos permiten elegir leche. */
     public function guardarProductos(): void
     {
@@ -170,11 +195,11 @@ class LecheController extends Controller
             'detalle' => 'Cambió los productos que permiten elegir leche (' . $antes . ' → ' . $despues . ' productos)',
         ]);
 
-        Flash::exito('Listo: ' . $despues . ' producto(s) permiten elegir leche.');
+        Flash::exito('Listo: ' . $despues . ' producto(s) ofrecen las leches.');
         $this->redirigir('/admin/leches');
     }
 
-    /** @return array{nombre:string,precio_extra:string,activo:int} */
+    /** @return array{nombre:string,precio_extra:string,activo:int,solo_productos:int} */
     private function datosDelFormulario(): array
     {
         $precio = trim(Entrada::texto($_POST, 'precio_extra', ''));
@@ -183,6 +208,7 @@ class LecheController extends Controller
             'nombre'       => trim(Entrada::texto($_POST, 'nombre', '')),
             'precio_extra' => $precio === '' ? '0' : $precio,
             'activo'       => isset($_POST['activo']) ? 1 : 0,
+            'solo_productos' => isset($_POST['solo_productos']) ? 1 : 0,
         ];
     }
 

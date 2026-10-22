@@ -8,6 +8,7 @@ use App\Core\Database;
 use App\Core\Dinero;
 use App\Core\EnvioPedidos;
 use App\Core\LechesProductos;
+use App\Core\OpcionesProducto;
 use App\Core\Logger;
 use App\Core\PedidosDisponibles;
 use App\Core\TemperaturaProductos;
@@ -393,12 +394,8 @@ class PedidoService
 
         $configuracion = (new Configuracion())->obtenerTodas();
         $temperaturas = TemperaturaProductos::mapa($configuracion);
-        $productosConLeche = LechesProductos::mapa($configuracion);
         $categoriasBebida = EnvioPedidos::categorias($configuracion);
-        $leches = [];
-        foreach ((new Leche())->listarActivas() as $l) {
-            $leches[(int) $l['id']] = $l;
-        }
+        $opcionesActivas = (new Leche())->listarActivas();
 
         $items = [];
         $noDisponibles = [];
@@ -450,16 +447,21 @@ class PedidoService
                 continue;
             }
 
-            // Leche: un producto que la permite exige elegir una leche activa; uno que no, no la admite.
+            // «Preparar con» (leche o agua): si el producto ofrece opciones, hay que elegir una de las que ofrece; si no ofrece
+            // ninguna (o no hay opciones activas), no admite ninguna.
             $leche = null;
             $extraLeche = 0;
-            if (isset($productosConLeche[$id]) && $leches !== []) {   // sin ninguna leche activa, el producto se pide sin leche
-                if ($lecheId === 0 || !isset($leches[$lecheId])) {
+            $ofrecidas = [];
+            foreach (OpcionesProducto::disponibles($configuracion, $opcionesActivas, $id) as $o) {
+                $ofrecidas[(int) $o['id']] = $o;
+            }
+            if ($ofrecidas !== []) {
+                if ($lecheId === 0 || !isset($ofrecidas[$lecheId])) {
                     $noDisponibles[] = $clave;
                     continue;
                 }
-                $leche = (string) $leches[$lecheId]['nombre'];
-                $extraLeche = Dinero::aCentavos((string) $leches[$lecheId]['precio_extra']);
+                $leche = (string) $ofrecidas[$lecheId]['nombre'];
+                $extraLeche = Dinero::aCentavos((string) $ofrecidas[$lecheId]['precio_extra']);
                 $precio += $extraLeche;
             } elseif ($lecheId !== 0) {
                 $noDisponibles[] = $clave;
