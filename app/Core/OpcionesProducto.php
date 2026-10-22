@@ -72,6 +72,30 @@ class OpcionesProducto
         return $salida;
     }
 
+    /** Quita un producto de todas las listas (al eliminarlo). */
+    public static function quitarProducto(int $productoId): void
+    {
+        $listas = self::listas((new Configuracion())->obtenerTodas());
+        foreach ($listas as $opcionId => $lista) {
+            if (isset($lista[$productoId])) {
+                unset($lista[$productoId]);
+                $guardar = array_values($lista);
+                sort($guardar);
+                $listas[$opcionId] = $lista;
+            }
+        }
+        $salida = [];
+        foreach ($listas as $id => $lista) {
+            $valores = array_values($lista);
+            sort($valores);
+            $salida[(string) $id] = $valores;
+        }
+        Database::conexion()->prepare(
+            'INSERT INTO configuracion_sistema (clave, valor, descripcion) VALUES (:clave, :valor, :descripcion)
+             ON DUPLICATE KEY UPDATE valor = VALUES(valor)'
+        )->execute(['clave' => self::CLAVE, 'valor' => (string) json_encode((object) $salida), 'descripcion' => self::DESCRIPCION]);
+    }
+
     /** Guarda los productos de una opción restringida. Descarta ids que no existan. */
     public static function guardarLista(int $opcionId, array $ids): void
     {

@@ -9,6 +9,7 @@ use App\Core\Controller;
 use App\Core\Flash;
 use App\Core\SubidaArchivo;
 use App\Core\LechesProductos;
+use App\Core\OpcionesProducto;
 use App\Core\TemperaturaProductos;
 use App\Core\Validator;
 use App\Models\Categoria;
@@ -141,7 +142,56 @@ class ProductoController extends Controller
         $this->redirigir('/admin/productos');
     }
 
-    /** "Eliminar" un producto en realidad alterna su estado activo/inactivo (nunca borrado físico, ver docs/arquitectura.md §8). */
+    /**
+     * Elimina un producto. Si ya se usó en un canje de lealtad o lo usa una promoción, no se puede (se explica por qué y se
+     * sugiere desactivarlo). Los pedidos ya hechos conservan el nombre y el precio con que se guardaron.
+     */
+    public function eliminar(string $id): void
+    {
+        $this->requerirPermiso('productos', 'editar');
+
+        $modelo = new Producto();
+        $producto = $modelo->buscarPorId((int) $id);
+        if ($producto === null) {
+            $this->error404();
+            return;
+        }
+
+        $motivos = $modelo->referenciasQueImpidenBorrar((int) $id);
+        if ($motivos !== []) {
+            $lista = [];
+            foreach ($motivos as $nombre => $n) {
+                $lista[] = $n . ' ' . $nombre;
+            }
+            Flash::error('No se puede eliminar «' . $producto['nombre'] . '»: lo usan ' . implode(' y ', $lista)
+                . '. Mejor desactívalo (deja de verse en el sitio) o cambia primero eso.');
+            $this->redirigir('/admin/productos');
+            return;
+        }
+
+        try {
+            $modelo->eliminar((int) $id);
+        } catch (\PDOException $e) {
+            Flash::error('No se pudo eliminar el producto porque todavía se usa en otra parte. Desactívalo en su lugar.');
+            $this->redirigir('/admin/productos');
+            return;
+        }
+
+        if (!empty($producto['imagen'])) {
+            SubidaArchivo::eliminar(UPLOADS_PATH . '/productos', $producto['imagen']);
+        }
+        // Quita al producto de las listas guardadas en la configuración (temperatura, leche y agua).
+        TemperaturaProductos::guardar((int) $id, '');
+        LechesProductos::marcar((int) $id, false);
+        OpcionesProducto::quitarProducto((int) $id);
+
+        AuditoriaService::registrar('productos', (int) $id, 'eliminar', $producto, null);
+
+        Flash::exito('Producto «' . $producto['nombre'] . '» eliminado. Los pedidos ya hechos conservan su nombre y su precio.');
+        $this->redirigir('/admin/productos');
+    }
+
+    /** Activa o desactiva un producto (desactivarlo lo oculta del sitio sin borrarlo). */
     public function alternarEstado(string $id): void
     {
         $this->requerirPermiso('productos', 'editar');

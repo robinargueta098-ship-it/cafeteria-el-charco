@@ -88,6 +88,32 @@ class Producto
         Database::conexion()->prepare('DELETE FROM productos WHERE id = :id')->execute(['id' => $id]);
     }
 
+    /**
+     * Lo que impide borrar un producto: canjes de lealtad ya hechos (historial y recompensas) y promociones que lo usan
+     * (borrarlo las eliminaría en silencio). Los pedidos NO lo impiden: guardan su propio nombre y precio.
+     *
+     * @return array<string,int> motivo => cantidad (solo los que son mayores que cero)
+     */
+    public function referenciasQueImpidenBorrar(int $id): array
+    {
+        $pdo = Database::conexion();
+        $consultas = [
+            'canje(s) de recompensas' => 'SELECT COUNT(*) FROM recompensas WHERE producto_canjeado_id = :id',
+            'promoción(es)'           => 'SELECT COUNT(*) FROM promociones WHERE producto_id = :id',
+        ];
+        $salida = [];
+        foreach ($consultas as $nombre => $sql) {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute(['id' => $id]);
+            $n = (int) $stmt->fetchColumn();
+            if ($n > 0) {
+                $salida[$nombre] = $n;
+            }
+        }
+
+        return $salida;
+    }
+
     /** Referencias que impiden borrado físico (canjes de lealtad ya hechos con este producto). */
     public function tieneReferenciasDeLealtad(int $id): bool
     {

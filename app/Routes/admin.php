@@ -53,13 +53,13 @@ $router->post('/admin/productos/crear', [ProductoController::class, 'crear']);
 $router->get('/admin/productos/{id}/editar', [ProductoController::class, 'mostrarEditar']);
 $router->post('/admin/productos/{id}/editar', [ProductoController::class, 'actualizar']);
 $router->post('/admin/productos/{id}/estado', [ProductoController::class, 'alternarEstado']);
+$router->post('/admin/productos/{id}/eliminar', [ProductoController::class, 'eliminar']);
 
 // --- Galería ---
 $router->get('/admin/leches', [LecheController::class, 'index']);
 $router->get('/admin/leches/crear', [LecheController::class, 'mostrarCrear']);
 $router->post('/admin/leches/crear', [LecheController::class, 'crear']);
 $router->post('/admin/leches/productos', [LecheController::class, 'guardarProductos']);
-$router->post('/admin/leches/{id}/productos', [LecheController::class, 'guardarProductosOpcion']);
 $router->get('/admin/leches/{id}/editar', [LecheController::class, 'mostrarEditar']);
 $router->post('/admin/leches/{id}/editar', [LecheController::class, 'actualizar']);
 $router->post('/admin/leches/{id}/estado', [LecheController::class, 'alternarEstado']);

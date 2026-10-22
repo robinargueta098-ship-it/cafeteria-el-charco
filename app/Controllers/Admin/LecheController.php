@@ -158,44 +158,37 @@ class LecheController extends Controller
         $this->redirigir('/admin/leches');
     }
 
-    /** Guarda en qué productos se ofrece una opción restringida (p. ej. Agua). */
-    public function guardarProductosOpcion(string $id): void
-    {
-        $this->requerirPermiso('leches', 'editar');
-
-        $opcion = (new Leche())->buscarPorId((int) $id);
-        if ($opcion === null) {
-            $this->error404();
-            return;
-        }
-
-        $marcados = isset($_POST['producto']) && is_array($_POST['producto']) ? array_keys($_POST['producto']) : [];
-        OpcionesProducto::guardarLista((int) $id, $marcados);
-        $despues = count(OpcionesProducto::listas((new Configuracion())->obtenerTodas())[(int) $id] ?? []);
-
-        AuditoriaService::registrar('leches', (int) $id, 'editar', null, [
-            'detalle' => 'Cambió los productos en los que se ofrece «' . $opcion['nombre'] . '» (' . $despues . ' productos)',
-        ]);
-
-        Flash::exito('Listo: «' . $opcion['nombre'] . '» se ofrece en ' . $despues . ' producto(s).');
-        $this->redirigir('/admin/leches');
-    }
-
-    /** Guarda qué productos permiten elegir leche. */
+    /**
+     * Guarda de una vez qué se ofrece en cada producto: la columna «Leche» (todas las leches normales) y una columna por
+     * cada opción restringida (p. ej. Agua). Campos: producto[id] y opcion[id de la opción][id del producto].
+     */
     public function guardarProductos(): void
     {
         $this->requerirPermiso('leches', 'editar');
 
-        $marcados = isset($_POST['producto']) && is_array($_POST['producto']) ? array_keys($_POST['producto']) : [];
-        $antes = count(LechesProductos::mapa((new Configuracion())->obtenerTodas()));
-        LechesProductos::reemplazar($marcados);
-        $despues = count(LechesProductos::mapa((new Configuracion())->obtenerTodas()));
+        $config = (new Configuracion())->obtenerTodas();
+        $antes = count(LechesProductos::mapa($config));
 
+        $marcados = isset($_POST['producto']) && is_array($_POST['producto']) ? array_keys($_POST['producto']) : [];
+        LechesProductos::reemplazar($marcados);
+
+        $resumen = [];
+        foreach ((new Leche())->listarTodas() as $opcion) {
+            if ((int) $opcion['solo_productos'] !== 1) {
+                continue;
+            }
+            $ids = isset($_POST['opcion'][$opcion['id']]) && is_array($_POST['opcion'][$opcion['id']]) ? array_keys($_POST['opcion'][$opcion['id']]) : [];
+            OpcionesProducto::guardarLista((int) $opcion['id'], $ids);
+            $resumen[] = $opcion['nombre'] . ': ' . count(OpcionesProducto::listas((new Configuracion())->obtenerTodas())[(int) $opcion['id']] ?? []);
+        }
+
+        $despues = count(LechesProductos::mapa((new Configuracion())->obtenerTodas()));
         AuditoriaService::registrar('leches', 0, 'editar', null, [
-            'detalle' => 'Cambió los productos que permiten elegir leche (' . $antes . ' → ' . $despues . ' productos)',
+            'detalle' => 'Cambió en qué productos se ofrece «Preparar con» (leches: ' . $antes . ' → ' . $despues . ' productos'
+                . ($resumen !== [] ? '; ' . implode('; ', $resumen) : '') . ')',
         ]);
 
-        Flash::exito('Listo: ' . $despues . ' producto(s) ofrecen las leches.');
+        Flash::exito('Listo: se guardó en qué productos se ofrece cada opción.');
         $this->redirigir('/admin/leches');
     }
 

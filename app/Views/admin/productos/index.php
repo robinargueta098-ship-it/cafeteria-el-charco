@@ -56,6 +56,11 @@ require APP_PATH . '/Views/layouts/panel_header.php';
                                     <?= (int) $p['activo'] === 1 ? 'Desactivar' : 'Activar' ?>
                                 </button>
                             </form>
+                            <form method="post" action="/admin/productos/<?= (int) $p['id'] ?>/eliminar"
+                                  onsubmit="return confirm('¿Eliminar este producto? No se puede deshacer. Los pedidos ya hechos conservan su nombre y su precio. Si solo quieres que deje de verse en el sitio, mejor desactívalo.');">
+                                <?= \App\Core\Csrf::campo() ?>
+                                <button type="submit" class="btn btn-peligro btn-pequeno">Eliminar</button>
+                            </form>
                         </td>
                     </tr>
                 <?php endforeach; ?>

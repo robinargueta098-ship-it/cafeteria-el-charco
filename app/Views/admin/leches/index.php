@@ -87,69 +87,73 @@ $puedeEditar = Permisos::puede('leches', 'editar');
 
 <form method="post" action="/admin/leches/productos" class="tarjeta" style="margin-bottom:20px;">
     <?= Csrf::campo() ?>
-    <h2 style="margin-top:0;">¿En qué productos se puede elegir la leche?</h2>
+    <h2 style="margin-top:0;">¿Qué se ofrece en cada producto?</h2>
     <p class="campo-ayuda" style="margin-top:0;">
-        Marca solo las bebidas que llevan leche (café con leche, lattes, chocolate…). El cliente verá las leches
-        en esos productos y el extra se suma al total. También puedes cambiarlo desde la ficha de cada producto.
+        Marca en qué bebidas el cliente puede elegir <strong>«Preparar con»</strong>. La columna <strong>Leche</strong> ofrece todas las leches;
+        las demás columnas son opciones que solo se ofrecen donde las marques (por ejemplo, Agua). Con la casilla de cada
+        encabezado marcas o desmarcas <strong>toda la categoría</strong>. También puedes cambiar la leche desde la ficha de cada producto.
     </p>
 
+    <?php
+    $restringidas = array_values(array_filter($leches, function ($l) { return (int) $l['solo_productos'] === 1; }));
+    ?>
     <?php foreach ($porCategoria as $categoria => $productos): ?>
-        <fieldset style="border:1px solid #e5d9c5;border-radius:10px;padding:12px 14px;margin:0 0 12px;">
+        <fieldset style="border:1px solid #e5d9c5;border-radius:10px;padding:10px 14px 12px;margin:0 0 12px;">
             <legend style="font-weight:700;padding:0 6px;"><?= $e($categoria) ?></legend>
-            <?php if ($puedeEditar): ?>
-                <label style="display:inline-flex;align-items:center;gap:6px;margin-bottom:6px;font-size:0.9rem;color:#6b5a4d;">
-                    <input type="checkbox" data-marcar-categoria> Marcar toda la categoría
-                </label>
-            <?php endif; ?>
-            <div style="display:flex;flex-wrap:wrap;gap:6px 22px;">
-                <?php foreach ($productos as $p): ?>
-                    <label style="display:inline-flex;align-items:center;gap:6px;<?= (int) $p['activo'] === 1 ? '' : 'opacity:.55;' ?>">
-                        <input type="checkbox" name="producto[<?= (int) $p['id'] ?>]" value="1" <?= isset($conLeche[(int) $p['id']]) ? 'checked' : '' ?> <?= $puedeEditar ? '' : 'disabled' ?>>
-                        <?= $e($p['nombre']) ?>
-                    </label>
-                <?php endforeach; ?>
-            </div>
+            <table class="tabla" style="margin:0;">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th style="text-align:center;width:110px;">
+                            Leche
+                            <?php if ($puedeEditar): ?><br><input type="checkbox" data-marcar-columna="leche" aria-label="Marcar toda la categoría con leche" title="Toda la categoría"><?php endif; ?>
+                        </th>
+                        <?php foreach ($restringidas as $opcion): ?>
+                            <th style="text-align:center;width:110px;">
+                                <?= $e($opcion['nombre']) ?>
+                                <?php if ($puedeEditar): ?><br><input type="checkbox" data-marcar-columna="opcion-<?= (int) $opcion['id'] ?>" aria-label="Marcar toda la categoría con <?= $e($opcion['nombre']) ?>" title="Toda la categoría"><?php endif; ?>
+                            </th>
+                        <?php endforeach; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($productos as $p): ?>
+                        <tr style="<?= (int) $p['activo'] === 1 ? '' : 'opacity:.55;' ?>">
+                            <td><?= $e($p['nombre']) ?></td>
+                            <td style="text-align:center;">
+                                <input type="checkbox" data-columna="leche" name="producto[<?= (int) $p['id'] ?>]" value="1" <?= isset($conLeche[(int) $p['id']]) ? 'checked' : '' ?> <?= $puedeEditar ? '' : 'disabled' ?> aria-label="Leche en <?= $e($p['nombre']) ?>">
+                            </td>
+                            <?php foreach ($restringidas as $opcion): ?>
+                                <td style="text-align:center;">
+                                    <input type="checkbox" data-columna="opcion-<?= (int) $opcion['id'] ?>" name="opcion[<?= (int) $opcion['id'] ?>][<?= (int) $p['id'] ?>]" value="1" <?= isset($listasOpcion[(int) $opcion['id']][(int) $p['id']]) ? 'checked' : '' ?> <?= $puedeEditar ? '' : 'disabled' ?> aria-label="<?= $e($opcion['nombre']) ?> en <?= $e($p['nombre']) ?>">
+                                </td>
+                            <?php endforeach; ?>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         </fieldset>
     <?php endforeach; ?>
 
     <?php if ($puedeEditar): ?>
-        <button type="submit" class="btn">Guardar productos con leche</button>
+        <button type="submit" class="btn">Guardar</button>
     <?php endif; ?>
 </form>
 
-<?php foreach ($leches as $opcion): ?>
-    <?php if ((int) $opcion['solo_productos'] !== 1) { continue; } ?>
-    <form method="post" action="/admin/leches/<?= (int) $opcion['id'] ?>/productos" class="tarjeta" style="margin-bottom:20px;">
-        <?= Csrf::campo() ?>
-        <h2 style="margin-top:0;">«<?= $e($opcion['nombre']) ?>»: ¿en qué productos se ofrece?</h2>
-        <p class="campo-ayuda" style="margin-top:0;">
-            Marca las bebidas que se pueden preparar con esta opción. En esos productos aparece como una opción más de «Preparar con».
-        </p>
-        <?php foreach ($porCategoria as $categoria => $productos): ?>
-            <fieldset style="border:1px solid #e5d9c5;border-radius:10px;padding:12px 14px;margin:0 0 12px;">
-                <legend style="font-weight:700;padding:0 6px;"><?= $e($categoria) ?></legend>
-                <div style="display:flex;flex-wrap:wrap;gap:6px 22px;">
-                    <?php foreach ($productos as $p): ?>
-                        <label style="display:inline-flex;align-items:center;gap:6px;<?= (int) $p['activo'] === 1 ? '' : 'opacity:.55;' ?>">
-                            <input type="checkbox" name="producto[<?= (int) $p['id'] ?>]" value="1" <?= isset($listasOpcion[(int) $opcion['id']][(int) $p['id']]) ? 'checked' : '' ?> <?= $puedeEditar ? '' : 'disabled' ?>>
-                            <?= $e($p['nombre']) ?>
-                        </label>
-                    <?php endforeach; ?>
-                </div>
-            </fieldset>
-        <?php endforeach; ?>
-        <?php if ($puedeEditar): ?>
-            <button type="submit" class="btn">Guardar productos de «<?= $e($opcion['nombre']) ?>»</button>
-        <?php endif; ?>
-    </form>
-<?php endforeach; ?>
-
 <script>
-    // «Marcar toda la categoría»
-    document.querySelectorAll('[data-marcar-categoria]').forEach(function (maestra) {
+    // Casilla del encabezado: marca o desmarca toda la categoría en esa columna.
+    document.querySelectorAll('[data-marcar-columna]').forEach(function (maestra) {
+        var columna = maestra.getAttribute('data-marcar-columna');
+        var celdas = function () { return maestra.closest('fieldset').querySelectorAll('input[data-columna="' + columna + '"]'); };
+        var sincronizar = function () {
+            var todas = Array.prototype.every.call(celdas(), function (c) { return c.checked; });
+            maestra.checked = todas;
+        };
         maestra.addEventListener('change', function () {
-            maestra.closest('fieldset').querySelectorAll('input[name^="producto["]').forEach(function (c) { c.checked = maestra.checked; });
+            celdas().forEach(function (c) { c.checked = maestra.checked; });
         });
+        celdas().forEach(function (c) { c.addEventListener('change', sincronizar); });
+        sincronizar();
     });
 </script>
 

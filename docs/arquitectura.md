@@ -1894,6 +1894,18 @@ almendras, descremada) en Café (menos Espresso y Americano), Bebidas con café 
 opción muestra el selector con esa opción; uno sin ninguna no lo muestra. En el mensaje de WhatsApp se lee «(Leche de
 almendras)» o «(Agua)».
 
+### 4.64 Una sola matriz para leche y agua; eliminar productos
+
+En **Leches** una única tabla por categoría muestra los productos como filas y las opciones como columnas (**Leche** =
+todas las leches; una columna por cada opción restringida, p. ej. **Agua**). Cada encabezado tiene una casilla que marca o
+desmarca **toda la categoría** en esa columna, y un solo botón «Guardar» guarda todo (`POST /admin/leches/productos`:
+`producto[id]` y `opcion[id de la opción][id del producto]`).
+
+**Productos → Eliminar** (antes solo se podía desactivar): se elimina el producto, su foto y sus apariciones en las listas de
+temperatura, leche y agua; queda en Auditoría. No se puede eliminar un producto que ya se usó en recompensas canjeadas o que
+usa una promoción (se explica el motivo y se sugiere desactivarlo). Los pedidos ya hechos no se afectan: guardan su propio
+nombre y precio (`pedido_items.producto_id` pasa a NULL).
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```
