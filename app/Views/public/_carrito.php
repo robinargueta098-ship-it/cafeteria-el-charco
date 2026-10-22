@@ -52,6 +52,7 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
             <div class="carrito-aviso" id="carrito-aviso" role="status" hidden></div>
             <p class="carrito-vacio" id="carrito-vacio">Tu carrito está vacío. Agrega productos del menú con el botón <strong>+ Agregar</strong>.</p>
             <ul class="carrito-lista" id="carrito-lista"></ul>
+            <p class="carrito-envio-nota" id="carrito-envio-nota" hidden></p>
 
             <div class="carrito-formulario" id="carrito-formulario" hidden>
             <fieldset class="carrito-datos">
@@ -83,18 +84,6 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
                 <?php endforeach; ?>
                 <p class="carrito-ayuda">Solo para que sepamos cómo vas a pagar; aquí no se cobra nada. La tarjeta física se paga en persona al recoger.</p>
             </fieldset>
-            </div>
-        </div>
-
-        <footer class="carrito-pie" id="carrito-pie" hidden>
-            <div class="carrito-resumen" id="carrito-resumen" hidden>
-                <div class="carrito-linea"><span>Productos</span><span id="carrito-subtotal">Q0.00</span></div>
-                <div class="carrito-linea"><span>Envío a domicilio</span><span id="carrito-envio">Q0.00</span></div>
-                <p class="carrito-envio-nota" id="carrito-envio-nota" hidden></p>
-            </div>
-            <div class="carrito-total"><span>Total</span><strong id="carrito-total">Q0.00</strong></div>
-
-            <p class="carrito-error" id="carrito-error" role="alert" hidden></p>
 
             <?php if ($numeroCarrito !== ''): ?>
                 <div class="carrito-ubicacion" id="carrito-ubicacion">
@@ -104,6 +93,21 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
                         <span>Entendido</span>
                     </label>
                 </div>
+            <?php endif; ?>
+
+            <button type="button" class="carrito-vaciar" id="carrito-vaciar">Vaciar carrito</button>
+            </div>
+        </div>
+
+        <footer class="carrito-pie" id="carrito-pie" hidden>
+            <div class="carrito-total">
+                <span class="carrito-total-texto">Total <small id="carrito-total-detalle" hidden></small></span>
+                <strong id="carrito-total">Q0.00</strong>
+            </div>
+
+            <p class="carrito-error" id="carrito-error" role="alert" hidden></p>
+
+            <?php if ($numeroCarrito !== ''): ?>
                 <a href="#" class="btn btn-whatsapp carrito-enviar" id="carrito-enviar" target="_blank" rel="noopener">
                     <?= Vista::iconoWhatsapp() ?>
                     <span>Enviar pedido por WhatsApp</span>
@@ -111,8 +115,6 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
             <?php else: ?>
                 <p class="carrito-error">Por ahora no podemos recibir pedidos por aquí. Escríbenos o visítanos en la cafetería.</p>
             <?php endif; ?>
-
-            <button type="button" class="carrito-vaciar" id="carrito-vaciar">Vaciar carrito</button>
         </footer>
 
         <?php /* Después de tocar "Enviar": se pregunta si el mensaje realmente salió (el sitio no puede saberlo). */ ?>

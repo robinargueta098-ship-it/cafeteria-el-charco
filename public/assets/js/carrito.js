@@ -45,9 +45,7 @@
     pie: document.getElementById('carrito-pie'),
     formulario: document.getElementById('carrito-formulario'),
     total: document.getElementById('carrito-total'),
-    resumen: document.getElementById('carrito-resumen'),
-    subtotal: document.getElementById('carrito-subtotal'),
-    envio: document.getElementById('carrito-envio'),
+    totalDetalle: document.getElementById('carrito-total-detalle'),
     envioNota: document.getElementById('carrito-envio-nota'),
     error: document.getElementById('carrito-error'),
     enviar: document.getElementById('carrito-enviar'),
@@ -367,6 +365,7 @@
       el.formulario.hidden = true;
       el.pie.hidden = true;
       el.aviso.hidden = true;
+      if (el.envioNota) { el.envioNota.hidden = true; }
     } else {
       el.lista.hidden = false;
     }
@@ -604,13 +603,13 @@
     el.formulario.hidden = !hayItems;
     el.total.textContent = dinero(totalPedido());
 
-    // Productos / envío / aviso de envío gratis (solo si el envío aplica en este pedido)
+    // Detalle del total en una sola línea («Productos Q30.00 + Envío Q5.00») y aviso de envío gratis bajo la lista
     var envio = envioActual();
-    if (el.resumen) {
-      el.resumen.hidden = !envio.aplica;
-      el.subtotal.textContent = dinero(subtotalProductos());
-      el.envio.textContent = envio.gratis ? 'GRATIS' : dinero(envio.centavos);
-      el.envio.classList.toggle('carrito-envio--gratis', envio.gratis);
+    if (el.totalDetalle) {
+      el.totalDetalle.hidden = !envio.aplica;
+      el.totalDetalle.textContent = 'Productos ' + dinero(subtotalProductos()) + ' + Envío ' + (envio.gratis ? 'GRATIS' : dinero(envio.centavos));
+    }
+    if (el.envioNota) {
       if (envio.gratis) {
         el.envioNota.textContent = '¡Tu envío es gratis por pedir ' + datos.envio.gratisDesde + ' bebidas o más!';
         el.envioNota.hidden = false;

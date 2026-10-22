@@ -1906,6 +1906,13 @@ temperatura, leche y agua; queda en Auditoría. No se puede eliminar un producto
 usa una promoción (se explica el motivo y se sugiere desactivarlo). Los pedidos ya hechos no se afectan: guardan su propio
 nombre y precio (`pedido_items.producto_id` pasa a NULL).
 
+### 4.65 Carrito compacto en pantallas pequeñas
+
+El pie fijo del carrito quedó mínimo: **Total** (con el detalle en una línea, «Productos Q30.00 + Envío Q5.00») y el botón
+de WhatsApp. El aviso de envío gratis va bajo la lista de productos, y el aviso de ubicación con «Entendido» y «Vaciar
+carrito» al final del área que se desplaza, junto a los datos y la forma de pago. Así el pedido no queda cortado: en un
+teléfono de 640 px de alto el pie mide ~118 px y en uno de 480 px el área desplazable conserva el 62 % del panel.
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```

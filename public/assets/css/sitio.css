@@ -2421,19 +2421,21 @@ html.carrito-abierto body {
 }
 .pedidos-cerrados .leche-agregar { display: none !important; }
 
-.carrito-resumen {
+/* Pie compacto: solo el total (con su detalle en una línea) y el botón. El aviso de ubicación y «Vaciar carrito» van
+   al final del área que se desplaza, para que el pedido y los datos no queden cortados en pantallas pequeñas. */
+.carrito-total-texto {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 8px;
-  font-size: 0.95rem;
-  color: #5a4535;
+  line-height: 1.15;
 }
-.carrito-resumen[hidden] { display: none; }
-.carrito-linea { display: flex; justify-content: space-between; gap: 12px; }
-.carrito-envio--gratis { color: #4b6b3a; font-weight: 700; }
+.carrito-total-texto small {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #6b5a4d;
+}
+.carrito-total-texto small[hidden] { display: none; }
 .carrito-envio-nota {
-  margin: 4px 0 0;
+  margin: 8px 0 0;
   padding: 8px 10px;
   border-radius: 8px;
   background: #eef3e8;
@@ -2441,3 +2443,20 @@ html.carrito-abierto body {
   font-size: 0.88rem;
 }
 .carrito-envio-nota[hidden] { display: none; }
+
+
+/* Carrito más compacto: menos relleno en el pie y en los avisos, sobre todo en pantallas bajas. */
+.carrito-pie { padding: 10px 16px 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+.carrito-pie .carrito-enviar { margin-top: 8px; }
+.carrito-ubicacion { margin-top: 14px; padding: 10px 12px; }
+.carrito-ubicacion-texto { font-size: 0.88rem; margin-bottom: 4px; }
+.carrito-entendido { min-height: 40px; }
+.carrito-vaciar { margin-top: 10px; }
+.carrito-aviso { font-size: 0.88rem; }
+@media (max-height: 700px) {
+  .carrito-encabezado { padding-top: 10px; padding-bottom: 10px; }
+  .carrito-aviso { padding: 8px 10px; font-size: 0.82rem; }
+  .carrito-total { font-size: 1rem; }
+  .carrito-total strong { font-size: 1.3rem; }
+  .carrito-pie .carrito-enviar { padding: 10px 14px; }
+}
