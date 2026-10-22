@@ -42,6 +42,7 @@ class Permisos
         'cupones'     => ['Cupones', 'editar', 'Ver: consulta. Editar: cancela cupones.'],
         'productos'   => ['Productos', 'editar', 'Ver: consulta. Editar: crea, modifica y activa o desactiva.'],
         'categorias'  => ['Categorías', 'editar', 'Ver: consulta. Editar: crea, modifica y elimina.'],
+        'leches'      => ['Leches', 'editar', 'Ver: consulta. Editar: crea, cambia precios, ordena y activa las leches, y elige qué productos las permiten.'],
         'galeria'     => ['Galería', 'editar', 'Ver: consulta. Editar: sube, ordena y elimina fotos.'],
         'temporadas'  => ['Temporadas', 'editar', 'Ver: consulta. Editar: crea, modifica y ordena.'],
         'promociones' => ['Promociones', 'editar', 'Ver: consulta. Editar: crea, modifica y ordena.'],
@@ -87,7 +88,7 @@ class Permisos
     public static function primeraRuta(int $rolId): string
     {
         foreach (['pedidos' => '/admin/pedidos', 'clientes' => '/admin/clientes', 'lealtad' => '/admin/lealtad', 'canjear' => '/admin/lealtad/canjear',
-                  'recompensas' => '/admin/recompensas', 'cupones' => '/admin/cupones', 'productos' => '/admin/productos',
+                  'recompensas' => '/admin/recompensas', 'cupones' => '/admin/cupones', 'productos' => '/admin/productos', 'leches' => '/admin/leches',
                   'reportes' => '/admin/reportes'] as $modulo => $ruta) {
             if (self::nivel($rolId, $modulo) >= self::VER) {
                 return $ruta;

@@ -19,6 +19,7 @@ use App\Controllers\Admin\CuponPromocionController;
 use App\Controllers\Admin\DashboardController;
 use App\Controllers\Admin\GaleriaController;
 use App\Controllers\Admin\LealtadController;
+use App\Controllers\Admin\LecheController;
 use App\Controllers\Admin\PedidoController;
 use App\Controllers\Admin\ReporteController;
 use App\Controllers\Admin\PortadaController;
@@ -54,6 +55,15 @@ $router->post('/admin/productos/{id}/editar', [ProductoController::class, 'actua
 $router->post('/admin/productos/{id}/estado', [ProductoController::class, 'alternarEstado']);
 
 // --- Galería ---
+$router->get('/admin/leches', [LecheController::class, 'index']);
+$router->get('/admin/leches/crear', [LecheController::class, 'mostrarCrear']);
+$router->post('/admin/leches/crear', [LecheController::class, 'crear']);
+$router->post('/admin/leches/productos', [LecheController::class, 'guardarProductos']);
+$router->get('/admin/leches/{id}/editar', [LecheController::class, 'mostrarEditar']);
+$router->post('/admin/leches/{id}/editar', [LecheController::class, 'actualizar']);
+$router->post('/admin/leches/{id}/estado', [LecheController::class, 'alternarEstado']);
+$router->post('/admin/leches/{id}/mover', [LecheController::class, 'mover']);
+$router->post('/admin/leches/{id}/eliminar', [LecheController::class, 'eliminar']);
 $router->get('/admin/galeria', [GaleriaController::class, 'index']);
 $router->get('/admin/galeria/crear', [GaleriaController::class, 'mostrarCrear']);
 $router->post('/admin/galeria/crear', [GaleriaController::class, 'crear']);

@@ -25,6 +25,7 @@ $enlaces = [
     'reportes'       => ['Reportes', '/admin/reportes', 'reportes'],
     'productos'      => ['Productos', '/admin/productos', 'productos'],
     'categorias'     => ['Categorías', '/admin/categorias', 'categorias'],
+    'leches'         => ['Leches', '/admin/leches', 'leches'],
     'galeria'        => ['Galería', '/admin/galeria', 'galeria'],
     'temporadas'     => ['Temporadas', '/admin/temporadas', 'temporadas'],
     'promociones'    => ['Promociones', '/admin/promociones', 'promociones'],

@@ -433,7 +433,7 @@ INSERT INTO categorias (id, nombre, slug, descripcion, notas, orden) VALUES
   (4, 'Smoothies', 'smoothies', 'Puré de fruta triturada con leche o agua y hielo', 'Q25 cada uno', 4),
   (5, 'Lassie', 'lassie', 'Puré de fruta triturada con yogurt griego, jugo de manzana y hielo', 'Q25 cada uno', 5),
   (6, 'Sándwiches', 'sandwiches', NULL, NULL, 6),
-  (7, 'Café', 'cafe', NULL, 'Leches disponibles: entera +Q0, deslactosada +Q2, almendras +Q3', 7),
+  (7, 'Café', 'cafe', NULL, NULL, 7),
   (8, 'Bebidas con café', 'bebidas-con-cafe', 'Bebidas saborizadas a base de lattes o capuchinos', NULL, 8),
   (9, 'Bebidas sin café', 'bebidas-sin-cafe', NULL, NULL, 9);
 
@@ -562,6 +562,19 @@ INSERT INTO horarios_atencion (dia_semana, cerrado) VALUES
 -- Pedidos del carrito (checkout por WhatsApp) — migración 013
 -- ---------------------------------------------------------------------
 -- Dinero en CENTAVOS ENTEROS. Los pedidos no se borran ni se editan en montos/ítems (disparadores).
+-- Leches elegibles en el carrito (migración 018). Se administran en el panel: Leches.
+CREATE TABLE IF NOT EXISTS leches (
+  id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre         VARCHAR(40) NOT NULL,
+  precio_extra   DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Lo que se suma al precio del producto (Q0.00 = sin costo)',
+  activo         TINYINT(1) NOT NULL DEFAULT 1,
+  orden          SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  creado_en      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_leches_nombre (nombre),
+  INDEX idx_leches_activo (activo, orden)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS pedidos (
   id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   codigo              CHAR(6) NOT NULL COMMENT 'Código corto que ve el cliente; sin O/0/I/1',
@@ -600,10 +613,12 @@ CREATE TABLE IF NOT EXISTS pedido_items (
   id                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   pedido_id                 BIGINT UNSIGNED NOT NULL,
   producto_id               INT UNSIGNED NULL COMMENT 'NULL si el producto se borró; el nombre queda en nombre_snapshot',
-  clave                     VARCHAR(20) NOT NULL COMMENT 'Clave del carrito: 12, 12-alt, 12~c, 12-alt~f',
+  clave                     VARCHAR(40) NOT NULL COMMENT 'Clave del carrito: 12, 12-alt, 12~c, 12-alt~f~l3, envio',
   nombre_snapshot           VARCHAR(200) NOT NULL,
   categoria_snapshot        VARCHAR(100) NOT NULL,
   tipo_snapshot             VARCHAR(60) NOT NULL COMMENT 'Versión y temperatura: Normal, Batido, Normal · Caliente…',
+  leche_snapshot            VARCHAR(60) NULL COMMENT 'Leche elegida (nombre al momento del pedido)',
+  leche_extra_centavos      BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Extra por unidad por la leche; ya está incluido en el precio unitario',
   precio_unitario_centavos  BIGINT UNSIGNED NOT NULL,
   cantidad                  SMALLINT UNSIGNED NOT NULL,
   subtotal_centavos         BIGINT UNSIGNED NOT NULL,
@@ -659,6 +674,7 @@ CREATE TRIGGER trg_items_no_editar BEFORE UPDATE ON pedido_items FOR EACH ROW
 BEGIN
   IF NOT (NEW.pedido_id <=> OLD.pedido_id AND NEW.clave <=> OLD.clave AND NEW.nombre_snapshot <=> OLD.nombre_snapshot
           AND NEW.categoria_snapshot <=> OLD.categoria_snapshot AND NEW.tipo_snapshot <=> OLD.tipo_snapshot
+          AND NEW.leche_snapshot <=> OLD.leche_snapshot AND NEW.leche_extra_centavos <=> OLD.leche_extra_centavos
           AND NEW.precio_unitario_centavos <=> OLD.precio_unitario_centavos AND NEW.cantidad <=> OLD.cantidad
           AND NEW.subtotal_centavos <=> OLD.subtotal_centavos AND NEW.es_cortesia <=> OLD.es_cortesia) THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Los ítems de un pedido no se pueden modificar';
@@ -666,3 +682,26 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+-- ---------------------------------------------------------------------
+-- Leches y envío (migración 018): datos iniciales
+-- ---------------------------------------------------------------------
+INSERT INTO leches (nombre, precio_extra, activo, orden) VALUES
+  ('Entera', 0.00, 1, 1), ('Deslactosada', 2.00, 1, 2), ('Almendras', 3.00, 1, 3), ('Descremada', 0.00, 1, 4);
+
+INSERT INTO configuracion_sistema (clave, valor, descripcion) VALUES
+  ('envio_activo', '1', 'Cobrar envío a domicilio en los pedidos del carrito: 1 = sí, 0 = no'),
+  ('envio_costo', '5.00', 'Costo del envío a domicilio en quetzales'),
+  ('envio_gratis_desde', '5', 'Envío gratis a partir de esta cantidad de bebidas (0 = nunca es gratis)');
+
+INSERT INTO configuracion_sistema (clave, valor, descripcion)
+SELECT 'envio_categorias', COALESCE(CONCAT('[', GROUP_CONCAT(id ORDER BY id SEPARATOR ','), ']'), '[]'),
+       'Categorías que cuentan como bebidas para el envío gratis (lista de id en JSON)'
+FROM categorias WHERE nombre NOT LIKE '%ándwich%' AND nombre NOT LIKE '%andwich%';
+
+INSERT INTO configuracion_sistema (clave, valor, descripcion)
+SELECT 'leche_productos', COALESCE(CONCAT('[', GROUP_CONCAT(p.id ORDER BY p.id SEPARATOR ','), ']'), '[]'),
+       'Productos que permiten elegir leche (lista de id en JSON)'
+FROM productos p JOIN categorias c ON c.id = p.categoria_id
+WHERE c.nombre IN ('Café', 'Bebidas con café', 'Bebidas sin café')
+  AND p.nombre NOT LIKE 'Affogato%' AND p.nombre NOT LIKE 'Carajillo%' AND p.nombre NOT LIKE 'Espresso%';

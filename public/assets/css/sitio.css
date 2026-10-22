@@ -2394,3 +2394,50 @@ html.carrito-abierto body {
   transform: none;
   transition: none;
 }
+
+/* ---------- Leche elegible y envío a domicilio (carrito) ---------- */
+.leche-agregar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+.leche-agregar label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b4a33;
+}
+.leche-select {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1.5px solid #6b4a33;
+  border-radius: 8px;
+  background: #fff;
+  color: #3b2415;
+  font: inherit;
+  font-size: 0.9rem;
+}
+.pedidos-cerrados .leche-agregar { display: none !important; }
+
+.carrito-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  color: #5a4535;
+}
+.carrito-resumen[hidden] { display: none; }
+.carrito-linea { display: flex; justify-content: space-between; gap: 12px; }
+.carrito-envio--gratis { color: #4b6b3a; font-weight: 700; }
+.carrito-envio-nota {
+  margin: 4px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #eef3e8;
+  color: #3f5a30;
+  font-size: 0.88rem;
+}
+.carrito-envio-nota[hidden] { display: none; }

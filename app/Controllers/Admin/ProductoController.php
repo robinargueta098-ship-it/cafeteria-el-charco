@@ -8,6 +8,7 @@ use App\Core\Entrada;
 use App\Core\Controller;
 use App\Core\Flash;
 use App\Core\SubidaArchivo;
+use App\Core\LechesProductos;
 use App\Core\TemperaturaProductos;
 use App\Core\Validator;
 use App\Models\Categoria;
@@ -63,6 +64,9 @@ class ProductoController extends Controller
         $id = $modelo->crear($datos);
         $modelo->sincronizarTemporadas($id, $this->temporadaIdsDelFormulario());
         TemperaturaProductos::guardar($id, $this->temperaturaDelFormulario());
+        if ($this->lecheDelFormulario()) {
+            LechesProductos::marcar($id, true);
+        }
 
         AuditoriaService::registrar('productos', $id, 'crear', null, $datos + ['temperatura' => $this->temperaturaDelFormulario()]);
 
@@ -81,7 +85,9 @@ class ProductoController extends Controller
         }
 
         $producto['temporada_ids'] = $modelo->obtenerTemporadaIds((int) $id);
-        $producto['temperatura'] = TemperaturaProductos::mapa((new Configuracion())->obtenerTodas())[(int) $id] ?? '';
+        $configProducto = (new Configuracion())->obtenerTodas();
+        $producto['temperatura'] = TemperaturaProductos::mapa($configProducto)[(int) $id] ?? '';
+        $producto['permite_leche'] = LechesProductos::permite($configProducto, (int) $id) ? 1 : 0;
         $this->formulario($producto, []);
     }
 
@@ -112,6 +118,7 @@ class ProductoController extends Controller
             $datos['id'] = $id;
             $datos['temporada_ids'] = $this->temporadaIdsDelFormulario();
             $datos['temperatura'] = $this->temperaturaDelFormulario();
+            $datos['permite_leche'] = $this->lecheDelFormulario() ? 1 : 0;
             $this->formulario($datos, $errores);
             return;
         }
@@ -122,6 +129,7 @@ class ProductoController extends Controller
         $modelo->actualizar((int) $id, $datos);
         $modelo->sincronizarTemporadas((int) $id, $this->temporadaIdsDelFormulario());
         TemperaturaProductos::guardar((int) $id, $this->temperaturaDelFormulario());
+        LechesProductos::marcar((int) $id, $this->lecheDelFormulario());
 
         if ($imagenNueva !== null && $existente['imagen'] !== null) {
             SubidaArchivo::eliminar(UPLOADS_PATH . '/productos', $existente['imagen']);
@@ -182,6 +190,12 @@ class ProductoController extends Controller
             'activo'              => isset($_POST['activo']) ? 1 : 0,
             'orden'               => (int) ($_POST['orden'] ?? 0),
         ];
+    }
+
+    /** ¿Se marcó «Permite elegir leche»? Va aparte de $datos: se guarda en la configuración, no en `productos`. */
+    private function lecheDelFormulario(): bool
+    {
+        return isset($_POST['permite_leche']);
     }
 
     /** 'ambas' | 'caliente' | 'frio' | '' (sin opción de temperatura). Va aparte de $datos: no es una columna de `productos`. */

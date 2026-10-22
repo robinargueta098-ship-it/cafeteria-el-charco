@@ -45,6 +45,10 @@
     pie: document.getElementById('carrito-pie'),
     formulario: document.getElementById('carrito-formulario'),
     total: document.getElementById('carrito-total'),
+    resumen: document.getElementById('carrito-resumen'),
+    subtotal: document.getElementById('carrito-subtotal'),
+    envio: document.getElementById('carrito-envio'),
+    envioNota: document.getElementById('carrito-envio-nota'),
     error: document.getElementById('carrito-error'),
     enviar: document.getElementById('carrito-enviar'),
     entendido: document.getElementById('carrito-entendido'),
@@ -64,10 +68,16 @@
   var catalogo = {};
   var NOMBRES_TEMP = { c: 'Caliente', f: 'Frío' };
 
-  // Cada combinación pedible (versión x temperatura) es una entrada con su propia clave:
+  // Leches activas (Panel → Leches): cada una con lo que suma al precio, en centavos.
+  var lechesActivas = Array.isArray(datos.leches) ? datos.leches : [];
+
+  // Cada combinación pedible (versión x temperatura x leche) es una entrada con su propia clave:
   //   "12"  producto sin opciones · "12-alt" segunda versión (Batido) · "12~c" / "12~f" caliente / frío
+  //   "12~c~l3" con la leche número 3 (la leche va siempre al final)
   Array.prototype.forEach.call(document.querySelectorAll('[data-agregar]'), function (boton) {
     var base = boton.getAttribute('data-clave');
+    var conLeche = boton.getAttribute('data-leche') === '1' && lechesActivas.length > 0;
+    var esBebida = boton.getAttribute('data-bebida') === '1';
     var claveAlt = boton.getAttribute('data-alt-clave');
     var temp = boton.getAttribute('data-temp') || '';
     var temps = temp === 'ambas' ? ['c', 'f'] : (temp === 'caliente' ? ['c'] : (temp === 'frio' ? ['f'] : ['']));
@@ -85,14 +95,24 @@
       temps.forEach(function (t) {
         var sufijo = t ? '~' + t : '';
         var otra = versiones[1 - i];
-        catalogo[v.clave + sufijo] = {
-          nombre: v.nombre + (t ? ' - ' + NOMBRES_TEMP[t] : ''),
-          precio: v.precio,
-          corta: v.corta,
-          hermana: otra ? otra.clave + sufijo : '',                       // la otra versión (Frappé <-> Batido)
-          otraTemp: temp === 'ambas' ? v.clave + '~' + (t === 'c' ? 'f' : 'c') : '',   // la otra temperatura
-          tempCorta: t ? NOMBRES_TEMP[t] : ''
-        };
+        (conLeche ? lechesActivas : [null]).forEach(function (l) {
+          var sufLeche = l ? '~l' + l.id : '';
+          catalogo[v.clave + sufijo + sufLeche] = {
+            nombre: v.nombre + (t ? ' - ' + NOMBRES_TEMP[t] : ''),
+            precio: v.precio + (l ? l.extra : 0),                            // el precio ya incluye lo que suma la leche
+            corta: v.corta,
+            hermana: otra ? otra.clave + sufijo + sufLeche : '',             // la otra versión (Frappé <-> Batido)
+            otraTemp: temp === 'ambas' ? v.clave + '~' + (t === 'c' ? 'f' : 'c') + sufLeche : '',   // la otra temperatura
+            tempCorta: t ? NOMBRES_TEMP[t] : '',
+            leche: l ? l.nombre : '',
+            lecheExtra: l ? l.extra : 0,
+            bebida: esBebida,
+            // las demás leches de esta misma bebida (para cambiarla desde el carrito)
+            leches: conLeche ? lechesActivas.map(function (x) {
+              return { clave: v.clave + sufijo + '~l' + x.id, texto: x.nombre + (x.extra > 0 ? ' +' + dinero(x.extra) : '') };
+            }) : []
+          };
+        });
       });
     });
   });
@@ -180,8 +200,34 @@
     return claves().reduce(function (suma, c) { return suma + items[c]; }, 0);
   }
 
-  function totalPedido() {
+  function subtotalProductos() {
     return claves().reduce(function (suma, c) { return suma + items[c] * catalogo[c].precio; }, 0);
+  }
+
+  /** Bebidas del carrito (por unidad): las de las categorías que cuentan para el envío gratis. */
+  function bebidasEnCarrito() {
+    return claves().reduce(function (suma, c) { return suma + (catalogo[c].bebida ? items[c] : 0); }, 0);
+  }
+
+  /**
+   * Envío a domicilio (Configuración → Carrito de pedidos). Misma regla que el servidor (App\Core\EnvioPedidos):
+   * gratis a partir de N bebidas; si no, tiene costo.
+   * @return {{aplica:boolean, cobra:boolean, centavos:number, gratis:boolean, faltan:number}}
+   */
+  function envioActual() {
+    var cfg = datos.envio;
+    if (!cfg || !cfg.activo || cfg.costo <= 0 || totalArticulos() === 0) {
+      return { aplica: false, cobra: false, centavos: 0, gratis: false, faltan: 0 };
+    }
+    var bebidas = bebidasEnCarrito();
+    if (cfg.gratisDesde > 0 && bebidas >= cfg.gratisDesde) {
+      return { aplica: true, cobra: false, centavos: 0, gratis: true, faltan: 0 };
+    }
+    return { aplica: true, cobra: true, centavos: cfg.costo, gratis: false, faltan: cfg.gratisDesde > 0 ? cfg.gratisDesde - bebidas : 0 };
+  }
+
+  function totalPedido() {
+    return subtotalProductos() + envioActual().centavos;
   }
 
   // ---- Horario de atención (dinámico, desde Configuración) ----
@@ -357,14 +403,21 @@
     lineas.push('', '*Detalle del pedido:*');
     if (pedido && pedido.items) {
       pedido.items.forEach(function (it) {
-        lineas.push('- ' + it.cantidad + ' x ' + limpiar(it.nombre) + ' - ' + it.precio + ' c/u = ' + it.subtotal);
+        lineas.push('- ' + it.cantidad + ' x ' + limpiar(it.nombre) + (it.leche ? ' (Leche ' + limpiar(it.leche) + ')' : '') + ' - ' + it.precio + ' c/u = ' + it.subtotal);
       });
+      if (pedido.envio && (pedido.envio.centavos > 0 || pedido.envio.gratis)) {
+        lineas.push('- Envio a domicilio: ' + pedido.envio.texto);
+      }
     } else {
       claves().forEach(function (c) {
         var p = catalogo[c];
         var cantidad = items[c];
-        lineas.push('- ' + cantidad + ' x ' + limpiar(p.nombre) + ' - ' + dinero(p.precio) + ' c/u = ' + dinero(cantidad * p.precio));
+        lineas.push('- ' + cantidad + ' x ' + limpiar(p.nombre) + (p.leche ? ' (Leche ' + limpiar(p.leche) + ')' : '') + ' - ' + dinero(p.precio) + ' c/u = ' + dinero(cantidad * p.precio));
       });
+      var envioMensaje = envioActual();
+      if (envioMensaje.aplica) {
+        lineas.push('- Envio a domicilio: ' + (envioMensaje.gratis ? 'GRATIS' : dinero(envioMensaje.centavos)));
+      }
     }
     lineas.push('');
     lineas.push('*Total: ' + (pedido && pedido.total ? pedido.total : dinero(totalPedido())) + '*');
@@ -497,6 +550,11 @@
         }), 'Versión'));
       }
 
+      // Producto con leche: se puede cambiar la leche aquí (cada una con lo que suma al precio).
+      if (p.leches && p.leches.length > 1) {
+        info.appendChild(selector(p.leches.map(function (l) { return { clave: l.clave, texto: l.texto }; }), 'Leche'));
+      }
+
       // Producto que se puede pedir caliente o frío: se puede cambiar aquí.
       if (p.otraTemp && catalogo[p.otraTemp]) {
         var temps2 = [clave, p.otraTemp].sort(function (x, y) { return (catalogo[x].tempCorta === 'Caliente' ? 0 : 1) - (catalogo[y].tempCorta === 'Caliente' ? 0 : 1); });
@@ -542,6 +600,24 @@
     el.pie.hidden = !hayItems || modoActual !== 'pedido';
     el.formulario.hidden = !hayItems;
     el.total.textContent = dinero(totalPedido());
+
+    // Productos / envío / aviso de envío gratis (solo si el envío aplica en este pedido)
+    var envio = envioActual();
+    if (el.resumen) {
+      el.resumen.hidden = !envio.aplica;
+      el.subtotal.textContent = dinero(subtotalProductos());
+      el.envio.textContent = envio.gratis ? 'GRATIS' : dinero(envio.centavos);
+      el.envio.classList.toggle('carrito-envio--gratis', envio.gratis);
+      if (envio.gratis) {
+        el.envioNota.textContent = '¡Tu envío es gratis por pedir ' + datos.envio.gratisDesde + ' bebidas o más!';
+        el.envioNota.hidden = false;
+      } else if (envio.cobra && envio.faltan > 0) {
+        el.envioNota.textContent = 'Agrega ' + envio.faltan + (envio.faltan === 1 ? ' bebida más' : ' bebidas más') + ' y tu envío es gratis.';
+        el.envioNota.hidden = false;
+      } else {
+        el.envioNota.hidden = true;
+      }
+    }
 
     Array.prototype.forEach.call(raiz.querySelectorAll('input[name="forma_pago"]'), function (radio) {
       radio.checked = radio.value === pago;
@@ -692,6 +768,10 @@
       clave += '~c';
     } else if (boton.getAttribute('data-temp') === 'frio') {
       clave += '~f';
+    }
+    if (boton.getAttribute('data-leche') === '1' && lechesActivas.length > 0) {
+      var selectorLeche = boton.closest('.tarjeta-producto').querySelector('.leche-select');
+      clave += '~l' + (selectorLeche ? selectorLeche.value : String(lechesActivas[0].id));
     }
     var cuantos = cantidadDeTarjeta(boton);
     cambiar(clave, cuantos);
@@ -941,6 +1021,7 @@
         Object.keys(resp.precios).forEach(function (clave) {
           if (catalogo[clave]) { catalogo[clave].precio = resp.precios[clave]; }
         });
+        if (resp.envio_reglas) { datos.envio = resp.envio_reglas; }   // el costo o la regla del envío también pudieron cambiar
         tokenPedido = '';
         guardar();
         pintar();

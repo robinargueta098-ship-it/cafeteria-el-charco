@@ -6,6 +6,7 @@
  *
  * @var array<string,string> $config
  * @var array<int,array<string,mixed>> $horarios
+ * @var array<int,array<string,mixed>> $leches leches activas
  */
 use App\Core\Vista;
 use App\Core\WhatsApp;
@@ -21,6 +22,10 @@ $datosCarrito = [
     'zona'     => APP_TIMEZONE,
     'horario'  => HorarioAtencion::paraCarrito($horarios),
     'pedidos'  => \App\Core\PedidosDisponibles::paraCarrito($config),
+    'envio'    => \App\Core\EnvioPedidos::paraCarrito($config),
+    'leches'   => array_map(function ($l) {
+        return ['id' => (int) $l['id'], 'nombre' => (string) $l['nombre'], 'extra' => \App\Core\Dinero::aCentavos((string) $l['precio_extra'])];
+    }, $leches),
     'pedidoUrl' => '/pedido',
     'csrf'      => \App\Core\Csrf::token(),
 ];
@@ -82,6 +87,11 @@ $iconoCarrito = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
         </div>
 
         <footer class="carrito-pie" id="carrito-pie" hidden>
+            <div class="carrito-resumen" id="carrito-resumen" hidden>
+                <div class="carrito-linea"><span>Productos</span><span id="carrito-subtotal">Q0.00</span></div>
+                <div class="carrito-linea"><span>Envío a domicilio</span><span id="carrito-envio">Q0.00</span></div>
+                <p class="carrito-envio-nota" id="carrito-envio-nota" hidden></p>
+            </div>
             <div class="carrito-total"><span>Total</span><strong id="carrito-total">Q0.00</strong></div>
 
             <p class="carrito-error" id="carrito-error" role="alert" hidden></p>

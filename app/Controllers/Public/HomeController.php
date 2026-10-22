@@ -8,6 +8,7 @@ use App\Core\Controller;
 use App\Models\Configuracion;
 use App\Models\Galeria;
 use App\Models\HorarioAtencion;
+use App\Models\Leche;
 use App\Models\PortadaImagen;
 use App\Models\Producto;
 use App\Models\Promocion;
@@ -32,6 +33,7 @@ class HomeController extends Controller
             'portada'         => (new PortadaImagen())->listar(), // fondo del hero: independiente de la galería
             'promociones'     => (new Promocion())->listarVigentesAhora(),
             'umbralLealtad'   => LealtadService::obtenerUmbral(),
+            'leches'          => (new Leche())->listarActivas(),
         ]);
     }
 }

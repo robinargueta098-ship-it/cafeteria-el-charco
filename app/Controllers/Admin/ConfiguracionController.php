@@ -15,7 +15,9 @@ use App\Core\Validator;
 use App\Models\Configuracion;
 use App\Models\Galeria;
 use App\Models\HorarioAtencion;
+use App\Core\EnvioPedidos;
 use App\Core\PedidosDisponibles;
+use App\Models\Categoria;
 use App\Models\PortadaImagen;
 use App\Services\AuditoriaService;
 
@@ -30,6 +32,7 @@ class ConfiguracionController extends Controller
         'umbral_lealtad', 'google_maps_embed', 'mapa_coordenadas', 'google_calificacion',
         'google_calificacion_url', 'carrito_aviso_ubicacion', 'sobre_nosotros_foto_pie', 'horario_agrupar',
         'pedidos_dias', 'pedidos_pausados', 'pedidos_mensaje',
+        'envio_activo', 'envio_costo', 'envio_gratis_desde', 'envio_categorias',
     ];
 
     /**
@@ -65,6 +68,7 @@ class ConfiguracionController extends Controller
         $this->vista('admin/configuracion/formulario', [
             'seccionActiva'   => 'configuracion',
             'config'          => $config,
+            'categoriasEnvio' => (new Categoria())->listarTodas(),
             'sobre'           => $sobre ?? SobreNosotros::estructura($config),
             'fotoGaleria'     => SobreNosotros::foto(['sobre_nosotros_foto' => ''], (new Galeria())->listarActivas(), (string) ($config['nombre_sitio'] ?? '')),
             'horarios'        => $horarios ?? (new HorarioAtencion())->listarTodos(),
@@ -99,6 +103,18 @@ class ConfiguracionController extends Controller
             }
             $_POST['pedidos_dias'] = implode(',', $marcados);
             $_POST['pedidos_pausados'] = isset($_POST['pedidos_pausa']) ? '1' : '0';
+        }
+
+        // «Envío a domicilio»: igual que arriba, el formulario manda una marca y aquí se arman los valores.
+        if (isset($_POST['envio_config_enviada'])) {
+            $_POST['envio_activo'] = isset($_POST['envio_cobrar']) ? '1' : '0';
+            $validas = [];
+            foreach ((new Categoria())->listarTodas() as $categoriaEnvio) {
+                if (isset($_POST['envio_categoria']) && is_array($_POST['envio_categoria']) && isset($_POST['envio_categoria'][$categoriaEnvio['id']])) {
+                    $validas[] = (int) $categoriaEnvio['id'];
+                }
+            }
+            $_POST['envio_categorias'] = (string) json_encode($validas);
         }
 
         $datos = [];
@@ -234,6 +250,15 @@ class ConfiguracionController extends Controller
                   SobreNosotros::CLAVE_FOTO_PIE => 'Sobre nosotros: pie de foto (texto visible debajo de la foto)'] as $claveNueva => $descripcionNueva) {
             if (array_key_exists($claveNueva, $datos)) {
                 $configModelo->asegurar($claveNueva, '', $descripcionNueva);
+            }
+        }
+
+        foreach ([EnvioPedidos::CLAVE_ACTIVO => ['1', 'Cobrar envío a domicilio en los pedidos del carrito: 1 = sí, 0 = no'],
+                  EnvioPedidos::CLAVE_COSTO => [EnvioPedidos::COSTO_DEFECTO, 'Costo del envío a domicilio en quetzales'],
+                  EnvioPedidos::CLAVE_GRATIS_DESDE => [(string) EnvioPedidos::GRATIS_DESDE_DEFECTO, 'Envío gratis a partir de esta cantidad de bebidas (0 = nunca es gratis)'],
+                  EnvioPedidos::CLAVE_CATEGORIAS => ['[]', 'Categorías que cuentan como bebidas para el envío gratis (lista de id en JSON)']] as $claveEnvio => $porDefectoEnvio) {
+            if (array_key_exists($claveEnvio, $datos)) {
+                $configModelo->asegurar($claveEnvio, $porDefectoEnvio[0], $porDefectoEnvio[1]);
             }
         }
 
@@ -469,6 +494,8 @@ class ConfiguracionController extends Controller
             ->longitudMaxima('carrito_aviso_ubicacion', 'Aviso de ubicación del carrito', 300)
             ->longitudMaxima('sobre_nosotros_foto_pie', 'Pie de foto de «Sobre nosotros»', SobreNosotros::MAX_PIE)
             ->longitudMaxima('pedidos_mensaje', 'Mensaje de pedidos pausados', 200)
+            ->precio('envio_costo', 'El costo del envío', EnvioPedidos::COSTO_MAXIMO)
+            ->enQueValores('envio_activo', 'Cobrar envío', ['0', '1'])
             ->enQueValores('pedidos_pausados', 'Pausa de pedidos', ['0', '1'])
             ->enQueValores('horario_agrupar', 'Forma de mostrar el horario', ['0', '1']);
 
@@ -488,6 +515,14 @@ class ConfiguracionController extends Controller
             $errores[] = 'El umbral de lealtad debe ser un número entero (ej. 10), sin decimales.';
         } elseif ($umbral !== '' && ((int) $umbral < 1 || (int) $umbral > 100)) {
             $errores[] = 'El umbral de lealtad debe estar entre 1 y 100 cafés.';
+        }
+
+        if (array_key_exists('envio_costo', $datos) && $datos['envio_costo'] === '') {
+            $errores[] = 'El costo del envío es obligatorio (escribe 0 si no quieres cobrar envío).';
+        }
+        $gratisDesde = $datos['envio_gratis_desde'] ?? null;
+        if ($gratisDesde !== null && (preg_match('/^\d{1,3}$/', $gratisDesde) !== 1 || (int) $gratisDesde > EnvioPedidos::GRATIS_DESDE_MAXIMO)) {
+            $errores[] = 'Las bebidas para el envío gratis deben ser un número entero de 0 a ' . EnvioPedidos::GRATIS_DESDE_MAXIMO . ' (0 = nunca es gratis).';
         }
 
         $coordenadas = trim((string) ($datos['mapa_coordenadas'] ?? ''));

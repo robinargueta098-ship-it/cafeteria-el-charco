@@ -83,6 +83,12 @@ $temporadaIdsSeleccionadas = $producto['temporada_ids'] ?? [];
             <span class="campo-ayuda">Se muestra en el pedido de WhatsApp (ej. "Moka - Caliente"). Si eliges "caliente o frío", el cliente debe escoger al agregarlo.</span>
         </div>
 
+        <div class="campo campo-checkbox">
+            <input type="checkbox" id="permite_leche" name="permite_leche" value="1" <?= !empty($producto['permite_leche']) ? 'checked' : '' ?>>
+            <label for="permite_leche" style="margin:0;">Permite elegir leche (el cliente la escoge en el carrito)</label>
+        </div>
+        <span class="campo-ayuda" style="display:block;margin:-6px 0 14px;">Para bebidas con leche. Las leches y sus precios se administran en <a href="/admin/leches">Leches</a>.</span>
+
         <div class="campo">
             <label for="imagen">Foto</label>
             <?php if (!empty($producto['imagen'])): ?>

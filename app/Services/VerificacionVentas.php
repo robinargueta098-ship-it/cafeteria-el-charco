@@ -70,6 +70,17 @@ class VerificacionVentas
                  WHERE i.cantidad < 1 OR i.cantidad > 20 OR (i.precio_unitario_centavos = 0 AND i.es_cortesia = 0)
                     OR (i.es_cortesia = 1 AND i.precio_unitario_centavos <> 0)',
 
+            'Ítems con la leche mal calculada (extra mayor al precio, o extra sin leche)' =>
+                'SELECT p.codigo AS ref, CONCAT(i.nombre_snapshot, ": leche=", COALESCE(i.leche_snapshot, "(ninguna)"), " extra=", i.leche_extra_centavos, " precio=", i.precio_unitario_centavos) AS dato
+                 FROM pedido_items i JOIN pedidos p ON p.id = i.pedido_id
+                 WHERE i.leche_extra_centavos > i.precio_unitario_centavos
+                    OR (i.leche_snapshot IS NULL AND i.leche_extra_centavos <> 0)',
+
+            'Pedidos con más de una línea de envío' =>
+                'SELECT p.codigo AS ref, CONCAT("líneas de envío=", COUNT(*)) AS dato
+                 FROM pedidos p JOIN pedido_items i ON i.pedido_id = p.id AND i.clave = "envio"
+                 GROUP BY p.id, p.codigo HAVING COUNT(*) > 1',
+
             'Pedidos con total fuera de rango' =>
                 'SELECT p.codigo AS ref, CONCAT("total=", p.total_centavos) AS dato FROM pedidos p
                  WHERE p.total_centavos <= 0 OR p.total_centavos > 500000',

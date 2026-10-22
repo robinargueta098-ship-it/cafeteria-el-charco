@@ -53,7 +53,12 @@ $textosBoton = ['confirmado' => 'Confirmar pedido', 'entregado' => 'Marcar como 
         <tbody>
             <?php foreach ($items as $it): ?>
                 <tr>
-                    <td><?= $e($it['nombre_snapshot']) ?><?php if ((int) $it['es_cortesia'] === 1): ?> <em>(cortesía)</em><?php endif; ?></td>
+                    <td>
+                        <?= $e($it['nombre_snapshot']) ?><?php if ((int) $it['es_cortesia'] === 1 && $it['clave'] !== 'envio'): ?> <em>(cortesía)</em><?php endif; ?>
+                        <?php if (!empty($it['leche_snapshot'])): ?>
+                            <br><small>Leche: <?= $e($it['leche_snapshot']) ?><?= (int) $it['leche_extra_centavos'] > 0 ? ' (+' . $e(Dinero::formato((int) $it['leche_extra_centavos'])) . ' c/u)' : '' ?></small>
+                        <?php endif; ?>
+                    </td>
                     <td><?= (int) $it['cantidad'] ?></td>
                     <td><?= $e(Dinero::formato((int) $it['precio_unitario_centavos'])) ?></td>
                     <td><?= $e(Dinero::formato((int) $it['subtotal_centavos'])) ?></td>

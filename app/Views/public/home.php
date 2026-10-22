@@ -56,7 +56,9 @@ foreach ($portada as $imagenPortada) {
  * veces con el riesgo de que se desincronicen.
  */
 $temperaturasProductos = TemperaturaProductos::mapa($config);
-$tarjetaProducto = function (array $p) use ($temperaturasProductos) {
+$productosConLeche = \App\Core\LechesProductos::mapa($config);
+$categoriasBebida = \App\Core\EnvioPedidos::categorias($config);
+$tarjetaProducto = function (array $p) use ($temperaturasProductos, $productosConLeche, $categoriasBebida, $leches) {
     ?>
     <article class="tarjeta-producto">
         <?= Vista::fotoOMarcador($p['imagen'] ?? null, UPLOADS_URL . '/productos', $p['nombre']) ?>
@@ -80,6 +82,8 @@ $tarjetaProducto = function (array $p) use ($temperaturasProductos) {
             $vBase = $variantesPedido[0];
             $vAlt = $variantesPedido[1] ?? null;
             $temperatura = $temperaturasProductos[(int) $p['id']] ?? '';
+            $conLeche = isset($productosConLeche[(int) $p['id']]) && $leches !== [];
+            $esBebida = isset($categoriasBebida[(int) ($p['categoria_id'] ?? 0)]);
             ?>
             <?php if ($temperatura === 'ambas'): ?>
                 <div class="temperatura-agregar" role="group" aria-label="Temperatura">
@@ -87,6 +91,17 @@ $tarjetaProducto = function (array $p) use ($temperaturasProductos) {
                     <button type="button" data-temperatura="f" aria-pressed="false">Frío</button>
                 </div>
                 <p class="temperatura-aviso" role="alert" hidden>Elige caliente o frío para agregarlo.</p>
+            <?php endif; ?>
+            <?php if ($conLeche): ?>
+                <div class="leche-agregar">
+                    <?php static $contadorLeche = 0; $contadorLeche++; $idLeche = 'leche-' . (int) $p['id'] . '-' . $contadorLeche; ?>
+                    <label for="<?= $idLeche ?>">Leche</label>
+                    <select class="leche-select" id="<?= $idLeche ?>">
+                        <?php foreach ($leches as $leche): ?>
+                            <option value="<?= (int) $leche['id'] ?>"><?= htmlspecialchars((string) $leche['nombre'], ENT_QUOTES, 'UTF-8') ?><?= (float) $leche['precio_extra'] > 0 ? ' +Q' . number_format((float) $leche['precio_extra'], 2) : '' ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             <?php endif; ?>
             <div class="agregar-carrito">
                 <div class="cantidad-agregar" role="group" aria-label="Cantidad a agregar">
@@ -100,6 +115,8 @@ $tarjetaProducto = function (array $p) use ($temperaturasProductos) {
                         data-precio="<?= number_format($vBase['precio'], 2, '.', '') ?>"
                         data-corta="<?= htmlspecialchars($vBase['corta'], ENT_QUOTES, 'UTF-8') ?>"
                         data-temp="<?= htmlspecialchars($temperatura, ENT_QUOTES, 'UTF-8') ?>"
+                        <?php if ($conLeche): ?>data-leche="1"<?php endif; ?>
+                        <?php if ($esBebida): ?>data-bebida="1"<?php endif; ?>
                         <?php if ($vAlt !== null): ?>
                         data-alt-clave="<?= htmlspecialchars($vAlt['clave'], ENT_QUOTES, 'UTF-8') ?>"
                         data-alt-nombre="<?= htmlspecialchars($vAlt['nombre'], ENT_QUOTES, 'UTF-8') ?>"
@@ -329,6 +346,19 @@ $tarjetaProducto = function (array $p) use ($temperaturasProductos) {
                     <h3><?= htmlspecialchars($cat['nombre'], ENT_QUOTES, 'UTF-8') ?></h3>
                     <?php if (!empty($cat['notas'])): ?>
                         <p class="menu-categoria-notas"><?= htmlspecialchars($cat['notas'], ENT_QUOTES, 'UTF-8') ?></p>
+                    <?php endif; ?>
+                    <?php
+                    // Las leches disponibles salen de Leches (panel), así el texto y los precios nunca quedan desactualizados.
+                    $categoriaConLeche = false;
+                    foreach ($cat['productos'] as $productoCategoria) {
+                        if (isset($productosConLeche[(int) $productoCategoria['id']])) { $categoriaConLeche = true; break; }
+                    }
+                    if ($categoriaConLeche && $leches !== []):
+                        $textoLeches = array_map(function ($l) {
+                            return (string) $l['nombre'] . ((float) $l['precio_extra'] > 0 ? ' +Q' . number_format((float) $l['precio_extra'], 2) : '');
+                        }, $leches);
+                    ?>
+                        <p class="menu-categoria-notas">Leche a elegir: <?= htmlspecialchars(implode(', ', $textoLeches), ENT_QUOTES, 'UTF-8') ?>.</p>
                     <?php endif; ?>
                     <div class="tarjetas-grid">
                         <?php foreach ($cat['productos'] as $p): $tarjetaProducto($p); endforeach; ?>

@@ -2,6 +2,7 @@
 /**
  * @var array<string,string> $config
  * @var array<int,array<string,mixed>> $horarios
+ * @var array<int,array<string,mixed>> $categoriasEnvio
  * @var array<int,string> $errores
  * @var array<int,array<string,mixed>> $portada imágenes del fondo de la portada, en orden
  * @var int $portadaMax máximo de imágenes de portada
@@ -376,6 +377,46 @@ $totalPortada = count($portada);
                    value="<?= htmlspecialchars($config['pedidos_mensaje'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                    placeholder="<?= htmlspecialchars(\App\Core\PedidosDisponibles::MENSAJE_PAUSA_DEFECTO, ENT_QUOTES, 'UTF-8') ?>">
             <p class="campo-ayuda">Hoy: <strong><?= $estadoPedidosHoy['abierto'] ? 'se reciben pedidos' : htmlspecialchars($estadoPedidosHoy['mensaje'], ENT_QUOTES, 'UTF-8') ?></strong></p>
+        </div>
+
+        <?php
+        $reglasEnvio = \App\Core\EnvioPedidos::reglas($config);
+        ?>
+        <h3 style="margin-bottom:6px;">Envío a domicilio</h3>
+        <input type="hidden" name="envio_config_enviada" value="1">
+        <p class="campo-ayuda" style="margin-top:0;">
+            El envío se suma al total del pedido como una línea aparte. Si el cliente pide suficientes <strong>bebidas</strong>,
+            el envío es gratis. Los sándwiches, panes u otros productos no cuentan como bebidas, salvo que marques su categoría abajo.
+        </p>
+        <div class="campo campo-checkbox">
+            <input type="checkbox" id="envio_cobrar" name="envio_cobrar" value="1" <?= $reglasEnvio['activo'] ? 'checked' : '' ?>>
+            <label for="envio_cobrar" style="margin:0;">Cobrar envío a domicilio</label>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            <div class="campo" style="flex:1;min-width:200px;">
+                <label for="envio_costo">Costo del envío (Q)</label>
+                <input type="text" id="envio_costo" name="envio_costo" inputmode="decimal" maxlength="9"
+                       value="<?= htmlspecialchars(number_format($reglasEnvio['costo_centavos'] / 100, 2, '.', ''), ENT_QUOTES, 'UTF-8') ?>">
+                <span class="campo-ayuda">Ej. 5.00. Con 0 no se cobra envío.</span>
+            </div>
+            <div class="campo" style="flex:1;min-width:200px;">
+                <label for="envio_gratis_desde">Envío gratis desde (bebidas)</label>
+                <input type="number" id="envio_gratis_desde" name="envio_gratis_desde" min="0" max="<?= (int) \App\Core\EnvioPedidos::GRATIS_DESDE_MAXIMO ?>" step="1"
+                       value="<?= (int) $reglasEnvio['gratis_desde'] ?>">
+                <span class="campo-ayuda">Ej. 5 = a partir de 5 bebidas. Con 0 el envío nunca es gratis.</span>
+            </div>
+        </div>
+        <div class="campo">
+            <label>Categorías que cuentan como bebidas para el envío gratis</label>
+            <div style="display:flex;gap:6px 20px;flex-wrap:wrap;">
+                <?php foreach ($categoriasEnvio as $categoriaEnvio): ?>
+                    <label style="display:inline-flex;align-items:center;gap:6px;font-weight:400;white-space:nowrap;<?= (int) $categoriaEnvio['activo'] === 1 ? '' : 'opacity:.55;' ?>">
+                        <input type="checkbox" style="width:auto;flex:none;margin:0;" name="envio_categoria[<?= (int) $categoriaEnvio['id'] ?>]" value="1" <?= isset($reglasEnvio['categorias'][(int) $categoriaEnvio['id']]) ? 'checked' : '' ?>>
+                        <?= htmlspecialchars((string) $categoriaEnvio['nombre'], ENT_QUOTES, 'UTF-8') ?>
+                    </label>
+                <?php endforeach; ?>
+            </div>
+            <span class="campo-ayuda">Una categoría nueva (por ejemplo, roles de canela) queda sin marcar: si quieres que cuente, márcala aquí.</span>
         </div>
 
         <h2>Horario de atención</h2>

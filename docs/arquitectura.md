@@ -1861,6 +1861,27 @@ coma; migración `017_pedidos_por_dia.sql`), `pedidos_pausados` y `pedidos_mensa
 - Un pedido ya guardado puede reintentarse (idempotencia) aunque el día esté cerrado. El horario de atención por horas
   sigue siendo solo informativo.
 
+### 4.62 Leche elegible y envío a domicilio (migración 018)
+
+**Leches.** Tabla `leches` (nombre, `precio_extra`, activa, orden), administrada en el panel (módulo **Leches**, permiso
+propio): crear, cambiar el precio, ordenar con ▲▼, activar o desactivar y eliminar. Qué productos permiten elegir leche se
+guarda como lista de id en `configuracion_sistema.leche_productos` (igual que la temperatura) y se edita en Leches
+(por categoría) o en la ficha del producto («Permite elegir leche»). Por defecto: Café (menos Espresso), Bebidas con café
+(menos Affogato y Carajillo) y Bebidas sin café. En el sitio, la tarjeta del producto muestra la lista de leches con su
+extra; la nota de la categoría («Leche a elegir: …») sale sola de las leches activas. La clave del carrito agrega la leche al
+final (`12~c~l3`): una bebida con leche exige elegir una leche activa; una sin leche no la admite; el precio unitario ya
+incluye el extra y `pedido_items` guarda `leche_snapshot` y `leche_extra_centavos` (un cambio de precio posterior no toca
+los pedidos hechos). Sin leches activas, los productos se piden sin leche.
+
+**Envío a domicilio.** Configuración → Carrito de pedidos → *Envío a domicilio*: cobrar sí/no, costo (por defecto Q5.00),
+«envío gratis desde N bebidas» (por defecto 5; 0 = nunca es gratis) y qué categorías cuentan como bebidas (por defecto todas
+menos Sándwiches; una categoría nueva queda sin marcar). Claves `envio_activo`, `envio_costo`, `envio_gratis_desde`,
+`envio_categorias`. La regla (`App\Core\EnvioPedidos`) la aplican el servidor (`PedidoService`, que guarda el envío como
+una **línea más del pedido**: «Envío a domicilio» con su costo, o en gratis una cortesía de precio 0) y el carrito
+(`carrito.js`: resumen Productos / Envío / Total, aviso «Agrega N bebidas más y tu envío es gratis»). Así el total sigue
+siendo la suma de las líneas, los reportes cuadran sin cambios (el envío aparece como categoría «Envío») y el mensaje de
+WhatsApp lleva la leche de cada bebida y «Envío a domicilio: Q5.00 / GRATIS».
+
 ## 5. Modelo de datos (entidades y relaciones)
 
 ```

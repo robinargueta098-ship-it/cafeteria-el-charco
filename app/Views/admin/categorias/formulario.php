@@ -42,7 +42,7 @@ $accion = $esEdicion ? '/admin/categorias/' . (int) $categoria['id'] . '/editar'
         <div class="campo">
             <label for="notas">Notas (texto libre, visible en el sitio público)</label>
             <input type="text" id="notas" name="notas" maxlength="255"
-                   placeholder="Ej. Leches disponibles: entera +Q0, deslactosada +Q2, almendras +Q3"
+                   placeholder="Ej. Q25 cada una"
                    value="<?= htmlspecialchars((string) ($categoria['notas'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
         </div>
 

@@ -6,11 +6,14 @@ namespace App\Services;
 
 use App\Core\Database;
 use App\Core\Dinero;
+use App\Core\EnvioPedidos;
+use App\Core\LechesProductos;
 use App\Core\Logger;
 use App\Core\PedidosDisponibles;
 use App\Core\TemperaturaProductos;
 use App\Core\Vista;
 use App\Models\Configuracion;
+use App\Models\Leche;
 use PDO;
 use PDOException;
 use Throwable;
@@ -118,6 +121,22 @@ class PedidoService
             return $resuelto;
         }
         $items = $resuelto['items'];
+
+        // Envío a domicilio (Configuración → Carrito de pedidos): se cobra, o es gratis desde N bebidas, y se guarda
+        // como una línea más del pedido para que el total siempre sea la suma de sus líneas.
+        $bebidas = 0;
+        foreach ($items as $it) {
+            if ($it['es_bebida']) {
+                $bebidas += $it['cantidad'];
+            }
+        }
+        $envio = EnvioPedidos::calcular((new Configuracion())->obtenerTodas(), $bebidas);
+        if ($envio['cobra']) {
+            $items[] = self::lineaEnvio($envio['costo_centavos'], false);
+        } elseif ($envio['gratis']) {
+            $items[] = self::lineaEnvio(0, true);
+        }
+
         $subtotal = 0;
         foreach ($items as $it) {
             $subtotal += $it['subtotal_centavos'];
@@ -139,6 +158,7 @@ class PedidoService
                 'total_centavos'  => $total,
                 'total'           => Dinero::formato($total),
                 'precios'         => self::preciosPorClave($items),
+                'envio_reglas'    => EnvioPedidos::paraCarrito((new Configuracion())->obtenerTodas()),
             ];
         }
 
@@ -180,9 +200,11 @@ class PedidoService
                 $stmtItem = $pdo->prepare(
                     'INSERT INTO pedido_items
                         (pedido_id, producto_id, clave, nombre_snapshot, categoria_snapshot, tipo_snapshot,
+                         leche_snapshot, leche_extra_centavos,
                          precio_unitario_centavos, cantidad, subtotal_centavos, es_cortesia)
                      VALUES
-                        (:pedido_id, :producto_id, :clave, :nombre, :categoria, :tipo, :precio, :cantidad, :subtotal, :cortesia)'
+                        (:pedido_id, :producto_id, :clave, :nombre, :categoria, :tipo,
+                         :leche, :leche_extra, :precio, :cantidad, :subtotal, :cortesia)'
                 );
                 foreach ($items as $it) {
                     $stmtItem->execute([
@@ -192,10 +214,12 @@ class PedidoService
                         'nombre'      => $it['nombre'],
                         'categoria'   => $it['categoria'],
                         'tipo'        => $it['tipo'],
+                        'leche'       => $it['leche'],
+                        'leche_extra' => $it['leche_extra_centavos'],
                         'precio'      => $it['precio_centavos'],
                         'cantidad'    => $it['cantidad'],
                         'subtotal'    => $it['subtotal_centavos'],
-                        'cortesia'    => 0,
+                        'cortesia'    => $it['es_cortesia'] ? 1 : 0,
                     ]);
                 }
 
@@ -317,7 +341,7 @@ class PedidoService
                 return null;
             }
             $clave = trim($it['clave']);
-            if (!preg_match('/^\d{1,10}(-alt)?(~[cf])?$/', $clave)) {
+            if (!preg_match('/^\d{1,10}(-alt)?(~[cf])?(~l\d{1,6})?$/', $clave)) {
                 return null;
             }
             $cantidad = $it['cantidad'];
@@ -357,7 +381,7 @@ class PedidoService
         $marcas = implode(',', array_fill(0, count($ids), '?'));
         $stmt = $pdo->prepare(
             "SELECT p.id, p.nombre, p.precio, p.precio_alt, p.etiqueta_precio_alt, p.activo,
-                    c.nombre AS cat_nombre, c.activo AS cat_activo
+                    c.id AS cat_id, c.nombre AS cat_nombre, c.activo AS cat_activo
              FROM productos p JOIN categorias c ON c.id = p.categoria_id
              WHERE p.id IN ({$marcas})"
         );
@@ -367,16 +391,24 @@ class PedidoService
             $productos[(int) $fila['id']] = $fila;
         }
 
-        $temperaturas = TemperaturaProductos::mapa((new Configuracion())->obtenerTodas());
+        $configuracion = (new Configuracion())->obtenerTodas();
+        $temperaturas = TemperaturaProductos::mapa($configuracion);
+        $productosConLeche = LechesProductos::mapa($configuracion);
+        $categoriasBebida = EnvioPedidos::categorias($configuracion);
+        $leches = [];
+        foreach ((new Leche())->listarActivas() as $l) {
+            $leches[(int) $l['id']] = $l;
+        }
 
         $items = [];
         $noDisponibles = [];
         foreach ($lineas as $clave => $cantidad) {
             $clave = (string) $clave;
-            preg_match('/^(\d+)(-alt)?(~([cf]))?$/', $clave, $m);
+            preg_match('/^(\d+)(-alt)?(~([cf]))?(~l(\d+))?$/', $clave, $m);
             $id = (int) $m[1];
             $esAlt = !empty($m[2]);
             $temp = isset($m[4]) ? $m[4] : '';
+            $lecheId = isset($m[6]) && $m[6] !== '' ? (int) $m[6] : 0;
 
             $p = isset($productos[$id]) ? $productos[$id] : null;
             if ($p === null || (int) $p['activo'] !== 1 || (int) $p['cat_activo'] !== 1) {
@@ -418,6 +450,22 @@ class PedidoService
                 continue;
             }
 
+            // Leche: un producto que la permite exige elegir una leche activa; uno que no, no la admite.
+            $leche = null;
+            $extraLeche = 0;
+            if (isset($productosConLeche[$id]) && $leches !== []) {   // sin ninguna leche activa, el producto se pide sin leche
+                if ($lecheId === 0 || !isset($leches[$lecheId])) {
+                    $noDisponibles[] = $clave;
+                    continue;
+                }
+                $leche = (string) $leches[$lecheId]['nombre'];
+                $extraLeche = Dinero::aCentavos((string) $leches[$lecheId]['precio_extra']);
+                $precio += $extraLeche;
+            } elseif ($lecheId !== 0) {
+                $noDisponibles[] = $clave;
+                continue;
+            }
+
             $nombreTemp = $temp === 'c' ? 'Caliente' : ($temp === 'f' ? 'Frío' : '');
             $items[] = [
                 'clave'             => $clave,
@@ -425,6 +473,10 @@ class PedidoService
                 'nombre'            => $variante['nombre'] . ($nombreTemp !== '' ? ' - ' . $nombreTemp : ''),
                 'categoria'         => (string) $p['cat_nombre'],
                 'tipo'              => $variante['corta'] . ($nombreTemp !== '' ? ' · ' . $nombreTemp : ''),
+                'leche'             => $leche,
+                'leche_extra_centavos' => $extraLeche,
+                'es_bebida'         => isset($categoriasBebida[(int) $p['cat_id']]),
+                'es_cortesia'       => false,
                 'precio_centavos'   => $precio,
                 'cantidad'          => (int) $cantidad,
                 'subtotal_centavos' => $precio * (int) $cantidad,
@@ -441,6 +493,29 @@ class PedidoService
         }
 
         return ['items' => $items];
+    }
+
+    /**
+     * La línea del pedido que representa el envío: con costo, o gratis (cortesía de precio 0, que no cuenta como ingreso).
+     *
+     * @return array<string,mixed>
+     */
+    private static function lineaEnvio(int $costoCentavos, bool $gratis): array
+    {
+        return [
+            'clave'                => EnvioPedidos::CLAVE_LINEA,
+            'producto_id'          => null,
+            'nombre'               => EnvioPedidos::NOMBRE_LINEA . ($gratis ? ' (gratis)' : ''),
+            'categoria'            => EnvioPedidos::CATEGORIA_LINEA,
+            'tipo'                 => EnvioPedidos::CATEGORIA_LINEA,
+            'leche'                => null,
+            'leche_extra_centavos' => 0,
+            'es_bebida'            => false,
+            'es_cortesia'          => $gratis,
+            'precio_centavos'      => $gratis ? 0 : $costoCentavos,
+            'cantidad'             => 1,
+            'subtotal_centavos'    => $gratis ? 0 : $costoCentavos,
+        ];
     }
 
     /** @param array<int,array<string,mixed>> $items @return array<string,int> */
@@ -464,10 +539,21 @@ class PedidoService
         $stmt = $pdo->prepare('SELECT * FROM pedido_items WHERE pedido_id = :id ORDER BY id');
         $stmt->execute(['id' => $pedidoId]);
         $items = [];
+        $envio = ['centavos' => 0, 'gratis' => false, 'texto' => ''];
         foreach ($stmt->fetchAll() as $it) {
+            if ($it['clave'] === EnvioPedidos::CLAVE_LINEA) {
+                // El envío no es un producto: se informa aparte («Envío: Q5.00» o «Envío: GRATIS»).
+                $envio = [
+                    'centavos' => (int) $it['subtotal_centavos'],
+                    'gratis'   => (int) $it['es_cortesia'] === 1,
+                    'texto'    => (int) $it['es_cortesia'] === 1 ? 'GRATIS' : Dinero::formato((int) $it['subtotal_centavos']),
+                ];
+                continue;
+            }
             $items[] = [
                 'clave'           => $it['clave'],
                 'nombre'          => $it['nombre_snapshot'],
+                'leche'           => $it['leche_snapshot'],
                 'cantidad'        => (int) $it['cantidad'],
                 'precio_centavos' => (int) $it['precio_unitario_centavos'],
                 'precio'          => Dinero::formato((int) $it['precio_unitario_centavos']),
@@ -482,6 +568,7 @@ class PedidoService
             'total_centavos'  => (int) $p['total_centavos'],
             'total'           => Dinero::formato((int) $p['total_centavos']),
             'items'           => $items,
+            'envio'           => $envio,
         ];
     }
 
